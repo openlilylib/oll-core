@@ -28,39 +28,28 @@
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 % This is the main entry file for openLilyLib.
-% When this is included different libraries and their modules can be loaded using
-% the \import command defined here.
-
-% Including this file also makes available some general helper material that
-% is therefore automatically available for any contained library, for example the
-% LilyPond version predicates that can be used to create code depending on the
-% LilyPond version currently executed
-
-% Include (once) the basic infrastructure of openLilyLib
+% To use openLilyLib this file has to be in LilyPond's include path.
+% including this file with
+%     \include "openlilylib.ily"
+% will initialize openLilyLib and make the library management available
+% as well as significant utility functionality.
 %
 % This does several things:
-% - define a global variable 'openlilylib-root
+% - defines a global variable 'openlilylib-root
 %   which is the absolute path to the root of openLilyLib
-%   (the folder this file is located in)
-%   This can be used to construct paths to locations in the
-%   libraries that are relative to openlilylib-root
-% - add this directory to Scheme's module path. Scheme modules
-%   can now be created and references from this root too.
-% - Add module handling support (\loadModule and friends)
-% - Add general tools that are available for all libraries.
-%   - lilypond-version-predicates
-%   - logging commands
-%
+%   (the parent of the folder this file is located in)
+% - adds openlilylib-root to Scheme's module path
+% - adds library/module handling support
+% - adds option handling
+% - adds logging tools
+% - adds miscellaneous helper functionality (e.g. version predicates)
 
-
-% Make general openLilyLib utilities available to any library.
-% See TODO: DOC for more information
-% This file is part of the openLilyLib library infrastructure
-% ... TOBEDONE ...
-%
-% This file initializes openLilyLib
+% We won't support 2.18 anymore as there are simply too many
+% substantial improvements in the 2.19 branch.
+% While development versions are usually more or less up to date,
+% 2.19.22 marks an important step regarding access to LilyPond's parser.
+\version "2.19.22"
 
 #(ly:set-option 'relative-includes #t)
 
