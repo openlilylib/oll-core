@@ -22,21 +22,65 @@
 %   - lilypond-version-predicates
 %   - logging commands
 %
-% NOTE: There has been a major syntax change in 2.19.22:
-% the parser argument is now obsolete with a number of functions,
-% e.g. ly:parser-include-string.
-% As the lilypond-version-predicates have not been included yet
-% we have to hard-code the switch here.
-initOpenLilyLib =
+
+
+% Make general openLilyLib utilities available to any library.
+% See TODO: DOC for more information
+% This file is part of the openLilyLib library infrastructure
+% ... TOBEDONE ...
+%
+% This file initializes openLilyLib
+
+#(ly:set-option 'relative-includes #t)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Common functionality
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Add directoires to Guile's module loading path.
+\include "general-tools/scheme-wrapper/add-guile-path/definitions.ily"
+% the ly directory is now an included path from which modules can be addressed
+% Add openLilyLib root directory to Guile's module load path
+\addGuilePath ".."
+% TODO: Check this when the Scheme lib has moved
+% This is only needed to possibly access modules in the "old" places
+\addGuilePath "../.."
+
+% Make common functionality available to all openLilyLib "users"
+\include "utilities/__main__.ily"
+
+% Logging capabilities with different log levels
+\include "logging.ily"
+
+% Common option handling
+\include "options.ily"
+
+% Set default loglevel to 'warning'
+% (can only be done after options have been included)
+\registerOption global.loglevel #oll-loglevel-warning
+
+% Utility to include multiple files at once
+% Depends on "options.ily"
+\include "utilities/include-pattern.ily"
+
+% Set the root path of openLilyLib
+% - for oll module inclusion
+% - for Scheme module inclusion
+setRootPath =
 #(define-void-function (parser location)()
-   (if (not (defined? 'openlilylib-options))
-       (if (let ((v (ly:version)))
-             (or (> (first  v)  2)
-                 (> (second v) 19)
-                 (>= (third v) 22)))
-           (ly:parser-include-string
-            "\\include \"_internal/init-openlilylib.ily\"")
-           (ly:parser-include-string parser
-             "\\include \"_internal/init-openlilylib.ily\"")
-           )))
-\initOpenLilyLib
+   (let* ((path
+           (normalize-path
+            (string-append
+             (location-extract-path location)
+             "/.."))))
+     #{ \registerOption global.root-path #path #}))
+\setRootPath
+
+% Functionality to load and manage modules
+\include "module-handling.ily"
+
+% Welcome message.
+% This is a default ly:message because otherwise we'd have to mess around with
+% loglevels. This shouldn't be logged anyway.
+
+#(ly:message "\nopenLilyLib: library infrastructure successfully loaded.\n\n")
