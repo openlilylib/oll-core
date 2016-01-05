@@ -1,0 +1,5 @@
+# openLilyLib oll-core .gitignore rules
+
+*.pdf
+*.eps
+*.log
