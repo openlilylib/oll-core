@@ -56,18 +56,17 @@
 % Functions for OS-independent path operations
 \include "internal/os-path.ily"
 
+% Add openLilyLib root directory to Guile's module load path
+% After this Scheme modules can be addressed starting from openLilyLib's
+% root directory (the parent of oll-core)
+\include "internal/add-guile-path.ily"
+\addGuilePath ".."
+
+
+%{
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Common functionality
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% Add directoires to Guile's module loading path.
-\include "general-tools/scheme-wrapper/add-guile-path/definitions.ily"
-% the ly directory is now an included path from which modules can be addressed
-% Add openLilyLib root directory to Guile's module load path
-\addGuilePath ".."
-% TODO: Check this when the Scheme lib has moved
-% This is only needed to possibly access modules in the "old" places
-\addGuilePath "../.."
 
 % Make common functionality available to all openLilyLib "users"
 \include "utilities/__main__.ily"
@@ -107,3 +106,5 @@ setRootPath =
 % loglevels. This shouldn't be logged anyway.
 
 #(ly:message "\nopenLilyLib: library infrastructure successfully loaded.\n\n")
+
+%}
