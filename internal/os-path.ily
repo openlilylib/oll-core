@@ -61,7 +61,7 @@
 % force an arbitrary path to be a list of strings.
 % From there we can reconstruct paths in arbitrary ways.
 
-#(define-public (split-path path)
+#(define-public (os-path-split path)
    "Returns a string list with path elements.
     Takes either a path string or a list.
     If 'path' is a string it is split
@@ -79,23 +79,23 @@
 
 #(define-public (join-unix-path path)
    "Returns a Unix formatted path string from a (symbol?/string?) list."
-   (string-join (split-path path) "/"))
+   (string-join (os-path-split path) "/"))
 
 #(define-public (join-dot-path path)
    "Returns a string in dot-notation (to be displayed).
    Takes a list with symbol?/string? elements or an
    OS independent path string."
-   (let ((path-list (split-path path)))
+   (let ((path-list (os-path-split path)))
      (string-join path-list ".")))
 
 #(define-public (get-cwd-list)
    "Return the current working directory as a list of strings."
-   (split-path (getcwd)))
+   (os-path-split (getcwd)))
 
 #(define-public (absolute-path? path)
    "Test if the given path is absolute.
     Process either a string or a symbol?/string? list."
-   (let ((path-list (split-path path)))
+   (let ((path-list (os-path-split path)))
      (if (and (> (length path-list) 0)
               ;; consider the path absolute if either the regex for windows volumes is matched
               ;; or the first list element is empty (indicating a "/" unix root)
@@ -110,7 +110,7 @@
     if it is a list a list is returned.
     The input string is OS independent (takes os-dependent path separator)
     but the resulting string is Unix-like (because this is nearly always what we need."
-   (let* ((path-list (split-path path))
+   (let* ((path-list (os-path-split path))
           (normalized
            (let ((result '()))
              (for-each
@@ -140,7 +140,7 @@
     to the current working directory.
     Input is OS independent, output is Unix style."
    (let* ((is-string (string? path))
-          (path-list (split-path path))
+          (path-list (os-path-split path))
           (abs-path
            (if (absolute-path? path-list)
                path-list

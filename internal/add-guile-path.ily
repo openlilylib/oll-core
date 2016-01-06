@@ -43,13 +43,13 @@
 % of the file the command is used in.
 #(define-public addGuilePath
    (define-void-function (path)(string?)
-     (let* ((path-arg (split-path path))
+     (let* ((path-arg (os-path-split path))
             (joined-path
              (if (absolute-path? path-arg)
                  (normalize-path path-arg)
                  (normalize-path
                   (append
-                   (split-path (thisDir))
+                   (os-path-split (thisDir))
                    path-arg))))
             (new-path (join-unix-path joined-path)))
        (if (not (member new-path %load-path))
