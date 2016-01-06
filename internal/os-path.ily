@@ -163,8 +163,12 @@
 % file where this function is called from (not the one that
 % is compiled by LilyPond).
 #(define-public thisFile
-   (define-scheme-function (parser location)()
-     (normalize-location location)))
+   (define-scheme-function ()()
+     (normalize-location (*location*))))
+
+#(define-public thisDir
+   (define-scheme-function ()()
+     (dirname (thisFile))))
 
 #(define-public (this-file-compiled? parser location)
    "Return #t if the file where this function is called
