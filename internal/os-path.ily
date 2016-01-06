@@ -112,13 +112,22 @@
     but the resulting string is Unix-like (because this is nearly always what we need."
    (let* ((path-list (split-path path))
           (normalized
-           (let ((ret '()))
+           (let ((result '()))
              (for-each
               (lambda (e)
-                (set! ret (cond ((equal? e "..")(if (> (length ret) 1) (cdr ret) (cdr (reverse (get-cwd-list)))))
-                            ((equal? e ".") (if (= (length ret) 0) (reverse (get-cwd-list)) ret))
-                            (else `(,e ,@ret))))) path-list)
-             (reverse ret))))
+                (set! result 
+                      (cond 
+                       ((equal? e "..")
+                        ;; go up one directory except if  ".." is the first element
+                        (if (> (length result) 0) 
+                            (cdr result) 
+                            `(,e ,@result)))
+                       ;; strip "." element
+                       ((equal? e ".") 
+                        result)
+                       (else `(,e ,@result)))))
+              path-list)
+             (reverse result))))
      (if (string? path)
          (string-join normalized "/" 'infix)
          normalized)))
