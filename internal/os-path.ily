@@ -77,16 +77,21 @@
               (symbol->string element)))
         path)))
 
-#(define-public (join-unix-path path)
-   "Returns a Unix formatted path string from a (symbol?/string?) list."
+% Output paths in different forms
+% First force the input to be a list, then convert it to the desired format
+% All the functions take a 'path' argument as processed by os-path-split.
+
+#(define-public (os-path-join path)
+   "Converts a given path to a path corresponding to the OS convention"
+   (string-join (os-path-split path) (format "~a" os-path-separator)))
+
+#(define-public (os-path-join-unix path)
+   "Converts a given path to a unix-like path"
    (string-join (os-path-split path) "/"))
 
-#(define-public (join-dot-path path)
-   "Returns a string in dot-notation (to be displayed).
-   Takes a list with symbol?/string? elements or an
-   OS independent path string."
-   (let ((path-list (os-path-split path)))
-     (string-join path-list ".")))
+#(define-public (os-path-join-dots path)
+   "Returns a string in LilyPondish dot-notation (for display)"
+   (string-join (os-path-split path) "."))
 
 #(define-public (get-cwd-list)
    "Return the current working directory as a list of strings."

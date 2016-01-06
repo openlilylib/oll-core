@@ -51,6 +51,6 @@
                   (append
                    (os-path-split (thisDir))
                    path-arg))))
-            (new-path (join-unix-path joined-path)))
+            (new-path (os-path-join-unix joined-path)))
        (if (not (member new-path %load-path))
            (set! %load-path `(,new-path ,@%load-path))))))
