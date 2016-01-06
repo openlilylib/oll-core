@@ -53,6 +53,9 @@
 
 #(ly:set-option 'relative-includes #t)
 
+% Functions for OS-independent path operations
+\include "internal/os-path.ily"
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Common functionality
 %%%%%%%%%%%%%%%%%%%%%%%%%%
