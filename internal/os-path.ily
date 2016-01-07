@@ -93,13 +93,19 @@
    "Returns a string in LilyPondish dot-notation (for display)"
    (string-join (os-path-split path) "."))
 
-#(define-public (get-cwd-list)
-   "Return the current working directory as a list of strings."
-   (os-path-split (getcwd)))
+
+%%%%%%%%%%%%%%%%%%%%%
+% Path manipulations
+%
+% The following functions all take a path argument
+% that can be passed to os-path-split, i.e. a
+% OS-specific string or list of strings or symbols.
+% They always return the resulting path as a list of strings
+
+% Handling absolute and relative paths
 
 #(define-public (absolute-path? path)
-   "Test if the given path is absolute.
-    Process either a string or a symbol?/string? list."
+   "Test if the given path is absolute"
    (let ((path-list (os-path-split path)))
      (if (and (> (length path-list) 0)
               ;; consider the path absolute if either the regex for windows volumes is matched
