@@ -104,7 +104,7 @@
 
 % Handling absolute and relative paths
 
-#(define-public (absolute-path? path)
+#(define-public (os-path-absolute? path)
    "Test if the given path is absolute"
    (let ((path-list (os-path-split path)))
      (if (and (> (length path-list) 0)
@@ -143,7 +143,7 @@
    (let* ((is-string (string? path))
           (path-list (os-path-split path))
           (abs-path
-           (if (absolute-path? path-list)
+           (if (os-path-absolute? path-list)
                path-list
                (append
                 (get-cwd-list)
