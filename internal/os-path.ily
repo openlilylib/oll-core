@@ -114,6 +114,18 @@
                   (= 0 (string-length (car path-list)))))
          #t #f)))
 
+#(define-public (os-path-absolute path)
+   "Return absolute and normalized path of given 'path'.
+    If 'path' is already an absolute path it is simply normalized,
+    if it is a relative path it is interpreted as relative 
+    to the current working directory."
+   (let* ((path-list (os-path-normalize path)))
+     (if (os-path-absolute? path-list)
+         path-list
+         (append
+          (os-path-cwd-list)
+          path-list))))
+
 #(define-public (os-path-normalize path)
    "Return a normalized path by resolving '.' and '..' elements."
    (let ((result '()))
@@ -133,24 +145,12 @@
       (os-path-split path))
      (reverse result)))
 
-#(define-public (absolute-path path)
-   "Return absolute path of given 'path'.
-    Path can be given as string or string list.
-    If 'path' is an absolute path it is simply normalized,
-    if it is a relative path it is interpreted as relative 
-    to the current working directory.
-    Input is OS independent, output is Unix style."
-   (let* ((is-string (string? path))
-          (path-list (os-path-split path))
-          (abs-path
-           (if (os-path-absolute? path-list)
-               path-list
-               (append
-                (get-cwd-list)
-                (normalize-path path-list)))))
-     (if is-string
-         (string-join abs-path "/" 'infix)
-         abs-path)))
+
+#(define-public (os-path-cwd-list)
+   "Return the current working directory as a list of strings."
+   (os-path-split (getcwd)))
+
+
 
 #(define-public (normalize-location location)
    "Returns a normalized path to the given location object"
@@ -167,7 +167,7 @@
                            0
                            (- (string-length full-string) 1)))
                        ".")))
-     (normalize-path dirname)))
+     (os-path-normalize dirname)))
 
 
 %%%%%%%%%%%%%%%%%%
