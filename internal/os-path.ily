@@ -50,8 +50,10 @@
          #t #f)))
 
 % Define a global variable containing the OS-dependent path separator character
-#(define-public os-path-separator
+#(define-public os-path-separator-char
    (if is-windows #\\ #\/ ))
+
+#(define-public os-path-separator-string (format "~a" os-path-separator-char))
 
 %%%%%%%%%%%%%%%%%
 % Path operations
@@ -69,7 +71,7 @@
     if it is a list then the list is returned,
     while elements are converted from symbol to string if necessary."
    (if (string? path)
-       (string-split path os-path-separator)
+       (string-split path os-path-separator-char)
        (map
         (lambda (element)
           (if (string? element)
@@ -83,7 +85,7 @@
 
 #(define-public (os-path-join path)
    "Converts a given path to a path corresponding to the OS convention"
-   (string-join (os-path-split path) (format "~a" os-path-separator)))
+   (string-join (os-path-split path) os-path-separator-string))
 
 #(define-public (os-path-join-unix path)
    "Converts a given path to a unix-like path"
