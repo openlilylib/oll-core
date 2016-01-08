@@ -55,23 +55,26 @@
 % "this" functions
 %
 % These functions operate on the file where they are used
-% (i.e. *not* necessarily the file that is currently compiled)
+% (i.e. *not* necessarily the file that is currently being compiled)
 
-% Return the normalized absolute path and file name of the
-% file where this function is called from (not the one that
-% is compiled by LilyPond).
-#(define-public thisFile
-   (define-scheme-function ()()
-     (normalize-location (*location*))))
+% Return the normalized absolute path and file name of "this" file
+#(define-public (this-file) (location->normalized-path (*location*)))
 
-#(define-public thisDir
-   (define-scheme-function ()()
-     (dirname (thisFile))))
+% Return the normalized absolute path of the directory containing "this"
+#(define-public (this-dir)
+   (let ((file (this-file)))
+     (list-head file (- (length file) 1))))
+
+% Return the parent of (this-dir)
+#(define-public (this-parent) 
+   (let ((dir (this-dir)))
+     (list-head dir (- (length dir) 1))))
 
 thisFileCompiled =
 #(define-scheme-function ()()
    "Return #t if the file where this function is called
     is the one that is currently compiled by LilyPond."
    (let ((outname (ly:parser-output-name (*parser*)))
-         (locname (normalize-location (*location*))))
+         (locname (location->normalized-path (*location*))))
+     (ly:message outname)
      (regexp-match? (string-match (format "^(.*/)?~A\\.i?ly$" outname) locname))))
