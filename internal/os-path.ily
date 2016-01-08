@@ -114,34 +114,24 @@
                   (= 0 (string-length (car path-list)))))
          #t #f)))
 
-
-#(define-public (normalize-path path)
-   "Return a normalized path by removing '.' and '..' elements.
-    If 'path' is a string a normalized string is returned,
-    if it is a list a list is returned.
-    The input string is OS independent (takes os-dependent path separator)
-    but the resulting string is Unix-like (because this is nearly always what we need."
-   (let* ((path-list (os-path-split path))
-          (normalized
-           (let ((result '()))
-             (for-each
-              (lambda (e)
-                (set! result 
-                      (cond 
-                       ((equal? e "..")
-                        ;; go up one directory except if  ".." is the first element
-                        (if (> (length result) 0) 
-                            (cdr result) 
-                            `(,e ,@result)))
-                       ;; strip "." element
-                       ((equal? e ".") 
-                        result)
-                       (else `(,e ,@result)))))
-              path-list)
-             (reverse result))))
-     (if (string? path)
-         (string-join normalized "/" 'infix)
-         normalized)))
+#(define-public (os-path-normalize path)
+   "Return a normalized path by resolving '.' and '..' elements."
+   (let ((result '()))
+     (for-each
+      (lambda (e)
+        (set! result 
+              (cond 
+               ((equal? e "..")
+                ;; go up one directory except if  ".." is the first element
+                (if (> (length result) 0) 
+                    (cdr result) 
+                    `(,e ,@result)))
+               ;; strip "." element
+               ((equal? e ".") 
+                result)
+               (else `(,e ,@result)))))
+      (os-path-split path))
+     (reverse result)))
 
 #(define-public (absolute-path path)
    "Return absolute path of given 'path'.
@@ -164,7 +154,7 @@
 
 #(define-public (normalize-location location)
    "Returns a normalized path to the given location object"
-   (normalize-path (car (ly:input-file-line-char-column location))))
+   (os-path-normalize (car (ly:input-file-line-char-column location))))
 
 #(define-public (location-extract-path location)
    "Returns the normalized path from a LilyPond location
