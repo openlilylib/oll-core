@@ -70,6 +70,10 @@
    (let ((dir (this-dir)))
      (list-head dir (- (length dir) 1))))
 
+%%%
+% TODO:
+% This doesn't work correctly so far:
+% How to determine the currently compiled file (name)?
 thisFileCompiled =
 #(define-scheme-function ()()
    "Return #t if the file where this function is called
