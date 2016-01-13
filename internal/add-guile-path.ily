@@ -45,11 +45,11 @@
    (define-void-function (path)(string?)
      (let* ((path-arg (os-path-split path))
             (joined-path
-             (if (absolute-path? path-arg)
-                 (normalize-path path-arg)
-                 (normalize-path
+             (if (os-path-absolute? path-arg)
+                 (os-path-normalize path-arg)
+                 (os-path-normalize
                   (append
-                   (os-path-split (thisDir))
+                   (os-path-split (this-dir))
                    path-arg))))
             (new-path (os-path-join-unix joined-path)))
        (if (not (member new-path %load-path))
