@@ -41,17 +41,9 @@
 % Helper functions handling the low-level differences between OSes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Define a global variable is-windows
-% that returns #t when run on a Windows OS
-#(define-public is-windows
-   (let ((os (getenv "OS")))
-     (if (and (string? os)
-              (regexp-exec (make-regexp ".*Windows.*" regexp/icase) os))
-         #t #f)))
-
 % Define a global variable containing the OS-dependent path separator character
 #(define-public os-path-separator-char
-   (if is-windows #\\ #\/ ))
+   (if (eq? PLATFORM 'windows) #\\ #\/ ))
 
 #(define-public os-path-separator-string (format "~a" os-path-separator-char))
 
@@ -133,15 +125,15 @@
    (let ((result '()))
      (for-each
       (lambda (e)
-        (set! result 
-              (cond 
+        (set! result
+              (cond
                ((equal? e "..")
                 ;; go up one directory except if  ".." is the first element
-                (if (> (length result) 0) 
-                    (cdr result) 
+                (if (> (length result) 0)
+                    (cdr result)
                     `(,e ,@result)))
                ;; strip "." element
-               ((equal? e ".") 
+               ((equal? e ".")
                 result)
                (else `(,e ,@result)))))
       (os-path-split path))
