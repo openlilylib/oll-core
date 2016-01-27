@@ -38,14 +38,24 @@
 \include "add-guile-path.ily"
 \addGuilePath #(os-path-join-unix openlilylib-root)
 
-
-%{
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Common functionality
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Make common functionality available to all openLilyLib "users"
-\include "utilities/__main__.ily"
+% A collection of general-purpose predicates
+#(use-modules (oll-core internal predicates))
+
+% Version predicates to execute code for specific LilyPond versions
+#(use-modules (oll-core internal lilypond-version-predicates))
+
+% Helpers for handling Scheme association lists
+#(use-modules (oll-core internal alist-access))
+
+
+
+%{
+
+TODO: The following includes have to be cleaned-up yet
 
 % Logging capabilities with different log levels
 \include "logging.ily"
