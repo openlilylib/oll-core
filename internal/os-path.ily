@@ -29,6 +29,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Provide tools to OS-independently work with file paths.
+% Additionally retrieve current file, current and parent dir of the file
+% where a function is called from.
+%
 % Compiled and refactored by Urs Liska, based heavily on work by Jan-Peter Voigt
 
 \version "2.19.22"
@@ -144,4 +147,57 @@
    "Return the current working directory as a list of strings."
    (os-path-split (getcwd)))
 
+
+
+% processing "location" arguments
+
+#(define-public (location->normalized-path location)
+   "Returns a normalized path to the given location object"
+   (os-path-normalize (car (ly:input-file-line-char-column location))))
+
+#(define-public (location-extract-path location)
+   "Returns the normalized path from a LilyPond location
+    or './' if 'location' is in the same directory."
+   (let* ((loc (location->normalized-path location))
+          (dirmatch (string-match "(.*/).*" loc))
+          (dirname (if (regexp-match? dirmatch)
+                       (let ((full-string (match:substring dirmatch 1)))
+                         (substring full-string
+                           0
+                           (- (string-length full-string) 1)))
+                       ".")))
+     (os-path-normalize dirname)))
+
+
+%%%%%%%%%%%%%%%%%%
+% "this" functions
+%
+% These functions operate on the file where they are used
+% (i.e. *not* necessarily the file that is currently being compiled)
+
+% Return the normalized absolute path and file name of "this" file
+#(define-public (this-file) (location->normalized-path (*location*)))
+
+% Return the normalized absolute path of the directory containing "this"
+#(define-public (this-dir)
+   (let ((file (this-file)))
+     (list-head file (- (length file) 1))))
+
+% Return the parent of (this-dir)
+#(define-public (this-parent)
+   (let ((file (this-file)))
+     (list-head file (- (length file) 2))))
+
+%%%
+% TODO:
+% This doesn't work correctly so far:
+% How to determine the currently compiled file (name)?
+thisFileCompiled =
+#(define-scheme-function ()()
+   "Return #t if the file where this function is called
+    is the one that is currently compiled by LilyPond."
+   (let ((outname (ly:parser-output-name (*parser*)))
+         (locname (location->normalized-path (*location*))))
+     (ly:message outname)
+     (regexp-match? (string-match (format "^(.*/)?~A\\.i?ly$" outname) locname))))
 

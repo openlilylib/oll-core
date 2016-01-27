@@ -58,12 +58,7 @@
 % *inside* this function, so we have to split the loading into two
 % stages.
 #(if (not (defined? 'openlilylib-root))
-     (ly:parser-include-string
-      "% Functions for OS-independent path operations
-       \\include \"internal/os-path.ily\"
-       % Functions for determining 'this' file/directory
-       % (the one where the function is called from)
-       \\include \"internal/this.ily\""))
+     (ly:parser-include-string "\\include \"internal/os-path.ily\""))
 
 % Determine (once) global root directory of openLilyLib libraries
 openlilylib-root =
