@@ -53,14 +53,23 @@
 
 #(ly:set-option 'relative-includes #t)
 
-% Functions for OS-independent path operations
-\include "internal/os-path.ily"
-% Functions for determining "this" file/directory
-% (the one where the function is called from)
-\include "internal/this.ily"
+% The os-path and the 'this' modules have to be loaded in order to
+% calculate openlilylib-root. However, they are not available yet
+% *inside* this function, so we have to split the loading into two
+% stages.
+#(if (not (defined? 'openlilylib-root))
+     (ly:parser-include-string
+      "% Functions for OS-independent path operations
+       \\include \"internal/os-path.ily\"
+       % Functions for determining 'this' file/directory
+       % (the one where the function is called from)
+       \\include \"internal/this.ily\""))
 
-% Global variable pointing to the root directory of all openLilyLib libraries
-#(define-public openlilylib-root (this-parent))
+% Determine (once) global root directory of openLilyLib libraries
+openlilylib-root =
+#(if (defined? 'openlilylib-root)
+     openlilylib-root
+     (this-parent))
 
 % Add openLilyLib root directory to Guile's module load path
 % After this Scheme modules can be addressed starting from openLilyLib's
