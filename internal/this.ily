@@ -67,8 +67,8 @@
 
 % Return the parent of (this-dir)
 #(define-public (this-parent) 
-   (let ((dir (this-dir)))
-     (list-head dir (- (length dir) 1))))
+   (let ((file (this-file)))
+     (list-head file (- (length file) 2))))
 
 %%%
 % TODO:
