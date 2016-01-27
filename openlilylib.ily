@@ -55,16 +55,18 @@
 
 % Functions for OS-independent path operations
 \include "internal/os-path.ily"
+% Functions for determining "this" file/directory
+% (the one where the function is called from)
+\include "internal/this.ily"
 
 % Global variable pointing to the root directory of all openLilyLib libraries
-#(define-public openlilylib-root
-   (normalize-path (string-append (thisDir) "/..")))
+#(define-public openlilylib-root (this-parent))
 
 % Add openLilyLib root directory to Guile's module load path
 % After this Scheme modules can be addressed starting from openLilyLib's
 % root directory (the parent of oll-core)
 \include "internal/add-guile-path.ily"
-\addGuilePath #openlilylib-root
+\addGuilePath #(os-path-join-unix openlilylib-root)
 
 
 %{
