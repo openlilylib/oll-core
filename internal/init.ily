@@ -61,19 +61,6 @@
 % Depends on "options.ily"
 \include "utilities/include-pattern.ily"
 
-% Set the root path of openLilyLib
-% - for oll module inclusion
-% - for Scheme module inclusion
-setRootPath =
-#(define-void-function (parser location)()
-   (let* ((path
-           (normalize-path
-            (string-append
-             (location-extract-path location)
-             "/.."))))
-     #{ \registerOption global.root-path #path #}))
-\setRootPath
-
 % Functionality to load and manage modules
 \include "module-handling.ily"
 
