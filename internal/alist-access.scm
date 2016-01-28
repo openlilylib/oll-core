@@ -40,6 +40,14 @@
      "Creates or resets <name> as an empty list."
          (ly:parser-define! name (list))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Processing nested alists,
+;; called a-trees herein
+
+;; Create a new empty a-tree with the name <name>.
+;; This is merely a renamed copy of newAlist as
+;; an empty a-tree is actually an empty list.
+(define-public newAtree newAlist)
 
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;% Old functions, to be reviewed
@@ -144,8 +152,6 @@
     (ly:parser-define! name opts)
     ))
 
-;% clear/create an empty a-list
-(define-public clratree newAlist)
 ;% get entry from nested a-list
 (define-public getatree
    (define-scheme-function (parser location name sympath)(symbol? list?)
