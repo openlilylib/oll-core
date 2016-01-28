@@ -29,13 +29,6 @@
 (use-modules
  (lily))
 
-(define-public (symbol-list->dot-path path)
-   "output option path list as a dot-delimited string"
-   (string-join
-    (map
-     (lambda (p)
-       (symbol->string p))
-     path) "."))
 
 ;% after \clralist <name> the variable <name> is initialized with an empty list
 (define-public clralist
