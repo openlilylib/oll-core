@@ -29,9 +29,14 @@
 (use-modules
  (lily))
 
+;;
+;; Functions for easier and robust access to nested association lists.
+;; Typically useful for implementing option trees.
+;;
 
-;;;;;;;;;;;;;;;;;;;
-;; Helper functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Internal Helper functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Check if a given alist is already defined.
 ;; This is necessary as (ly:parser-lookup alst) will implicitly
@@ -148,6 +153,11 @@ which is probably not intended."
 
 
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Public interface
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Processing regular alists
 
@@ -190,14 +200,19 @@ which is probably not intended."
 ;; an empty a-tree is actually an empty list.
 (define-public newAtree newAlist)
 
+;; Set node <path> in a-tree <atree> to value <val>.
+;; If <path> is present modify in-place, otherwise append the node.
+;; Intermediate nodes are created if necessary.
 (define-public setAtree
-  (define-void-function (name sympath val)(symbol? list? scheme?)
-    (set-a-tree name sympath val #t)))
+  (define-void-function (atree path val)(symbol? list? scheme?)
+    (set-a-tree atree path val #t)))
 
-;% add an entry to nested a-list at the end
+;; Set node <path> in a-tree <atree> to value <val>.
+;; If <path> is present it is moved to the end, otherwise appended
+;; Intermediate nodes are created if necessary.
 (define-public addAtree
-  (define-void-function (name sympath val)(symbol? list? scheme?)
-    (set-a-tree name sympath val #f)))
+  (define-void-function (atree path val)(symbol? list? scheme?)
+    (set-a-tree atree path val #f)))
 
 ;; Retrieve a value from path <path> in an a-tree <atree>.
 ;; If the key (last element) or any element in <path> is not present
