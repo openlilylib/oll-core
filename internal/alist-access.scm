@@ -131,31 +131,25 @@ which is probably not intended."
 ;; an empty a-tree is actually an empty list.
 (define-public newAtree newAlist)
 
+;; Retrieve a value from path <path> in an a-tree <atree>.
+;; If the key (last element) or any element in <path> is not present
+;; #f is returned.
+;; NOTE: There's an ambiguity between a non-present key and a key
+;; with the explicit value #f
+(define-public getAtree
+  (define-scheme-function (atree path)(symbol? symbol-list-or-symbol?)
+   (let ((tree (ly:parser-lookup atree)))
+     (check-alst 'getAtree atree path #f)
+     (if (list? tree)
+         (get-from-subtree tree path)
+         (begin
+          (ly:input-warning (*location*) "~A is not list (~A)" atree tree)
+          #f)))))
+
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;% Old functions, to be reviewed
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-;% get entry from nested a-list
-(define-public (get-a-tree name path)
-   (if (not (symbol? name)) (set! name (string->symbol (object->string name))))
-   (let ((opts (ly:parser-lookup name)))
-     (define (getval ol op)
-       (let ((sym (car op)))
-         (cond
-          ((> (length op) 1)
-           (let ((al (assoc-get sym ol #f)))
-             (if (list? al)
-                 (getval al (cdr op))
-                 #f)))
-          ((= (length op) 1)
-           (assoc-get (car op) ol #f))
-          (else #f))))
-     (if (list? opts)
-         (getval opts path)
-         (begin
-          (oll:warn location "~A is not list (~A)" name opts)
-          #f)
-         )))
 ;% add an entry to a nested a-list
 (define (add-a-tree name sympath val assoc-set-append)
    (if (not (symbol? name)) (set! name (string->symbol (object->string name))))
@@ -202,10 +196,6 @@ which is probably not intended."
     (ly:parser-define! name opts)
     ))
 
-;% get entry from nested a-list
-(define-public getatree
-   (define-scheme-function (name sympath)(symbol? list?)
-     (get-a-tree name sympath)))
 ;% add an entry to nested a-list at the end
 (define-public addatree
   (define-void-function (name sympath val)(symbol? list? scheme?)
