@@ -99,6 +99,14 @@ which is probably not intended."
        (rem-from-alist (ly:parser-lookup alst) key-name)
        (list (cons key-name val))))))
 
+;% removes one entry from association list
+(define-public removeFromAlist
+  (define-void-function (alst key-name)(symbol? symbol?)
+    (check-alst 'removeFromAlist alst key-name #f)
+    (ly:parser-define! alst
+      (rem-from-alist (ly:parser-lookup alst) key-name))))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Processing nested alists,
 ;; called a-trees herein
@@ -111,14 +119,6 @@ which is probably not intended."
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;% Old functions, to be reviewed
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-;% removes one entry from association list
-(define-public remalist
-  (define-void-function (parser location alst name)(symbol? symbol?)
-    (let ((l  (ly:parser-lookup alst)))
-          (ly:parser-define! alst
-            (filter (lambda (p) (and (pair? p)(not (equal? (car p) name)))) l))
-      )))
 
 ;% get entry from nested a-list
 (define-public (get-a-tree parser location name path)
