@@ -75,6 +75,16 @@
                 (append result-list (list (cons key-name val)))))
       (ly:parser-define! alst result-list))))
 
+;; Set the node <key-name> to the value <val>.
+;; If <key-name> is present it is moved to the end
+;; otherwise it is appended to the alist.
+(define-public addToAlist
+  (define-void-function (alst key-name val) (symbol? symbol? scheme?)
+    (ly:parser-define! alst
+      (append
+       (rem-from-alist (ly:parser-lookup alst) key-name)
+       (list (cons key-name val))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Processing nested alists,
 ;; called a-trees herein
@@ -87,15 +97,6 @@
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;% Old functions, to be reviewed
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-;% sets one value - <name> is always placed at the end of the list
-(define-public addalist
-  (define-void-function (parser location alst name val)
-    (symbol? symbol? scheme?)
-    (let ((l (ly:parser-lookup alst)))
-      (set! l (filter (lambda (p) (and (pair? p)(not (equal? (car p) name)))) l))
-     (ly:parser-define! alst (append l (list (cons name val))))
-      )))
 
 ;% removes one entry from association list
 (define-public remalist
