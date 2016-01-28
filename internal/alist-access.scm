@@ -59,6 +59,21 @@ which is probably not intended."
               (not (equal? (car node) key-name)))))
    alst))
 
+;; Recursively walk the nested alist <tree> over the symbol-list <path>
+;; and return the value for the last leaf in <path> or #f if the chain
+;; is broken at any point.
+(define (get-from-subtree tree path)
+  (let ((key-name (car path)))
+    (cond
+     ((> (length path) 1)
+      (let ((subtree (assoc-get key-name tree #f)))
+        (if (list? subtree)
+            (get-from-subtree subtree (cdr path))
+            #f)))
+     ((= (length path) 1)
+      (assoc-get (car path) tree #f))
+     (else #f))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Processing regular alists
 
