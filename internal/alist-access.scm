@@ -56,6 +56,11 @@ which is probably not intended."
   (let ((is-present (assq-ref alst key-name)))
     (if (and in-place is-present)
         ;; Set value in-place
+
+        ;
+        ; QUESTION:
+        ; Is this really necessary, aren't there any Guile functions?
+        ;
         (map (lambda (node)
                (if (and (pair? node) (equal? (car node) key-name))
                    (cons key-name val)
