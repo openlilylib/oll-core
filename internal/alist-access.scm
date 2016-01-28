@@ -33,6 +33,22 @@
 ;;;;;;;;;;;;;;;;;;;
 ;; Helper functions
 
+;; Check if a given alist is already defined.
+;; This is necessary as (ly:parser-lookup alst) will implicitly
+;; create an empty list, which will usually result in strange
+;; error conditions when a list name is misspelled.
+(define (check-alst funcname alst key-name val)
+  (if (not (defined? alst))
+      ; TODO: Change this to oll-warning (when this is transfered to oll-core)
+      (ly:input-warning (*location*) "
+Trying to access non-present alist '~a' with function '~a',
+using key '~a' and ~a.  This will create a new alist instead,
+which is probably not intended."
+      alst funcname key-name
+      (if val
+          (format "value '~a'" val)
+          "no value"))))
+
 ;; Remove node <key-name> from a-list <alst> when it is present.
  ; QUESTION: This takes some extra work to preserve nodes
  ; which are not pairs? Is that appropriate?
@@ -59,11 +75,7 @@
 ;; otherwise it is appended at the end of the alist.
 (define-public setAlist
   (define-void-function (alst key-name val)(symbol? symbol? scheme?)
-    (if (not (defined? alst))
-        ; TODO: Change this to oll-warning (when this is transfered to oll-core)
-        (ly:input-warning (*location*) "
-Trying to set value ~a to key ~a in non-existent alist '~a'.
-Creating new object instead - is this intended?" val key-name alst))
+    (check-alst 'setAlist alst key-name val)
     (ly:parser-define! alst
       (let ((result-list (ly:parser-lookup alst)))
         (if (assq-ref result-list key-name)
@@ -81,6 +93,7 @@ Creating new object instead - is this intended?" val key-name alst))
 ;; otherwise it is appended to the alist.
 (define-public addToAlist
   (define-void-function (alst key-name val) (symbol? symbol? scheme?)
+    (check-alst 'addToAlist alst key-name val)
     (ly:parser-define! alst
       (append
        (rem-from-alist (ly:parser-lookup alst) key-name)
