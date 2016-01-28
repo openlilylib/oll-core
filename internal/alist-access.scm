@@ -29,6 +29,20 @@
 (use-modules
  (lily))
 
+
+;;;;;;;;;;;;;;;;;;;
+;; Helper functions
+
+;; Remove node <key-name> from a-list <alst> when it is present.
+ ; QUESTION: This takes some extra work to preserve nodes
+ ; which are not pairs? Is that appropriate?
+(define (rem-from-alist alst key-name)
+  (filter
+   (lambda (node)
+     (or (and (pair? node)
+              (not (equal? (car node) key-name)))))
+   alst))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Processing regular alists
 
