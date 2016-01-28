@@ -49,6 +49,32 @@ which is probably not intended."
           (format "value '~a'" val)
           "no value"))))
 
+;; Set key <key-name> in alist <alst> to value <val>
+;; If <in-place> is #t the key is replaced in-place if already present.
+;; Otherwise (<in-place> is #f and/or key is not set) is is appended.
+(define (set-in-alist alst key-name val in-place)
+  (let ((is-present (assq-ref alst key-name)))
+    (if (and in-place is-present)
+        ;; Set value in-place
+        (map (lambda (node)
+               (if (and (pair? node) (equal? (car node) key-name))
+                   (cons key-name val)
+                   node))
+          alst)
+        ;; Append entry, remove from within if necessary
+        (append
+         (if is-present
+             (rem-from-alist alst key-name)
+             alst)
+         (list (cons key-name val))))))
+
+;; Wrapper function around set-in-alist
+;; Is used by \setAlist and \addToAlist
+(define (set-a-list funcname alst key-name val in-place)
+  (check-alst funcname alst key-name val)
+  (ly:parser-define! alst
+    (set-in-alist (ly:parser-lookup alst) key-name val in-place)))
+
 ;; Remove node <key-name> from a-list <alst> when it is present.
  ; QUESTION: This takes some extra work to preserve nodes
  ; which are not pairs? Is that appropriate?
@@ -58,6 +84,35 @@ which is probably not intended."
      (or (and (pair? node)
               (not (equal? (car node) key-name)))))
    alst))
+
+;; Set <path> in alist <tree> to value <val>.
+;; <path> is a symbol list, with the last element being the actual key.
+;; If any node or the final key is not present it is created implicitly.
+;; If <in-place> is #t the key is modified in place if already present,
+;; otherwise it will be appended.
+;; Intermediate nodes are always updated in place if the already exist.
+(define (set-in-atree tree path val in-place)
+  (let ((key-name (car path)))
+    (if (not (list? tree))
+        (begin
+         (ly:input-warning (*location*) "Not a list. Deleting '~A'" tree)
+         (set! tree '())))
+    (cond ((> (length path) 1)
+            (let ((subtree (assoc-get key-name tree '())))
+              (set-in-alist
+               tree
+               key-name
+               ;; Intermediate nodes are always updated in-place
+               (set-in-atree subtree (cdr path) val #t)
+               in-place)))
+      (else
+        (set-in-alist tree key-name val in-place)))))
+
+;; Wrapper function around set-in-atree,
+;; to be used by \setAtree and \addAtree
+(define (set-a-tree atree path val in-place)
+   (ly:parser-define! atree
+     (set-in-atree (ly:parser-lookup atree) path val in-place)))
 
 ;; Recursively walk the nested alist <tree> over the symbol-list <path>
 ;; and return the value for the last leaf in <path> or #f if the chain
@@ -73,6 +128,8 @@ which is probably not intended."
      ((= (length path) 1)
       (assoc-get (car path) tree #f))
      (else #f))))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Processing regular alists
@@ -90,29 +147,14 @@ which is probably not intended."
 ;; otherwise it is appended at the end of the alist.
 (define-public setAlist
   (define-void-function (alst key-name val)(symbol? symbol? scheme?)
-    (check-alst 'setAlist alst key-name val)
-    (ly:parser-define! alst
-      (let ((result-list (ly:parser-lookup alst)))
-        (if (assq-ref result-list key-name)
-            ;; node is present, replace in-place
-            (map (lambda (node)
-                   (if (and (pair? node) (equal? (car node) key-name))
-                       (cons name val)
-                       node))
-              result-list)
-            ;; else simply append to the end
-            (append result-list (list (cons key-name val))))))))
+    (set-a-list 'setAlist alst key-name val #t)))
 
 ;; Set the node <key-name> to the value <val>.
 ;; If <key-name> is present it is moved to the end
 ;; otherwise it is appended to the alist.
 (define-public addToAlist
   (define-void-function (alst key-name val) (symbol? symbol? scheme?)
-    (check-alst 'addToAlist alst key-name val)
-    (ly:parser-define! alst
-      (append
-       (rem-from-alist (ly:parser-lookup alst) key-name)
-       (list (cons key-name val))))))
+    (set-a-list 'addToAlist alst key-name val #f)))
 
 ;% removes one entry from association list
 (define-public removeFromAlist
@@ -130,6 +172,15 @@ which is probably not intended."
 ;; This is merely a renamed copy of newAlist as
 ;; an empty a-tree is actually an empty list.
 (define-public newAtree newAlist)
+
+(define-public setAtree
+  (define-void-function (name sympath val)(symbol? list? scheme?)
+    (set-a-tree name sympath val #t)))
+
+;% add an entry to nested a-list at the end
+(define-public addAtree
+  (define-void-function (name sympath val)(symbol? list? scheme?)
+    (set-a-tree name sympath val #f)))
 
 ;; Retrieve a value from path <path> in an a-tree <atree>.
 ;; If the key (last element) or any element in <path> is not present
@@ -149,32 +200,6 @@ which is probably not intended."
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;% Old functions, to be reviewed
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-;% add an entry to a nested a-list
-(define (add-a-tree name sympath val assoc-set-append)
-   (if (not (symbol? name)) (set! name (string->symbol (object->string name))))
-   (let ((opts (ly:parser-lookup name)))
-    (define (setval ol op)
-      (let ((sym (car op))
-            (ol (if (list? ol) ol (begin
-                                   (oll:warn location "deleting '~A'" ol)
-                                   '()))))
-        (if (> (length op) 1)
-            (let ((al (assoc-get sym ol '())))
-              (if (not (list? al))
-                  (begin
-                   (oll:warn location "deleting '~A' = '~A'" sym al)
-                   (set! al '())
-                   ))
-              (assoc-set-append ol sym (setval al (cdr op)))
-              )
-            (let ((ov (assoc-get sym ol #f)))
-              ;(if ov (oll:warn location "deleting '~A'" ov))
-              (assoc-set-append ol sym val)
-              )
-            )))
-    (set! opts (setval opts sympath)) (ly:parser-define! name opts)
-     ))
 
 ;% remove an entry from a nested a-list
 (define (rem-a-tree name sympath)
@@ -196,18 +221,6 @@ which is probably not intended."
     (ly:parser-define! name opts)
     ))
 
-;% add an entry to nested a-list at the end
-(define-public addatree
-  (define-void-function (name sympath val)(symbol? list? scheme?)
-    (add-a-tree name sympath val
-      (lambda (l sym val)
-        (append (filter (lambda (p) (not (and (pair? p)(equal? (car p) sym)))) l)
-          (list (cons sym val)))))))
-;% set an entry in nested a-list in place
-(define-public setatree
-  (define-void-function (name sympath val)(symbol? list? scheme?)
-    (add-a-tree name sympath val
-      (lambda (l sym val) (assoc-set! l sym val)))))
 ;% remove an entry from nested a-list
 (define-public rematree
   (define-void-function (name sympath)(symbol? list?)
