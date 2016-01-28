@@ -134,6 +134,18 @@ which is probably not intended."
       (assoc-get (car path) tree #f))
      (else #f))))
 
+;; Takes the alist <tree> and removes the node <path>,
+;; returns a new list.
+(define (remove-value tree path)
+  (let* ((key-name (car path))
+         (subpath (cdr path))
+         (subtree (assoc-get key-name tree '())))
+    (cond
+     ((> (length subpath) 1)
+      (set-in-alist tree key-name (remove-value subtree (cdr path)) #t))
+     (else
+      (set-in-alist tree key-name (rem-from-alist subtree (car subpath)) #t)))))
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -202,31 +214,10 @@ which is probably not intended."
           (ly:input-warning (*location*) "~A is not list (~A)" atree tree)
           #f)))))
 
-;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-;% Old functions, to be reviewed
-;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-;% remove an entry from a nested a-list
-(define (rem-a-tree name sympath)
-  (if (not (symbol? name)) (set! name (string->symbol (object->string name))))
-  (let ((opts (ly:parser-lookup name)))
-    (define (remval ol op)
-      (let ((sym (car op)))
-        (if (> (length op) 1)
-            (let ((al (assoc-get sym ol '())))
-              (set! al (remval al (cdr op)))
-              (if (> (length al) 0)
-                  (map (lambda (p) (if (and (pair? p)(equal? (car p) sym)) (cons sym al) p)) ol)
-                  (filter (lambda (p) (not (and (pair? p)(equal? (car p) sym)))) ol))
-              )
-            (filter (lambda (p) (not (and (pair? p)(equal? (car p) sym)))) ol)
-            )
-        ))
-    (set! opts (remval opts sympath))
-    (ly:parser-define! name opts)
-    ))
-
-;% remove an entry from nested a-list
-(define-public rematree
-  (define-void-function (name sympath)(symbol? list?)
-    (rem-a-tree name sympath)))
+;; Remove node <path> from a-tree <atree>.
+;; If <path> isn't present in <atree> it is not modified.
+(define-public remAtree
+  (define-void-function (atree path)(symbol? list?)
+    (check-alst 'remAtree atree path #f)
+    (ly:parser-define! atree
+      (remove-value (ly:parser-lookup atree) path))))
