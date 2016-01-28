@@ -121,7 +121,7 @@ which is probably not intended."
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 ;% get entry from nested a-list
-(define-public (get-a-tree parser location name path)
+(define-public (get-a-tree name path)
    (if (not (symbol? name)) (set! name (string->symbol (object->string name))))
    (let ((opts (ly:parser-lookup name)))
      (define (getval ol op)
@@ -142,7 +142,7 @@ which is probably not intended."
           #f)
          )))
 ;% add an entry to a nested a-list
-(define (add-a-tree parser location name sympath val assoc-set-append)
+(define (add-a-tree name sympath val assoc-set-append)
    (if (not (symbol? name)) (set! name (string->symbol (object->string name))))
    (let ((opts (ly:parser-lookup name)))
     (define (setval ol op)
@@ -168,7 +168,7 @@ which is probably not intended."
      ))
 
 ;% remove an entry from a nested a-list
-(define (rem-a-tree parser location name sympath)
+(define (rem-a-tree name sympath)
   (if (not (symbol? name)) (set! name (string->symbol (object->string name))))
   (let ((opts (ly:parser-lookup name)))
     (define (remval ol op)
@@ -189,21 +189,21 @@ which is probably not intended."
 
 ;% get entry from nested a-list
 (define-public getatree
-   (define-scheme-function (parser location name sympath)(symbol? list?)
-     (get-a-tree parser location name sympath)))
+   (define-scheme-function (name sympath)(symbol? list?)
+     (get-a-tree name sympath)))
 ;% add an entry to nested a-list at the end
 (define-public addatree
-  (define-void-function (parser location name sympath val)(symbol? list? scheme?)
-    (add-a-tree parser location name sympath val
+  (define-void-function (name sympath val)(symbol? list? scheme?)
+    (add-a-tree name sympath val
       (lambda (l sym val)
         (append (filter (lambda (p) (not (and (pair? p)(equal? (car p) sym)))) l)
           (list (cons sym val)))))))
 ;% set an entry in nested a-list in place
 (define-public setatree
-  (define-void-function (parser location name sympath val)(symbol? list? scheme?)
-    (add-a-tree parser location name sympath val
+  (define-void-function (name sympath val)(symbol? list? scheme?)
+    (add-a-tree name sympath val
       (lambda (l sym val) (assoc-set! l sym val)))))
 ;% remove an entry from nested a-list
 (define-public rematree
-  (define-void-function (parser location name sympath)(symbol? list?)
-    (rem-a-tree parser location name sympath)))
+  (define-void-function (name sympath)(symbol? list?)
+    (rem-a-tree name sympath)))
