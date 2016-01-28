@@ -29,12 +29,22 @@
 (use-modules
  (lily))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Processing regular alists
 
-;% after \clralist <name> the variable <name> is initialized with an empty list
-(define-public clralist
-   (define-void-function (parser location alst)(symbol?)
-         (ly:parser-define! alst (list))
-     ))
+;; Create a new empty list with the name <name>.
+;; After this call we can rely on the existence
+;; and emptyness of this.
+(define-public newAlist
+   (define-void-function (name)(symbol?)
+     "Creates or resets <name> as an empty list."
+         (ly:parser-define! name (list))))
+
+
+;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+;% Old functions, to be reviewed
+;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 ;% sets one value - replaces the value and leaves the order of elements, if <name> is already present
 (define-public setalist
   (define-void-function (parser location alst name val)(symbol? symbol? scheme?)
@@ -135,7 +145,7 @@
     ))
 
 ;% clear/create an empty a-list
-(define-public clratree clralist)
+(define-public clratree newAlist)
 ;% get entry from nested a-list
 (define-public getatree
    (define-scheme-function (parser location name sympath)(symbol? list?)
