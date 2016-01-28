@@ -59,21 +59,22 @@
 ;; otherwise it is appended at the end of the alist.
 (define-public setAlist
   (define-void-function (alst key-name val)(symbol? symbol? scheme?)
-    (let ((result-list (ly:parser-lookup alst))
-          (is-present-key #f))
-      (set! result-list
-            (map
-             (lambda (node)
-               (if (and (pair? node) (equal? (car node) key-name))
-                   (begin
-                    (set! is-present-key #t)
-                    (cons name val))
-                   node))
-             result-list))
-      (if (not is-present-key)
-          (set! result-list
-                (append result-list (list (cons key-name val)))))
-      (ly:parser-define! alst result-list))))
+    (if (not (defined? alst))
+        ; TODO: Change this to oll-warning (when this is transfered to oll-core)
+        (ly:input-warning (*location*) "
+Trying to set value ~a to key ~a in non-existent alist '~a'.
+Creating new object instead - is this intended?" val key-name alst))
+    (ly:parser-define! alst
+      (let ((result-list (ly:parser-lookup alst)))
+        (if (assq-ref result-list key-name)
+            ;; node is present, replace in-place
+            (map (lambda (node)
+                   (if (and (pair? node) (equal? (car node) key-name))
+                       (cons name val)
+                       node))
+              result-list)
+            ;; else simply append to the end
+            (append result-list (list (cons key-name val))))))))
 
 ;; Set the node <key-name> to the value <val>.
 ;; If <key-name> is present it is moved to the end
