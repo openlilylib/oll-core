@@ -56,27 +56,17 @@ which is probably not intended."
 
 ;; Set key <key-name> in alist <alst> to value <val>
 ;; If <in-place> is #t the key is replaced in-place if already present.
-;; Otherwise (<in-place> is #f and/or key is not set) is is appended.
+;; Otherwise (<in-place> is #f and/or key is not set) it is appended.
 (define (set-in-alist alst key-name val in-place)
-  (let ((is-present (assq-ref alst key-name)))
-    (if (and in-place is-present)
-        ;; Set value in-place
-
-        ;
-        ; QUESTION:
-        ; Is this really necessary, aren't there any Guile functions?
-        ;
-        (map (lambda (node)
-               (if (and (pair? node) (equal? (car node) key-name))
-                   (cons key-name val)
-                   node))
-          alst)
-        ;; Append entry, remove from within if necessary
-        (append
-         (if is-present
-             (assoc-remove! alst key-name)
-             alst)
-         (list (cons key-name val))))))
+  (let* ((process-alist
+          (if in-place
+              alst
+              (assoc-remove! alst key-name)))
+         (intermed (assoc-set! process-alist key-name val)))
+    (if (= (length process-alist) (length intermed))
+        intermed
+        ;; Shift added pair to the end
+        (append (cdr intermed) (list (car intermed))))))
 
 ;; Wrapper function around set-in-alist
 ;; Is used by \setAlist and \addToAlist
