@@ -116,8 +116,7 @@ which is probably not intended."
             (get-from-subtree subtree (cdr path))
             #f)))
      ((= (length path) 1)
-      (assoc-get (car path) tree #f))
-     (else #f))))
+      (assoc-get (car path) tree #f)))))
 
 ;; Takes the alist <tree> and removes the node <path>,
 ;; returns a new list.
