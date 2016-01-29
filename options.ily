@@ -100,6 +100,40 @@ setOption =
          ; TODO: change to oll-warning
          (ly:input-warning (*location*) "Not a valid option path: ~a" (os-path-join-dots path)))))
 
+% Set one or more child options below a given option path.
+% #1: Optional boolean <force-set>
+%     If set this will implicitly create a missing 'parent' node
+% #2: 'parent' path
+%     A path within the a-tree. Child options will be set/created below
+% #3: One or more key-value pairs
+%     For each of the items an option below <path> will be set.
+%     Missing options are registered automatically.
+%     Specify a single suboption using a pair: #'(option-name . value)
+%     Specify a list of suboptions using an alist:
+%     #'((one . 1)(two . 2))
+setChildOptions =
+#(define-void-function (force-set path items)
+   ((boolean?) symbol-list? pair?)
+   (let ((is-set (option-registered path))
+         (sub-options
+          ;; Accept single pair as well as alist
+          (if (not (list? items))
+              (set! items (list items)))))
+     (if (and (not is-set) force-set)
+         ;; register missing parent option
+         (begin
+          (registerOption path '())
+          (set! is-set #t)))
+     (if is-set
+       (for-each
+        (lambda (item)
+          (setOption #t (append path (list (car item))) (cdr item)))
+        items)
+       (ly:input-warning (*location*)
+         "Trying to add children to non-existent option: ~a"
+         (os-path-join-dots path)))))
+
+
 % Retrieve an option
 % Provide a tree path in dotted or list notation
 % Retrieving a non-existing option path issues a warning and returns #f
@@ -124,28 +158,6 @@ getOptionWithFallback =
      (if option
          (cdr option)
          fallback)))
-
-% Set a child option to a given option path.
-% This is practical to dynamically add sub-options.
-% If the given option path isn't present already it is registered.
-% If the child path is present it is modified, otherwise it is added.
-setChildOption =
-#(define-void-function (path child value)
-   (symbol-list? symbol? scheme?)
-   (if (not (option-registered path))
-       (ly:input-warning (*location*)
-         "Trying to access non-existent option: ~a" (os-path-join-dots path))
-       (setOption #t (append path (list child)) value)))
-
-
-setChildOptions =
-#(define-void-function (path items) (symbol-list? pair?)
-   (if (not (list? items))
-       (set! items (list items)))
-   (for-each
-    (lambda (item)
-      (setChildOption path (car item) (cdr item)))
-     items))
 
 
 %{
