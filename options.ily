@@ -107,18 +107,17 @@ getOption =
             "Trying to access non-existent option: ~a" (os-path-join-dots path))
           #f))))
 
-
-%{
-
 % Same as \getOption, but retrieving non-existing options returns
 % the fallback argument and does not raise a warning.
 getOptionWithFallback =
-#(define-scheme-function (parser location opt-path fallback)
+#(define-scheme-function (path fallback)
    (list? scheme?)
-   (let ((value #{ \optionRegistered #opt-path #}))
-     (if value
-         (cdr value)
+   (let ((option (getAtree #t 'oll-options path)))
+     (if option
+         (cdr option)
          fallback)))
+
+%{
 
 % Set a child option to a given option path.
 % This is practical to dynamically add sub-options.
