@@ -53,19 +53,11 @@
 
 #(ly:set-option 'relative-includes #t)
 
-% The os-path and the 'this' modules have to be loaded in order to
-% calculate openlilylib-root. However, they are not available yet
-% *inside* this function, so we have to split the loading into two
-% stages.
+% Initialize oll-core *once*
 #(if (not (defined? 'openlilylib-root))
-     (ly:parser-include-string "\\include \"internal/os-path.ily\""))
-
-% Determine (once) global root directory of openLilyLib libraries
-openlilylib-root =
-#(if (defined? 'openlilylib-root)
-     openlilylib-root
-     (this-parent))
-
-% Execute (once) the global initialization of oll-core
-#(if (not (defined? 'openlilylib-options))
-     (ly:parser-include-string "\\include \"internal/init.ily\""))
+     (begin
+      ;; We need to use a parser close to have the os-path stuff available
+      ;; inside the current expression
+      (ly:parser-parse-string (ly:parser-clone) "\\include \"internal/os-path.ily\"")
+      (define-public openlilylib-root (this-parent))
+      (ly:parser-include-string "\\include \"internal/init.ily\"")))
