@@ -138,6 +138,14 @@ setChildOption =
        (setOption #t (append path (list child)) value)))
 
 
+setChildOptions =
+#(define-void-function (path items) (symbol-list? pair?)
+   (if (not (list? items))
+       (set! items (list items)))
+   (for-each
+    (lambda (item)
+      (setChildOption path (car item) (cdr item)))
+     items))
 
 
 %{
