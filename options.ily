@@ -65,23 +65,13 @@ registerPackage =
    (symbol? list?)
    (registerOption (list package-name) `((root . ,root-path))))
 
-%{
-
 % Convenience function to determine if an option is set.
 % can be used to avoid warnings when trying to access unregistered options.
 % Returns the option's value or #f
-optionRegistered =
-#(define-scheme-function (parser location opt-path)
-   (list?)
-   (let*
-    ;; test if the second-to-last branch contains
-    ;; an entry for that option (assoc needed in order not to
-    ;; stumble over existing entries with #f)
-    ((opt-key (last opt-path))
-     (parent (list-head opt-path (- (length opt-path) 1)))
-     (siblings #{ \getatree openlilylib-options #parent #}))
-    ;; return the entry pair or #f
-    (assoc opt-key siblings)))
+#(define option-registered
+   (define-scheme-function (path) (symbol-list?)
+     (pair? (getAtree #t 'oll-options path))))
+
 
 % Set an option.
 % Only registered options can be set this way.
@@ -90,16 +80,19 @@ optionRegistered =
 %     followed by an arbitrary path at the library's discretion
 % #2: Any Scheme value
 setOption =
-#(define-void-function (parser location opt-path val)
-   (list? scheme?)
-   (if #{ \optionRegistered #opt-path #}
+#(define-void-function (path val) (symbol-list? scheme?)
+   (if (option-registered path)
        (begin
-        #{ \setatree openlilylib-options #opt-path #val #}
-        (oll:log location "Option set: ~a"
+        (setAtree 'oll-options path val)
+        ; TODO: change to oll-log
+        (ly:input-message (*location*) "Option set: ~a"
           (format "~a: ~a"
-            (symbol-list->dot-path opt-path) val)))
+            (os-path-join-dots path) val)))
        ;; reject setting unknown options and report that
-       (oll:warn location "Not a valid option path: ~a" (symbol-list->dot-path opt-path))))
+       ; TODO: change to oll-warning
+       (ly:input-warning (*location*) "Not a valid option path: ~a" (os-path-join-dots path))))
+
+%{
 
 % Retrieve an option
 % Provide a tree path in dotted or list notation
