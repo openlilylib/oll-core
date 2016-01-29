@@ -55,9 +55,9 @@
 
 % Initialize oll-core *once*
 #(if (not (defined? 'openlilylib-root))
+     (ly:parser-include-string "\\include \"internal/os-path.ily\""))
+
+#(if (not (defined? 'openlilylib-root))
      (begin
-      ;; We need to use a parser close to have the os-path stuff available
-      ;; inside the current expression
-      (ly:parser-parse-string (ly:parser-clone) "\\include \"internal/os-path.ily\"")
       (define-public openlilylib-root (this-parent))
       (ly:parser-include-string "\\include \"internal/init.ily\"")))
