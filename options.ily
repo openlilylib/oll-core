@@ -159,30 +159,25 @@ getOptionWithFallback =
          (cdr option)
          fallback)))
 
-
-%{
-
-% Retrieve a suboption from an option that stores an alist
-% This actually is just another subtree but that function can
-% significantly ease the use when sub-options have to be handled dynamically.
-% \getOption scholarly.annotate.colors.critical-remark
-% is equivalent to
-% \getChildOption scholarly.annotate.colors #'critical-remark
-% but we can simply pass the sub-option name as a symbol
+% Retrieve a child option from option <path>.
+% If either the 'parent' path or the child option are not present
+% a warning is issued and #f returned
 getChildOption =
-#(define-scheme-function (parser location opt-path child)
-   (list? symbol?)
-   #{ \getOption #(append opt-path (list child)) #})
+#(define-scheme-function (path child)
+   (symbol-list? symbol?)
+   (getOption (append path (list child))))
 
 % Same as \getChildOption, but retrieving non-existing options
-% returns the #fallback argument and doesn't issue a warning.
+% returns the fallback argument and doesn't issue a warning.
 % This is useful for dynamic options where the user should be
 % allowed to provide arbitrary values.
 % An example is the setting of arbitrary annotation properties.
 getChildOptionWithFallback =
-#(define-scheme-function (parser location opt-path child fallback)
-   (list? symbol? scheme?)
-   #{ \getOptionWithFallback #(append opt-path (list child)) #fallback #})
+#(define-scheme-function (path child fallback)
+   (symbol-list? symbol? scheme?)
+   (getOptionWithFallback (append path (list child)) fallback))
+
+%{
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Display all currently registered options
