@@ -75,22 +75,30 @@ registerPackage =
 
 % Set an option.
 % Only registered options can be set this way.
-% #1: Provide a tree path in dotted or list notation
+% #1: Optional argument <force-set>
+%     If set and the option is not registered it initialized
+%     instead of being rejected.
+% #2: Provide a tree path in dotted or list notation
 %     the first item of the path is the library name,
 %     followed by an arbitrary path at the library's discretion
-% #2: Any Scheme value
+% #3: Any Scheme value
 setOption =
-#(define-void-function (path val) (symbol-list? scheme?)
-   (if (option-registered path)
-       (begin
-        (setAtree 'oll-options path val)
-        ; TODO: change to oll-log
-        (ly:input-message (*location*) "Option set: ~a"
-          (format "~a: ~a"
-            (os-path-join-dots path) val)))
-       ;; reject setting unknown options and report that
-       ; TODO: change to oll-warning
-       (ly:input-warning (*location*) "Not a valid option path: ~a" (os-path-join-dots path))))
+#(define-void-function (force-set path val) ((boolean?) symbol-list? scheme?)
+   (let ((is-set (option-registered path)))
+     (if (and (not is-set) force-set)
+         (begin
+          (registerOption path '())
+          (set! is-set #t)))
+     (if is-set
+         (begin
+          (setAtree 'oll-options path val)
+          ; TODO: change to oll-log
+          (ly:input-message (*location*) "Option set: ~a"
+            (format "~a: ~a"
+              (os-path-join-dots path) val)))
+         ;; reject setting unknown options and report that
+         ; TODO: change to oll-warning
+         (ly:input-warning (*location*) "Not a valid option path: ~a" (os-path-join-dots path)))))
 
 % Retrieve an option
 % Provide a tree path in dotted or list notation
