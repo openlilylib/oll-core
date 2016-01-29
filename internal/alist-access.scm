@@ -205,7 +205,7 @@ which is probably not intended."
      (if (list? tree)
          (get-from-subtree tree path)
          (begin
-          (ly:input-warning (*location*) "~A is not list (~A)" atree tree)
+          (ly:input-warning (*location*) "~a is not a list: ~a" atree tree)
           #f)))))
 
 ;; Remove node <path> from a-tree <atree>.
