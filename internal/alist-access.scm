@@ -62,11 +62,10 @@ which is probably not intended."
           (if in-place
               alst
               (assoc-remove! alst key-name)))
-         (intermed (assoc-set! process-alist key-name val)))
-    (if (= (length process-alist) (length intermed))
-        intermed
-        ;; Shift added pair to the end
-        (append (cdr intermed) (list (car intermed))))))
+         (where (assoc key-name process-alist)))
+    (if where
+        (begin (set-cdr! where val) alst)
+        (append alst (list (cons key-name val))))))
 
 ;; Wrapper function around set-in-alist
 ;; Is used by \setAlist and \addToAlist
