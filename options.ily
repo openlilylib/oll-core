@@ -177,21 +177,17 @@ getChildOptionWithFallback =
    (symbol-list? symbol? scheme?)
    (getOptionWithFallback (append path (list child)) fallback))
 
-%{
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Display all currently registered options
 
 displayOptions =
-#(define-void-function (parser location)()
-   (display "\n\nopenlilyLib: Currently registered options:\n=====\n")
+#(define-void-function ()()
+   (display "\n\nopenLilyLib: Currently registered options:\n=====\n")
    (pretty-print
-    openlilylib-options #:display? #t))
+    oll-options #:display? #t))
 
 % TODO:
 % Provide commands to bulk-process this.
 % Maybe also make it possible to load options froma  JSON file
 % (although I'm not completely sure if that JSON file would be
 % actually easier to maintain).
-
-%}
