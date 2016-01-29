@@ -25,27 +25,43 @@
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Implements logging facilities (to console and/or files)
+
+% Constant symbols representing the different log levels.
+#(define oll-loglevels
+   '((nolog . 0)
+     (critical . 1)
+     (warning . 2)
+     (log . 3)
+     (debug . 4)))
+
+% Define one single public variable.
+% We can't use oll-core's options for this because they are not loaded yet -
+% and the option handline needs the logging code ...
+#(define oll-loglevel 0)
+
+% Set the log level. oll-core's oll: logging functions won't do anything
+% if their log level is lower than the currently set level.
+% <level> has to be one of the symbols used in 'oll-loglevels'
+setLoglevel =
+#(define-void-function (level)(symbol?)
+   (let ((new-level (getAtree #t 'oll-loglevels (list level))))
+     (if new-level
+         (set! oll-loglevel (cdr new-level))
+         ;
+         ; TODO:
+         ; Change to oll:warn
+         ;
+         (ly:input-warning
+          (*location*) "Not a valid openLilyLib log level: ~a. Ignoring" level))))
+
+% Open log file
+#(define oll-logfile
+   (open-output-file
+    (format "~a.oll.log" (ly:parser-output-name (*parser*)))))
+
+
 %{
-
-% Logging for openLilyLib libraries
-
-% Define loglevel constants
-#(define oll-loglevel-nolog    0)
-#(define oll-loglevel-critical 1)
-#(define oll-loglevel-warning  2)
-#(define oll-loglevel-log      3)
-#(define oll-loglevel-debug    4)
-
-#(define oll-logfile #f)
-
-% Open a log file when the first entry is actually written
-openLogfile =
-#(define-void-function (parser location)()
-   (if (not oll-logfile)
-       (set! oll-logfile
-             (open-output-file
-              (format "~a.oll.log" (ly:parser-output-name parser))))))
-
 
 % Different logging levels can be output.
 % Can be used with or without location argument
