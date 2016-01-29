@@ -75,6 +75,19 @@ which is probably not intended."
   (ly:parser-define! alst
     (set-in-alist (ly:parser-lookup alst) key-name val in-place)))
 
+;; Retrieve entry <key-name> from alist <alst>.
+;; If <return-pair> is #t then the function behaves like 'assoc',
+;; that is it returns the key-value pair or #f.
+;; Otherwise it returns only the value or #f without the chance of
+;; discerning between a non-present key or a literal value #f.
+(define (get-from-alist alst key-name return-pair)
+  (let ((intermediate (assoc key-name alst)))
+    (if return-pair
+        intermediate
+        (if (pair? intermediate)
+            (cdr intermediate)
+            #f))))
+
 ;; Set <path> in alist <tree> to value <val>.
 ;; <path> is a symbol list, with the last element being the actual key.
 ;; If any node or the final key is not present it is created implicitly.
@@ -107,16 +120,14 @@ which is probably not intended."
 ;; Recursively walk the nested alist <tree> over the symbol-list <path>
 ;; and return the value for the last leaf in <path> or #f if the chain
 ;; is broken at any point.
-(define (get-from-subtree tree path)
+(define (get-from-tree tree path return-pair)
   (let ((key-name (car path)))
-    (cond
-     ((> (length path) 1)
-      (let ((subtree (assoc-get key-name tree #f)))
-        (if (list? subtree)
-            (get-from-subtree subtree (cdr path))
-            #f)))
-     ((= (length path) 1)
-      (assoc-get (car path) tree #f)))))
+    (if (> (length path) 1)
+        (let ((subtree (assoc-get key-name tree #f)))
+          (if (list? subtree)
+              (get-from-tree subtree (cdr path) return-pair)
+              #f))
+        (get-from-alist tree (car path) return-pair))))
 
 ;; Takes the alist <tree> and removes the node <path>,
 ;; returns a new list.
@@ -193,20 +204,17 @@ which is probably not intended."
   (define-void-function (atree path val)(symbol? list? scheme?)
     (set-a-tree atree path val #f)))
 
-;; Retrieve a value from path <path> in an a-tree <atree>.
-;; If the key (last element) or any element in <path> is not present
-;; #f is returned.
-;; NOTE: There's an ambiguity between a non-present key and a key
-;; with the explicit value #f
+;; Retrieve a value from or a node from <path> in an a-tree <atree>.
+;; The optional first argument <return-pair> controls the behaviour:
+;; if #t the function returns the key-value pair, otherwise the value.
+;; If <path> isn't present in the alist #f is returned.
+;; However, if <return-pair> is #f there is no way to discern between
+;; a literal value #f and a missing key.
 (define-public getAtree
-  (define-scheme-function (atree path)(symbol? symbol-list-or-symbol?)
-   (let ((tree (ly:parser-lookup atree)))
-     (check-alst 'getAtree atree path #f)
-     (if (list? tree)
-         (get-from-subtree tree path)
-         (begin
-          (ly:input-warning (*location*) "~a is not a list: ~a" atree tree)
-          #f)))))
+  (define-scheme-function (return-pair atree path)
+  ((boolean?) symbol? symbol-list-or-symbol?)
+    (check-alst 'getAtree atree path #f)
+    (get-from-tree (ly:parser-lookup atree) path return-pair)))
 
 ;; Remove node <path> from a-tree <atree>.
 ;; If <path> isn't present in <atree> it is not modified.
