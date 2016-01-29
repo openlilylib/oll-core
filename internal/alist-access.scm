@@ -74,7 +74,7 @@ which is probably not intended."
         ;; Append entry, remove from within if necessary
         (append
          (if is-present
-             (rem-from-alist alst key-name)
+             (assoc-remove! alst key-name)
              alst)
          (list (cons key-name val))))))
 
@@ -84,16 +84,6 @@ which is probably not intended."
   (check-alst funcname alst key-name val)
   (ly:parser-define! alst
     (set-in-alist (ly:parser-lookup alst) key-name val in-place)))
-
-;; Remove node <key-name> from a-list <alst> when it is present.
- ; QUESTION: This takes some extra work to preserve nodes
- ; which are not pairs? Is that appropriate?
-(define (rem-from-alist alst key-name)
-  (filter
-   (lambda (node)
-     (or (and (pair? node)
-              (not (equal? (car node) key-name)))))
-   alst))
 
 ;; Set <path> in alist <tree> to value <val>.
 ;; <path> is a symbol list, with the last element being the actual key.
@@ -149,7 +139,7 @@ which is probably not intended."
      ((> (length subpath) 1)
       (set-in-alist tree key-name (remove-value subtree (cdr path)) #t))
      (else
-      (set-in-alist tree key-name (rem-from-alist subtree (car subpath)) #t)))))
+      (set-in-alist tree key-name (assoc-remove! subtree (car subpath)) #t)))))
 
 
 
@@ -188,7 +178,7 @@ which is probably not intended."
   (define-void-function (alst key-name)(symbol? symbol?)
     (check-alst 'removeFromAlist alst key-name #f)
     (ly:parser-define! alst
-      (rem-from-alist (ly:parser-lookup alst) key-name))))
+      (assoc-remove! (ly:parser-lookup alst) key-name))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
