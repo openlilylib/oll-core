@@ -92,20 +92,23 @@ setOption =
        ; TODO: change to oll-warning
        (ly:input-warning (*location*) "Not a valid option path: ~a" (os-path-join-dots path))))
 
-%{
-
 % Retrieve an option
 % Provide a tree path in dotted or list notation
 % Retrieving a non-existing option path issues a warning and returns #f
 getOption =
-#(define-scheme-function (parser location opt-path)
-   (list?)
-   (let ((value #{ \optionRegistered #opt-path #}))
-     (if value
-         (cdr value)
+#(define-scheme-function (path) (symbol-list?)
+   (let ((option (getAtree #t 'oll-options path)))
+     (if option
+         ;; getAtree has returned a pair => option is set
+         (cdr option)
+         ;; getAtree has returned #f
          (begin
-          (oll:warn location "Try retrieving non-existent option: ~a" (symbol-list->dot-path opt-path))
+          (ly:input-warning (*location*)
+            "Trying to access non-existent option: ~a" (os-path-join-dots path))
           #f))))
+
+
+%{
 
 % Same as \getOption, but retrieving non-existing options returns
 % the fallback argument and does not raise a warning.
