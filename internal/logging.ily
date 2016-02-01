@@ -48,11 +48,7 @@ setLoglevel =
    (let ((new-level (getAtree #t 'oll-loglevels (list level))))
      (if new-level
          (set! oll-loglevel (cdr new-level))
-         ;
-         ; TODO:
-         ; Change to oll:warn
-         ;
-         (ly:input-warning
+         (oll:warn
           (*location*) "Not a valid openLilyLib log level: ~a. Ignoring" level))))
 
 % Open log file
