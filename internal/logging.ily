@@ -64,7 +64,7 @@ setLoglevel =
 % by comparing the value passed in <loglevel> to the
 % currently active log level
 #(define (oll:do-log loglevel)
-   (>= (getAtree 'oll-loglevels (list loglevel)) oll-loglevel))
+   (>= oll-loglevel (getAtree 'oll-loglevels `(,loglevel))))
 
 % Generic function to consistently write to log file.
 % <title> is a sectioning header in the log file
