@@ -117,25 +117,10 @@ setLoglevel =
         (ly:input-message (*location*)
           (format "\n\n~a\n" vals)))))
 
-%{
-
-
 % Debug output
-#(define (oll:debug location fmt . vals)
-   (if (>= #{ \getOption global.loglevel #}  oll-loglevel-debug)
+#(define (oll:debug fmt . vals)
+   (if (oll:do-log 'debug)
        (begin
-        #{ \openLogfile #}
-        (if (ly:input-location? location)
-            (begin
-             (ly:input-message location
-               (format
-                (string-append "openLilyLib: " fmt) vals))
-             (format oll-logfile fmt vals))
-            (begin
-             (ly:message
-              (format
-               (string-append "openLilyLib: " location) fmt))
-             (format oll-logfile
-               (format "log: ~a\n" location) fmt))))))
-
-%}
+        (oll:log-to-file "Debug info" fmt vals)
+        (ly:input-message (*location*)
+          (format "\n\n~a\n" vals)))))
