@@ -60,34 +60,41 @@ setLoglevel =
    (open-output-file
     (format "~a.oll.log" (ly:parser-output-name (*parser*)))))
 
-
-%{
-
-% Different logging levels can be output.
-% Can be used with or without location argument
+% Check if a logging function should be executed
+% by comparing the value passed in <loglevel> to the
+% currently active log level
+#(define (oll:do-log loglevel)
+   (>= (getAtree 'oll-loglevels (list loglevel)) oll-loglevel))
 
 % Critical error
-#(define (oll:error location fmt . vals)
-   (if (>= #{ \getOption global.loglevel #} oll-loglevel-critical)
+% Aborts the compilation of the input file
+% so use with care!
+#(define (oll:error fmt . vals)
+   (if (oll:do-log 'critical)
        (begin
-        ;; open logfile upon first request
-        #{ \openLogfile #}
-        (if (ly:input-location? location)
-            (begin
-             ;; console output
-             (ly:error location
-               (format
-                (string-append "openLilyLib: " fmt) vals))
-             ;; logfile output
-             (format oll-logfile fmt vals))
-            (begin
-             ;; this is an "abuse" of the parameters,
-             ;; "location" is actually the "fmt" argument
-             (ly:error
-              (format
-               (string-append "openLilyLib: " location) fmt))
-             (format oll-logfile
-               (format "error: ~a\n" location) fmt))))))
+        ;
+        ; TODO:
+        ; This doesn't properly work with multiple arguments to format
+        (format oll-logfile
+          (string-append
+           (os-path-join (location->normalized-path (*location*)))
+           "\n"
+           ;
+           ; TODO:
+           ; it seems 'vals' is a list here, so we'd have to unpack it before passing to format
+           fmt
+           "\n") vals)
+        ; TODO: Make this prettier:
+              ; provide a clickable message without the clutter!
+              ; Or better: make ly:error produce a clickable message
+        (ly:input-message (*location*)
+          (format "~a" (os-path-join (location->normalized-path (*location*)))))
+        (ly:error
+         (format
+          (string-append "openLilyLib: " fmt) vals)))))
+
+
+%{
 
 % Warning
 #(define (oll:warn location fmt . vals)
