@@ -105,13 +105,9 @@ setLoglevel =
 #(define (oll:warn fmt . vals)
    (if (oll:do-log 'warning)
        (begin
-        (format oll-logfile
-          (string-append
-           (os-path-join (location->normalized-path (*location*)))
-           "\n openLilyLib: Warning!\n" fmt "\n\n") vals)
+        (oll:log-to-file "Warning" fmt vals)
         (ly:input-warning (*location*)
           (format "\n\n~a\n" vals)))))
-
 
 %{
 
