@@ -93,12 +93,12 @@ setOption =
          (begin
           (setAtree 'oll-options path val)
           ; TODO: change to oll-log
-          (ly:input-message (*location*) "Option set: ~a"
+          (oll:log "Option set: ~a"
             (format "~a: ~a"
               (os-path-join-dots path) val)))
          ;; reject setting unknown options and report that
          ; TODO: change to oll-warning
-         (ly:input-warning (*location*) "Not a valid option path: ~a" (os-path-join-dots path)))))
+         (oll:warn "Not a valid option path: ~a" (os-path-join-dots path)))))
 
 % Set one or more child options below a given option path.
 % #1: Optional boolean <force-set>
@@ -129,7 +129,7 @@ setChildOptions =
         (lambda (item)
           (setOption #t (append path (list (car item))) (cdr item)))
         items)
-       (ly:input-warning (*location*)
+       (oll:warn
          "Trying to add children to non-existent option: ~a"
          (os-path-join-dots path)))))
 
@@ -145,7 +145,7 @@ getOption =
          (cdr option)
          ;; getAtree has returned #f
          (begin
-          (ly:input-warning (*location*)
+          (oll:warn
             "Trying to access non-existent option: ~a" (os-path-join-dots path))
           #f))))
 
