@@ -66,27 +66,35 @@ setLoglevel =
 #(define (oll:do-log loglevel)
    (>= (getAtree 'oll-loglevels (list loglevel)) oll-loglevel))
 
+% Generic function to consistently write to log file.
+% <title> is a sectioning header in the log file
+% <fmt> and <vals> are simply passed along.
+#(define (oll:log-to-file title fmt vals)
+   (format oll-logfile
+     (string-append
+      "\n"
+      (os-path-join (location->normalized-path (*location*)))
+      "\nLine: "
+      (number->string (cadr (ly:input-file-line-char-column (*location*))))
+
+      "\n~a:\n"
+       ;
+       ; TODO:
+       ; it seems 'vals' is a list here, so we'd have to unpack it before passing to format
+      (format fmt vals)
+      "\n\n")
+      title))
+
 % Critical error
 % Aborts the compilation of the input file
 % so use with care!
 #(define (oll:error fmt . vals)
    (if (oll:do-log 'critical)
        (begin
-        ;
-        ; TODO:
-        ; This doesn't properly work with multiple arguments to format
-        (format oll-logfile
-          (string-append
-           (os-path-join (location->normalized-path (*location*)))
-           "\n"
-           ;
-           ; TODO:
-           ; it seems 'vals' is a list here, so we'd have to unpack it before passing to format
-           fmt
-           "\n") vals)
+        (oll:log-to-file "Error" fmt vals)
         ; TODO: Make this prettier:
-              ; provide a clickable message without the clutter!
-              ; Or better: make ly:error produce a clickable message
+        ; provide a clickable message without the clutter!
+        ; Or better: make ly:error produce a clickable message
         (ly:input-message (*location*)
           (format "~a" (os-path-join (location->normalized-path (*location*)))))
         (ly:error
