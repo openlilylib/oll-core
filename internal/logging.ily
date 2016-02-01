@@ -93,26 +93,19 @@ setLoglevel =
          (format
           (string-append "openLilyLib: " fmt) vals)))))
 
+% Warning
+#(define (oll:warn fmt . vals)
+   (if (oll:do-log 'warning)
+       (begin
+        (format oll-logfile
+          (string-append
+           (os-path-join (location->normalized-path (*location*)))
+           "\n openLilyLib: Warning!\n" fmt "\n\n") vals)
+        (ly:input-warning (*location*)
+          (format "\n\n~a\n" vals)))))
+
 
 %{
-
-% Warning
-#(define (oll:warn location fmt . vals)
-   (if (>= #{ \getOption global.loglevel #}  oll-loglevel-warning)
-       (begin
-        #{ \openLogfile #}
-        (if (ly:input-location? location)
-            (begin
-             (ly:input-warning location
-              (format
-               (string-append "openLilyLib: " fmt) vals))
-             (format oll-logfile fmt vals))
-            (begin
-             (ly:warning
-              (format
-               (string-append "openLilyLib: " location) fmt))
-             (format oll-logfile
-               (format "warning: ~a\n" location) fmt))))))
 
 % Logging
 #(define (oll:log location fmt . vals)
