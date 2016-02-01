@@ -109,25 +109,16 @@ setLoglevel =
         (ly:input-warning (*location*)
           (format "\n\n~a\n" vals)))))
 
+% General logging
+#(define (oll:log fmt . vals)
+   (if (oll:do-log 'log)
+       (begin
+        (oll:log-to-file "Event" fmt vals)
+        (ly:input-message (*location*)
+          (format "\n\n~a\n" vals)))))
+
 %{
 
-% Logging
-#(define (oll:log location fmt . vals)
-   (if (>= #{ \getOption global.loglevel #}  oll-loglevel-log)
-       (begin
-        #{ \openLogfile #}
-        (if (ly:input-location? location)
-            (begin
-             (ly:input-message location
-               (format
-                (string-append "openLilyLib: " fmt) vals))
-             (format oll-logfile fmt vals))
-            (begin
-             (ly:message
-              (format
-               (string-append "openLilyLib: " location) fmt))
-             (format oll-logfile
-               (format "log: ~a\n" location) fmt))))))
 
 % Debug output
 #(define (oll:debug location fmt . vals)
