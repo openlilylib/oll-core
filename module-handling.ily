@@ -42,7 +42,26 @@ registerPackage =
     `(,package-name root)
     (os-path-dirname (location->normalized-path (*location*)))))
 
-
+% Packages can register 'modules' that are not implicitly loaded
+% together with the package itself. Modules can then be loaded
+% upon request.
+%
+% #1: The package name
+% #2: A list of modules, formatted as a symbol list, either way of
+%    #'(mod-a mod-b mod-c)
+%    mod-a.mod-b.mod-c
+% Each module lives within a subdirectory of the package, named
+% exactly like the symbol passed to \registerModules, so the
+% directory naming is limited to LilyPond's symbol? parsing.
+% The module must then contain the file module.ily, which will
+% then be loaded by \useModule.
+registerModules =
+#(define-void-function (package modules)(symbol? symbol-list?)
+   (for-each
+    (lambda (mod)
+      (setOption #t (append `(,package modules) (list mod 'root))
+        (append (getOption `(,package root)) (list mod))))
+    modules))
 
 %{
 
