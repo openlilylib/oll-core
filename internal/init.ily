@@ -65,21 +65,15 @@
 
 TODO: The following includes have to be cleaned-up yet
 
-% Set default loglevel to 'warning'
-% (can only be done after options have been included)
-\registerOption global.loglevel #oll-loglevel-warning
-
-% Utility to include multiple files at once
-% Depends on "options.ily"
-\include "utilities/include-pattern.ily"
-
 % Functionality to load and manage modules
 \include "module-handling.ily"
 
-% Welcome message.
-% This is a default ly:message because otherwise we'd have to mess around with
-% loglevels. This shouldn't be logged anyway.
-
-#(ly:message "\nopenLilyLib: library infrastructure successfully loaded.\n\n")
-
 %}
+
+
+% Welcome message.
+% First set log level to 'log so it will be displayed,
+% then set the default log level to 'warning.
+\setLoglevel #'log
+#(oll:log "oll-core: library infrastructure successfully loaded.")
+\setLoglevel #'warning
