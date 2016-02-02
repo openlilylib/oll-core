@@ -222,3 +222,18 @@ which is probably not intended."
     (check-alst 'remAtree atree path #f)
     (ly:parser-define! atree
       (remove-value (ly:parser-lookup atree) path))))
+
+
+;; This is somewhat special and doesn't really fit in that module,
+;; but as it *is* dealing with alists and wouldn't warrant its own module
+;; it is for now hosted here.
+;; <ctx-mods> is a \with { } clause that is not used to pass along
+;; *context* properties but rather general key-value pairs.
+;; It returns an alist with these key-value pairs, dropping the
+;; first element of each context property.
+;; Returns an empty list if noe
+(define-public extract-options
+  (define-scheme-function (ctx-mods)((ly:context-mod?))
+    (map (lambda (o)
+           (cons (cadr o) (caddr o)))
+      (ly:get-context-mods ctx-mods))))

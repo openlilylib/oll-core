@@ -63,18 +63,6 @@ registerModules =
     modules))
 
 
-% Extract an options alist from a context-mods argument
-% Return an empty list if no mods are passed.
-%
-% TODO: Move this to a more generic utility file
-%
-#(define (extract-options ctx-mods)
-   (if ctx-mods
-       (map (lambda (o)
-              (cons (cadr o) (caddr o)))
-         (ly:get-context-mods ctx-mods))
-       '()))
-
 % Load a module from within a package.
 % Module locations are looked up from the package's 'modules' options,
 % and trying to load a non-existent module will cause a warning.
@@ -88,18 +76,16 @@ loadModule =
    (let ((module-file
           (os-path-join
            (append (getOption `(,package modules ,module))
-             (list "module.ily"))))
-         (options (extract-options opts)))
+             (list "module.ily")))))
      (ly:parser-parse-string (ly:parser-clone)
        ;
        ; TODO: Check how this is to be done on Windows"
-       ;
        (format "\\include \"~a\"" (os-path-join-unix module-file)))
-     (if options
+     (if opts
          (for-each
           (lambda (opt)
             (setOption `(,package ,module ,(car opt)) (cdr opt)))
-          options))))
+          (extract-options opts)))))
 
 
 
