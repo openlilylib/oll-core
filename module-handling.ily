@@ -37,9 +37,11 @@
 %     Will be used to navigate the top level of the option tree.
 registerPackage =
 #(define-void-function (package-name)(symbol?)
-   (setOption #t
-     `(,package-name root)
-     (os-path-dirname (location->normalized-path (*location*)))))
+   (if (not (option-registered `(,package-name root)))
+       (setOption #t
+         `(,package-name root)
+         (os-path-dirname (location->normalized-path (*location*))))
+       (oll:warn "Package ~a already registered." package-name)))
 
 % Packages can register 'modules' that are not implicitly loaded
 % together with the package itself. Modules can then be loaded
