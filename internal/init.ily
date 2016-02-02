@@ -60,16 +60,8 @@
 % Initialize option branch for oll-core
 \registerOption #'(oll-core root) #(this-parent)
 
-
-%{
-
-TODO: The following includes have to be cleaned-up yet
-
 % Functionality to load and manage modules
 \include "module-handling.ily"
-
-%}
-
 
 % Welcome message.
 % First set log level to 'log so it will be displayed,
