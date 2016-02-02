@@ -74,12 +74,13 @@ setLoglevel =
       (number->string (cadr (ly:input-file-line-char-column (*location*))))
 
       "\n~a:\n"
-       ;
-       ; TODO:
-       ; it seems 'vals' is a list here, so we'd have to unpack it before passing to format
-      (format fmt vals)
+      (apply format fmt vals)
       "\n\n")
       title))
+
+% Generic function to consistently format the output for the logging functions
+#(define (oll-format-log fmt vals)
+   (apply format (format "\n\n~a\n" fmt) vals))
 
 % Critical error
 % Aborts the compilation of the input file
@@ -94,8 +95,7 @@ setLoglevel =
         (ly:input-message (*location*)
           (format "~a" (os-path-join (location->normalized-path (*location*)))))
         (ly:error
-         (format
-          (string-append "openLilyLib: " fmt) vals)))))
+          (oll-format-log fmt vals)))))
 
 % Warning
 #(define (oll:warn fmt . vals)
@@ -103,7 +103,7 @@ setLoglevel =
        (begin
         (oll:log-to-file "Warning" fmt vals)
         (ly:input-warning (*location*)
-          (format "\n\n~a\n" vals)))))
+           (oll-format-log fmt vals)))))
 
 % General logging
 #(define (oll:log fmt . vals)
@@ -111,7 +111,7 @@ setLoglevel =
        (begin
         (oll:log-to-file "Event" fmt vals)
         (ly:input-message (*location*)
-          (format "\n\n~a\n" vals)))))
+           (oll-format-log fmt vals)))))
 
 % Debug output
 #(define (oll:debug fmt . vals)
@@ -119,4 +119,4 @@ setLoglevel =
        (begin
         (oll:log-to-file "Debug info" fmt vals)
         (ly:input-message (*location*)
-          (format "\n\n~a\n" vals)))))
+          (oll-format-log fmt vals)))))
