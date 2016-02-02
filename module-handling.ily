@@ -64,6 +64,15 @@ registerModules =
         (append (getOption `(,package root)) (list mod))))
     modules))
 
+% Check if a module is registered.
+% Return the absolute path to the module's entry file
+% or #f.
+#(define module-entry
+   (define-scheme-function (package module)(symbol? symbol?)
+     (let ((module-dir (getOptionWithFallback `(,package modules ,module) #f)))
+       (if module-dir
+           (append module-dir (list "module.ily"))
+           #f))))
 
 % Load a module from within a package.
 % Module locations are looked up from the package's 'modules' options,
@@ -75,19 +84,25 @@ registerModules =
 loadModule =
 #(define-void-function (opts package module)
    ((ly:context-mod?) symbol? symbol?)
-   (let ((module-file
-          (os-path-join
-           (append (getOption `(,package modules ,module))
-             (list "module.ily")))))
-     (ly:parser-parse-string (ly:parser-clone)
-       ;
-       ; TODO: Check how this is to be done on Windows"
-       (format "\\include \"~a\"" (os-path-join-unix module-file)))
-     (if opts
-         (for-each
-          (lambda (opt)
-            (setOption `(,package ,module ,(car opt)) (cdr opt)))
-          (extract-options opts)))))
+   (let ((module-file (module-entry package module)))
+     (if (not module-file)
+         (oll:warn "Trying to load unregistered module '~a'"
+           (os-path-join-dots `(,package ,module)))
+         (begin
+          (ly:parser-parse-string (ly:parser-clone)
+            ;
+            ; TODO: Check how this is to be done on Windows"
+            (format "\\include \"~a\"" (os-path-join module-file)))
+          (if opts
+              (for-each
+               (lambda (opt)
+                 (let* ((path `(,package ,module ,(car opt)))
+                        (is-registered (option-registered path)))
+                   (if is-registered
+                       (setOption path (cdr opt))
+                       (oll:warn "Trying to set unregistered option '~a'"
+                         (os-path-join-dots path)))))
+               (extract-options opts)))))))
 
 
 
