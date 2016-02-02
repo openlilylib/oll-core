@@ -36,11 +36,10 @@
 % #1: symbol name for the package.
 %     Will be used to navigate the top level of the option tree.
 registerPackage =
-#(define-void-function (package-name)
-   (symbol?)
-   (setPackageOption #t
-    `(,package-name root)
-    (os-path-dirname (location->normalized-path (*location*)))))
+#(define-void-function (package-name)(symbol?)
+   (setOption #t
+     `(,package-name root)
+     (os-path-dirname (location->normalized-path (*location*)))))
 
 % Packages can register 'modules' that are not implicitly loaded
 % together with the package itself. Modules can then be loaded
@@ -59,80 +58,16 @@ registerModules =
 #(define-void-function (package modules)(symbol? symbol-list?)
    (for-each
     (lambda (mod)
-      (setModuleOption #t `(,package ,mod root)
-        (append (getPackageOption `(,package root)) (list mod))))
+      (setOption #t `(,package modules ,mod)
+        (append (getOption `(,package root)) (list mod))))
     modules))
 
-% The options for packages and modules are maintained using extra
-% 'packages', 'modules' and 'options' nodes in the options tree.
-% The following functions are used to let the user (or other packages)
-% transparently access the options.
-% Packages and modules are limited to a flat structure, while options
-% may be arbitrarily nested trees. So the following options are valid:
-%
-% - some-package.an-option
-% - some-package.option-group.an-option
-% - some-package.some-module.an-option
-% - some-package.some-module.another-option
-% - some-package.some-module.option-subgroup.another-option
-% but not:
-% - some-package.a-sub-package.an-option
-% - some-package.some-module.a-sub-module.an-option
-% - etc.
-
-% Two functions to transparently wrap the option paths for packages and modules
-#(define (package-option-path path)
-   (append `(packages ,(car path) options) (cdr path)))
-
-#(define (module-option-path path)
-   (append `(packages ,(car path) modules ,(second path) options) (cddr path)))
-
-% Wrapper functions to set and retrieve options in packages and modules.
-% These make use of the above path wrappers.
-%
-% TODO: either add the missing functions or find a generic way
-% to wrap the normal getOption etc.
-
-% Set an option in a package. Wrapper to \setOption.
-% <path> consists of
-% - package name
-% - option (optionally nested)
-% ex.: \setPackageOption #t some-package.colors.highlight #red
-%      \setPackageOption some-package.use-colors ##t
-setPackageOption =
-#(define-void-function (force-set path val)((boolean?) symbol-list? scheme?)
-   (setOption force-set (package-option-path path) val))
-
-% Retrieve a package option. Wrapper to \getOption
-% See setPackageOption
-getPackageOption =
-#(define-scheme-function (path)(symbol-list?)
-   (getOption (package-option-path path)))
-
-% Set an option in a module. Wrapper to \setOption.
-% <path> consists of
-% - package name
-% - module name
-% - option (optionally nested)
-% ex.: \setModuleOption #t some-package.some-module.colors.highlight #red
-%      \setModuleOption some-package.some-module.use-colors ##t
-setModuleOption =
-#(define-void-function (force-set path val) ((boolean?) symbol-list? scheme?)
-   (setOption force-set (module-option-path path) val))
-
-% Retrieve a module option. Wrapper to \getOption
-% See setModuleOption
-getModuleOption =
-#(define-scheme-function (path) (symbol-list?)
-   (getOption (module-option-path path)))
-
-% TODO: The following functions seem to be missing, both for packages and modules:
-% - setChildOption
-% - getChildOption
-% - ...WithFallback
 
 % Extract an options alist from a context-mods argument
 % Return an empty list if no mods are passed.
+%
+% TODO: Move this to a more generic utility file
+%
 #(define (extract-options ctx-mods)
    (if ctx-mods
        (map (lambda (o)
@@ -140,31 +75,30 @@ getModuleOption =
          (ly:get-context-mods ctx-mods))
        '()))
 
-
-% Load a module from within a library.
-% A module is either a single .ily file or a __main__.ily file in a folder.
-% It is adressed as a dotted path representing the directory structure
-% leading to the file. The first element of the path is the library, the last one
-% is the name of the module.
-% It is looked for files path/to/NAME.ily or path/to/NAME/__main__.ily
+% Load a module from within a package.
+% Module locations are looked up from the package's 'modules' options,
+% and trying to load a non-existent module will cause a warning.
 %
 % An optional \with {} clause can contain options that will be set
 % after the module has been loaded. Such options must have been registered
 % in the module definition file.
-
 loadModule =
 #(define-void-function (opts package module)
    ((ly:context-mod?) symbol? symbol?)
-   (let ((module-file (os-path-join (append
-                                     (getModuleOption `(,package ,module root))
-                                     (list "module.ily"))))
+   (let ((module-file
+          (os-path-join
+           (append (getOption `(,package modules ,module))
+             (list "module.ily"))))
          (options (extract-options opts)))
      (ly:parser-parse-string (ly:parser-clone)
+       ;
+       ; TODO: Check how this is to be done on Windows"
+       ;
        (format "\\include \"~a\"" (os-path-join-unix module-file)))
      (if options
          (for-each
           (lambda (opt)
-            (setModuleOption `(,package ,module ,(car opt)) (cdr opt)))
+            (setOption `(,package ,module ,(car opt)) (cdr opt)))
           options))))
 
 
