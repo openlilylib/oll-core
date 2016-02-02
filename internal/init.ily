@@ -58,7 +58,7 @@
 % for oll-core, other openLilyLib packages or arbitrary end-user code
 \include "options.ily"
 % Initialize option branch for oll-core
-\registerPackage oll-core #(this-parent)
+\registerOption #'(oll-core root) #(this-parent)
 
 
 %{

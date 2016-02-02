@@ -147,7 +147,12 @@
    "Return the current working directory as a list of strings."
    (os-path-split (getcwd)))
 
-
+#(define-public (os-path-dirname path)
+   "Strips off the last part of a path.
+    If <path> does not contain a file name
+    the parent dir will be returned instead."
+   (let ((path-list (os-path-split path)))
+     (list-head path-list (- (length path-list) 1))))
 
 % processing "location" arguments
 
