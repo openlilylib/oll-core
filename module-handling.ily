@@ -38,7 +38,7 @@
 registerPackage =
 #(define-void-function (package-name)
    (symbol?)
-   (registerOption
+   (setPackageOption #t
     `(,package-name root)
     (os-path-dirname (location->normalized-path (*location*)))))
 
@@ -59,9 +59,77 @@ registerModules =
 #(define-void-function (package modules)(symbol? symbol-list?)
    (for-each
     (lambda (mod)
-      (setOption #t (append `(,package modules) (list mod 'root))
-        (append (getOption `(,package root)) (list mod))))
+      (setModuleOption #t `(,package ,mod root)
+        (append (getPackageOption `(,package root)) (list mod))))
     modules))
+
+% The options for packages and modules are maintained using extra
+% 'packages', 'modules' and 'options' nodes in the options tree.
+% The following functions are used to let the user (or other packages)
+% transparently access the options.
+% Packages and modules are limited to a flat structure, while options
+% may be arbitrarily nested trees. So the following options are valid:
+%
+% - some-package.an-option
+% - some-package.option-group.an-option
+% - some-package.some-module.an-option
+% - some-package.some-module.another-option
+% - some-package.some-module.option-subgroup.another-option
+% but not:
+% - some-package.a-sub-package.an-option
+% - some-package.some-module.a-sub-module.an-option
+% - etc.
+
+% Two functions to transparently wrap the option paths for packages and modules
+#(define (package-option-path path)
+   (append `(packages ,(car path) options) (cdr path)))
+
+#(define (module-option-path path)
+   (append `(packages ,(car path) modules ,(second path) options) (cddr path)))
+
+% Wrapper functions to set and retrieve options in packages and modules.
+% These make use of the above path wrappers.
+%
+% TODO: either add the missing functions or find a generic way
+% to wrap the normal getOption etc.
+
+% Set an option in a package. Wrapper to \setOption.
+% <path> consists of
+% - package name
+% - option (optionally nested)
+% ex.: \setPackageOption #t some-package.colors.highlight #red
+%      \setPackageOption some-package.use-colors ##t
+setPackageOption =
+#(define-void-function (force-set path val)((boolean?) symbol-list? scheme?)
+   (setOption force-set (package-option-path path) val))
+
+% Retrieve a package option. Wrapper to \getOption
+% See setPackageOption
+getPackageOption =
+#(define-scheme-function (path)(symbol-list?)
+   (getOption (package-option-path path)))
+
+% Set an option in a module. Wrapper to \setOption.
+% <path> consists of
+% - package name
+% - module name
+% - option (optionally nested)
+% ex.: \setModuleOption #t some-package.some-module.colors.highlight #red
+%      \setModuleOption some-package.some-module.use-colors ##t
+setModuleOption =
+#(define-void-function (force-set path val) ((boolean?) symbol-list? scheme?)
+   (setOption force-set (module-option-path path) val))
+
+% Retrieve a module option. Wrapper to \getOption
+% See setModuleOption
+getModuleOption =
+#(define-scheme-function (path) (symbol-list?)
+   (getOption (module-option-path path)))
+
+% TODO: The following functions seem to be missing, both for packages and modules:
+% - setChildOption
+% - getChildOption
+% - ...WithFallback
 
 %{
 
