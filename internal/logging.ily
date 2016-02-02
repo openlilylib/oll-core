@@ -89,13 +89,9 @@ setLoglevel =
    (if (oll:do-log 'critical)
        (begin
         (oll:log-to-file "Error" fmt vals)
-        ; TODO: Make this prettier:
-        ; provide a clickable message without the clutter!
-        ; Or better: make ly:error produce a clickable message
         (ly:input-message (*location*)
-          (format "~a" (os-path-join (location->normalized-path (*location*)))))
-        (ly:error
-          (oll-format-log fmt vals)))))
+         (format "Error:~a" (oll-format-log fmt vals)))
+        (ly:error ""))))
 
 % Warning
 #(define (oll:warn fmt . vals)
