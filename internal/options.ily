@@ -54,16 +54,17 @@ registerOption =
 % Each package that uses oll-core is encouraged to register itself, ensuring
 % there is an option tree available. After this there will be a top-level
 % branch for the package, with a first entry for the package's root directory
+% The root directory will be inferred from the directory the calling file
+% is in, so \registerPackage should be called from the package's root directory.
 %
 % #1: symbol name for the package.
 %     Will be used to navigate the top level of the option tree.
-% #2: root path of the package
-%     An absolute path list is expected, typically generated
-%     using (this-dir) or (this-parent) from within the package.
 registerPackage =
-#(define-void-function (package-name root-path)
-   (symbol? list?)
-   (registerOption (list package-name) `((root . ,root-path))))
+#(define-void-function (package-name)
+   (symbol?)
+   (registerOption
+    `(,package-name root)
+    (os-path-dirname (location->normalized-path (*location*)))))
 
 % Convenience function to determine if an option is set.
 % can be used to avoid warnings when trying to access unregistered options.
