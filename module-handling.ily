@@ -131,11 +131,6 @@ getModuleOption =
 % - getChildOption
 % - ...WithFallback
 
-%{
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Helper tools
-
 % Extract an options alist from a context-mods argument
 % Return an empty list if no mods are passed.
 #(define (extract-options ctx-mods)
@@ -144,6 +139,42 @@ getModuleOption =
               (cons (cadr o) (caddr o)))
          (ly:get-context-mods ctx-mods))
        '()))
+
+
+% Load a module from within a library.
+% A module is either a single .ily file or a __main__.ily file in a folder.
+% It is adressed as a dotted path representing the directory structure
+% leading to the file. The first element of the path is the library, the last one
+% is the name of the module.
+% It is looked for files path/to/NAME.ily or path/to/NAME/__main__.ily
+%
+% An optional \with {} clause can contain options that will be set
+% after the module has been loaded. Such options must have been registered
+% in the module definition file.
+
+loadModule =
+#(define-void-function (opts package module)
+   ((ly:context-mod?) symbol? symbol?)
+   (let ((module-file (os-path-join (append
+                                     (getModuleOption `(,package ,module root))
+                                     (list "module.ily"))))
+         (options (extract-options opts)))
+     (ly:parser-parse-string (ly:parser-clone)
+       (format "\\include \"~a\"" (os-path-join-unix module-file)))
+     (if options
+         (for-each
+          (lambda (opt)
+            (setModuleOption `(,package ,module ,(car opt)) (cdr opt)))
+          options))))
+
+
+
+%{
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Helper tools
 
 % Initialize a library before first use.
 % This also serves as a kind of declaration of the intent of using it.
