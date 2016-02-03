@@ -1,7 +1,7 @@
 \version "2.19.22"
 
 % The following is temporary, and the oll-core directory must be in the include path.
-\include "openlilylib.ily"
+\include "oll-core.ily"
 
 % Little helper function
 show =
