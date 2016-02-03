@@ -38,7 +38,8 @@
 % Define one single public variable.
 % We can't use oll-core's options for this because they are not loaded yet -
 % and the option handline needs the logging code ...
-#(define oll-loglevel 0)
+% Initialize to 'log, will later be set to 'warning
+#(define oll-loglevel 2)
 
 % Set the log level. oll-core's oll: logging functions won't do anything
 % if their log level is lower than the currently set level.
