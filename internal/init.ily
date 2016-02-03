@@ -63,6 +63,14 @@
 % Functionality to load and manage modules
 \include "module-handling.ily"
 
+
+% Registering available modules
+% These modules are not automatically loaded with oll-core
+% but are available for \loadModule
+
+% Include files from a directory that match a pattern
+\registerModules oll-core include-pattern
+
 % Welcome message.
 % First set log level to 'log so it will be displayed,
 % then set the default log level to 'warning.
