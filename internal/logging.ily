@@ -44,7 +44,7 @@
 % Set the log level. oll-core's oll: logging functions won't do anything
 % if their log level is lower than the currently set level.
 % <level> has to be one of the symbols used in 'oll-loglevels'
-setLoglevel =
+setLogLevel =
 #(define-void-function (level)(symbol?)
    (let ((new-level (getAtree #t 'oll-loglevels (list level))))
      (if new-level

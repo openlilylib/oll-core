@@ -75,4 +75,4 @@
 % First set log level to 'log so it will be displayed,
 % then set the default log level to 'warning.
 #(oll:log "oll-core: library infrastructure successfully loaded.")
-\setLoglevel #'warning
+\setLogLevel #'warning
