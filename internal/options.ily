@@ -101,39 +101,29 @@ setOption =
          ; TODO: change to oll-warning
          (oll:warn "Not a valid option path: ~a" (os-path-join-dots path)))))
 
-% Set one or more child options below a given option path.
+% Set a child option below a given option path.
 % #1: Optional boolean <force-set>
 %     If set this will implicitly create a missing 'parent' node
-% #2: 'parent' path
+% #2: <parent-path>
 %     A path within the a-tree. Child options will be set/created below
-% #3: One or more key-value pairs
-%     For each of the items an option below <path> will be set.
-%     Missing options are registered automatically.
-%     Specify a single suboption using a pair: #'(option-name . value)
-%     Specify a list of suboptions using an alist:
-%     #'((one . 1)(two . 2))
-setChildOptions =
-#(define-void-function (force-set path items)
-   ((boolean?) symbol-list? pair?)
-   (let ((is-set (option-registered path))
-         (sub-options
-          ;; Accept single pair as well as alist
-          (if (not (list? items))
-              (set! items (list items)))))
+% #3: <option>
+%     The name of the option
+% #4: <value>
+%     The actual option value
+setChildOption =
+#(define-void-function (force-set parent-path option val)
+   ((boolean?) symbol-list? symbol? scheme?)
+   (let ((is-set (option-registered parent-path)))
      (if (and (not is-set) force-set)
          ;; register missing parent option
          (begin
-          (registerOption path '())
+          (registerOption parent-path '())
           (set! is-set #t)))
      (if is-set
-       (for-each
-        (lambda (item)
-          (setOption #t (append path (list (car item))) (cdr item)))
-        items)
-       (oll:warn
-         "Trying to add children to non-existent option: ~a"
-         (os-path-join-dots path)))))
-
+         (setOption #t (append parent-path (list option)) val)
+         (oll:warn
+          "Trying to add child to non-existent option: ~a"
+          (os-path-join-dots parent-path)))))
 
 % Retrieve an option
 % Provide a tree path in dotted or list notation
