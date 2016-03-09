@@ -41,13 +41,18 @@
   (store #:accessor store #:setter set-store! #:init-value '())
   )
 
+; push value on the stack
 (define-method (push (stack <stack>) val)
   (set! (store stack) (cons val (store stack))))
+
+; get topmost value from stack without removing it
 (define-method (get (stack <stack>))
   (let ((st (store stack)))
     (if (> (length st) 0)
         (car st)
         #f)))
+
+; return and remove topmost value
 (define-method (pop (stack <stack>))
   (let ((st (store stack)))
     (if (> (length st) 0)
@@ -55,11 +60,16 @@
           (set! (store stack) (cdr st))
           ret)
         #f)))
+
+; display stack
 (define-method (display (stack <stack>) port)
   (for-each (lambda (e)
               (format #t "~A> " (name stack))(display e)(newline)) (store stack)))
 
+; create stack object
 (define-public (stack-create)(make <stack>))
+
+; export methods
 (export push)
 (export get)
 (export pop)
@@ -80,6 +90,7 @@
   (value #:accessor value #:setter set-value! #:init-value #f)
   )
 
+; set value at path
 (define-method (tree-set! (tree <tree>) (path <list>) val)
   (if (= (length path) 0)
       (set! (value tree) val)
@@ -95,12 +106,15 @@
         ))
   val)
 
+; merge one tree into path (not used very often)
 (define-method (tree-merge! (tree <tree>) (path <list>) (proc <procedure>) val)
   (let ((ctree (tree-get-tree tree path)))
     (if (is-a? ctree <tree>)
         (set! (value ctree) (proc (value ctree) val))
         (tree-set! tree path (proc #f val)))
     ))
+
+; get sub-tree at path
 (define-method (tree-get-tree (tree <tree>) (path <list>))
   (if (= (length path) 0)
       tree
@@ -112,9 +126,16 @@
             (tree-get-tree child cpath)
             #f)
         )))
+
+; get value at path
 (define-method (tree-get (tree <tree>) (path <list>))
   (let ((ctree (tree-get-tree tree path)))
     (if (is-a? ctree <tree>) (value ctree) #f)))
+
+; get value with key <skey> from path
+; if skey=global and path=music.momnt.brass.trumpet
+; it looks for music.global, music.momnt.global, music.momnt.brass.global
+; and music.momnt.brass.trumpet.global and returns the last value found
 (define-method (tree-get-from-path (tree <tree>) (path <list>) skey val)
   (if (equal? skey (key tree))(set! val (value tree)))
   (let ((child (hash-ref (children tree) skey)))
@@ -129,6 +150,8 @@
             (tree-get-from-path child cpath skey val)
             val)
         )))
+
+; return all sub-keys/nodes at path
 (define-method (tree-get-keys (tree <tree>) (path <list>))
   (if (= (length path) 0)
       (hash-map->list (lambda (key value) key) (children tree))
@@ -141,6 +164,7 @@
             #f)
         )))
 
+; return pair with relative path to value ... more TBD (not used very often)
 (define-method (tree-dispatch (tree <tree>) (path <list>) (relative <list>) def)
   (let ((val (value tree)))
     (if (= (length path) 0)
@@ -156,6 +180,7 @@
               `((,@relative ,@path) . ,def))
           ))))
 
+; collect all values on path
 (define-method (tree-collect (tree <tree>) (path <list>) (vals <stack>))
   (let ((val (value tree)))
     (if (> (length path) 0)
@@ -169,6 +194,7 @@
     (reverse (store vals))
     ))
 
+; standard sort-function
 (define (stdsort p1 p2)
   (let ((v1 (car p1))
         (v2 (car p2)))
@@ -177,6 +203,8 @@
      ((and (ly:moment? v1) (ly:moment? v2)) (ly:moment<? v1 v2))
      (else (string-ci<? (format "~A" v1) (format "~A" v2)))
      )))
+
+; walk the tree and call callback for every node
 (define-method (tree-walk (tree <tree>) (path <list>) (callback <procedure>) . opts)
   (let ((dosort (assoc-get 'sort opts))
         (sortby (assoc-get 'sortby opts stdsort))
@@ -188,6 +216,8 @@
       (if dosort (sort (hash-table->alist (children tree)) sortby)
           (hash-table->alist (children tree)) ))
     ))
+
+; walk the tree and call callback for every node in sub-tree at path
 (define-method (tree-walk-branch (tree <tree>) (path <list>) (callback <procedure>) . opts)
   (let ((dosort (assoc-get 'sort opts))
         (sortby (assoc-get 'sortby opts stdsort))
@@ -196,16 +226,18 @@
     (if (is-a? ctree <tree>)
         (tree-walk ctree path callback `(sort . ,dosort) `(sortby . ,sortby) `(empty . ,doempty)))
     ))
+
+; display tree
 (define-public (tree-display tree . opt)
-  (let ((path (ly:assoc-get 'path opt '() #f))
-        (dosort (ly:assoc-get 'sort opt #t #f))
-        (sortby (assoc-get 'sortby opt stdsort))
-        (empty (ly:assoc-get 'empty opt #f #f))
-        (dval (ly:assoc-get 'value opt #t #f))
-        (vformat (ly:assoc-get 'vformat opt (lambda (v)(format "~A" v)) #f))
-        (pformat (ly:assoc-get 'pformat opt (lambda (v)(format "~A" v)) #f))
-        (pathsep (ly:assoc-get 'pathsep opt "/" #f))
-        (port (ly:assoc-get 'port opt (current-output-port))))
+  (let ((path (ly:assoc-get 'path opt '() #f)) ; path to display
+        (dosort (ly:assoc-get 'sort opt #t #f)) ; wether to sort by key
+        (sortby (assoc-get 'sortby opt stdsort)) ; sort-function
+        (empty (ly:assoc-get 'empty opt #f #f)) ; display empty nodes
+        (dval (ly:assoc-get 'value opt #t #f)) ; display value
+        (vformat (ly:assoc-get 'vformat opt (lambda (v)(format "~A" v)) #f)) ; format value
+        (pformat (ly:assoc-get 'pformat opt (lambda (v)(format "~A" v)) #f)) ; format path
+        (pathsep (ly:assoc-get 'pathsep opt "/" #f)) ; separator for path
+        (port (ly:assoc-get 'port opt (current-output-port)))) ; output-port
     (tree-walk-branch tree path
       (lambda (path k val)
         (format #t "[~A] ~A" (key tree) (string-join (map pformat path) pathsep 'infix) port)
@@ -216,23 +248,28 @@
         (newline port)
         ) `(sort . ,dosort) `(sortby . ,sortby) `(empty . ,empty) )
     ))
+
+; display tree to string
 (define-public (tree->string tree . opt)
   (call-with-output-string
    (lambda (port)
      (apply tree-display tree (assoc-set! opt 'port port))
      )))
 
-
+; display tree
 (define-method (display (tree <tree>) port)
   (let ((tkey (key tree)))
     (tree-display tree)))
 
+; tree predicate
 (define-public (tree? tree)(is-a? tree <tree>))
+; create tree
 (define-public (tree-create . key)
   (let ((k (if (> (length key) 0)(car key) 'node)))
     (make <tree> #:key k)
     ))
 
+; export methods
 (export tree-set!)
 (export tree-merge!)
 (export tree-get-tree)
