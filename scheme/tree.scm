@@ -47,17 +47,22 @@
   )
 
 ; set value at path
+; if the path doesn't exist yet intermediate nodes are created implicitly
 (define-method (tree-set! (tree <tree>) (path <list>) val)
   (if (= (length path) 0)
+      ;; end of path reached: set value
       (set! (value tree) val)
+      ;; determine child
       (let* ((ckey (car path))
              (cpath (cdr path))
              (child (hash-ref (children tree) ckey))
              )
         (if (not (is-a? child <tree>))
+            ;; create child node if not present
             (begin (set! child (make <tree> #:key ckey))
               (hash-set! (children tree) ckey child)
               ))
+        ;; recursively walk through path
         (tree-set! child cpath val)
         ))
   val)
