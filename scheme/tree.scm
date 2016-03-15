@@ -55,16 +55,13 @@
       ;; determine child
       (let* ((ckey (car path))
              (cpath (cdr path))
-             (child (hash-ref (children tree) ckey))
-             )
+             (child (hash-ref (children tree) ckey)))
         (if (not (is-a? child <tree>))
             ;; create child node if not present
             (begin (set! child (make <tree> #:key ckey))
-              (hash-set! (children tree) ckey child)
-              ))
-        ;; recursively walk through path
-        (tree-set! child cpath val)
-        ))
+              (hash-set! (children tree) ckey child)))
+        ;; recursively walk path
+        (tree-set! child cpath val)))
   val)
 
 ; merge one tree into path (not used very often)
@@ -75,18 +72,21 @@
         (tree-set! tree path (proc #f val)))
     ))
 
-; get sub-tree at path
+; return the sub-tree with path as its root
+; returns #f if path is not in the tree
 (define-method (tree-get-tree (tree <tree>) (path <list>))
   (if (= (length path) 0)
+      ;; end of path reached: return sub-tree
       tree
+      ;; determine child node
       (let* ((ckey (car path))
              (cpath (cdr path))
-             (child (hash-ref (children tree) ckey))
-             )
+             (child (hash-ref (children tree) ckey)))
         (if (is-a? child <tree>)
+            ;; recurse through path
             (tree-get-tree child cpath)
-            #f)
-        )))
+            ;; return #f immediately if node is not present
+            #f))))
 
 ; get value at path
 (define-method (tree-get (tree <tree>) (path <list>))
