@@ -33,7 +33,8 @@
 (use-modules
  (oop goops)
  (lily)
- (srfi srfi-1))
+ (srfi srfi-1)
+ (oll-core scheme stack))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; tree
@@ -93,7 +94,7 @@
           ))
     val))
 
-; merge one tree into path (not used very often)
+; merge one tree into path TBD!! (not used very often)
 (define-method (tree-merge! (tree <tree>) (path <list>) (proc <procedure>) val)
   (let ((ctree (tree-get-tree tree path)))
     (if (is-a? ctree <tree>)
@@ -182,33 +183,48 @@
             #f)
         )))
 
-; return pair with relative path to value ... more TBD (not used very often)
+; return pair with relative path to value
+; if X is stored at 'a/b/c'
+; (tree-dispatch tree '(a b c d e))
+; returns: '((d e) . X)
+(define-method (tree-dispatch (tree <tree>) (path <list>))
+  (tree-dispatch tree path '() #f))
+; def = default value
+(define-method (tree-dispatch (tree <tree>) (path <list>) def)
+  (tree-dispatch tree path '() def))
+; relative = relative path to tree
 (define-method (tree-dispatch (tree <tree>) (path <list>) (relative <list>) def)
   (let ((val (value tree)))
     (if (= (length path) 0)
-        (if val (cons '() val)(cons relative def))
-        (let* ((ckey (car path))
+        (if (has-value tree) (cons '() val)(cons relative def)) ; return last element
+        (let* ((ckey (car path)) ; look deeper
                (cpath (cdr path))
                (child (hash-ref (children tree) ckey))
                )
-          (if (or val (not (list? relative))) (set! relative '()))
-          (if val (set! def (value tree)))
+          (if (or (has-value tree) (not (list? relative))) (set! relative '()))
+          (if (has-value tree) (set! def (value tree)))
           (if (is-a? child <tree>)
               (tree-dispatch child cpath `(,@relative ,ckey) def)
               `((,@relative ,@path) . ,def))
           ))))
 
-; collect all values on path (includes #f-values)
-(define-method (tree-collect (tree <tree>) (path <list>) (vals <stack>))
+; collect all values on path with optional predicate
+(define-method (tree-collect (tree <tree>) (path <list>))
+  (tree-collect tree path (stack-create) (lambda (v) #t)))
+(define-method (tree-collect (tree <tree>) (path <list>) (pred? <procedure>))
+  (tree-collect tree path (stack-create) pred?))
+(define-method (tree-collect (tree <tree>) (path <list>) (vals (@@ (oll-core scheme stack) <stack>))) ; there is also a <stack> class in (oop goops)
+  (tree-collect tree path vals (lambda (v) #t)))
+(define-method (tree-collect (tree <tree>) (path <list>) (vals (@@ (oll-core scheme stack) <stack>)) (pred? <procedure>))
   (let ((val (value tree)))
     (if (> (length path) 0)
         (let* ((ckey (car path))
                (cpath (cdr path))
                (child (hash-ref (children tree) ckey))
                )
-          (if (is-a? child <tree>) (tree-collect child cpath vals))
+          (if (is-a? child <tree>) (tree-collect child cpath vals pred?))
           ))
-    (if (has-value tree) (push vals val))
+    (if (and (has-value tree)(pred? val)) (push vals val))
     (reverse (store vals))
     ))
 
