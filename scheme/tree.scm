@@ -155,10 +155,11 @@
 ; if skey=global and path=music.momnt.brass.trumpet
 ; it looks for global, music.global, music.momnt.global, music.momnt.brass.global
 ; and music.momnt.brass.trumpet.global and returns the last value found
+; TODO predicate?
 (define-method (tree-get-node-from-path (tree <tree>) (path <list>) skey val)
   (if (equal? skey (key tree))(set! val (value tree)))
   (let ((child (hash-ref (children tree) skey)))
-    (if (is-a? child <tree>)(set! val (value child))))
+    (if (and (is-a? child <tree>)(has-value child))(set! val (value child))))
   (if (= (length path) 0)
       val
       (let* ((ckey (car path))
@@ -166,7 +167,7 @@
              (child (hash-ref (children tree) ckey))
              )
         (if (is-a? child <tree>)
-            (tree-get-from-path child cpath skey val)
+            (tree-get-node-from-path child cpath skey val)
             val)
         )))
 
