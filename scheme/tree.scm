@@ -137,6 +137,8 @@
 ; if skey=global and path=music.momnt.brass.trumpet
 ; it looks for global, music.global, music.momnt.global, music.momnt.brass.global
 ; and music.momnt.brass.trumpet.global and returns the last value found
+(define-method (tree-get-from-path (tree <tree>) (path <list>) skey)
+  (tree-get-from-path tree path skey #f))
 (define-method (tree-get-from-path (tree <tree>) (path <list>) skey val)
   (if (equal? skey (key tree))(set! val (value tree)))
   (let ((child (hash-ref (children tree) skey)))
@@ -317,6 +319,7 @@
 (export tree-get)
 (export tree-get-node)
 (export tree-get-from-path)
+(export tree-get-node-from-path)
 (export tree-get-keys)
 (export tree-dispatch)
 (export tree-collect)
