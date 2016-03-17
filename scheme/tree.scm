@@ -30,7 +30,10 @@
 
 (define-module (oll-core scheme tree))
 
-(use-modules (oop goops)(lily))
+(use-modules
+ (oop goops)
+ (lily)
+ (srfi srfi-1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; tree
@@ -72,6 +75,21 @@
         (tree-set! tree path (proc #f val)))
     ))
 
+; get value at path
+; returns #f if path is not present or if its value is #f
+; to discern use tree-get-node
+(define-method (tree-get (tree <tree>) (path <list>))
+  (let ((ctree (tree-get-tree tree path)))
+    (if (is-a? ctree <tree>) (value ctree) #f)))
+
+; get the node at path
+; returns '(key . value) pair - or #f if path is not present
+; to be used if #f values are to be expected.
+(define-method (tree-get-node (tree <tree>) (path <list>))
+  (let ((ctree (tree-get-tree tree path)))
+    (if (is-a? ctree <tree>)
+        (cons (last path) (value ctree)) #f)))
+
 ; return the sub-tree with path as its root
 ; returns #f if path is not in the tree
 (define-method (tree-get-tree (tree <tree>) (path <list>))
@@ -87,11 +105,6 @@
             (tree-get-tree child cpath)
             ;; return #f immediately if node is not present
             #f))))
-
-; get value at path
-(define-method (tree-get (tree <tree>) (path <list>))
-  (let ((ctree (tree-get-tree tree path)))
-    (if (is-a? ctree <tree>) (value ctree) #f)))
 
 ; get value with key <skey> from path
 ; if skey=global and path=music.momnt.brass.trumpet
@@ -235,6 +248,7 @@
 (export tree-merge!)
 (export tree-get-tree)
 (export tree-get)
+(export tree-get-node)
 (export tree-get-from-path)
 (export tree-get-keys)
 (export tree-dispatch)
