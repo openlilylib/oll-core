@@ -60,4 +60,15 @@ mytree = #(tree-create 'my-tree)
 #(display (tree-collect mytree '(a b c d e f)))
 #(newline)
 
+#(display "-----------------------------------------")
+#(newline)
+#(tree-merge! mytree '(a b) + 33)
+#(display mytree)
+
+
+% TBD explain tree-merge!
+#(tree-set! mytree '(mods) #{ \with { \override NoteHead.color = #red } #})
+#(tree-merge! mytree '(mods) (lambda (m1 m2) #{ \with { $m1 $m2 } #}) #{ \with { \override Beam.color = #red } #})
+
+#(display mytree)
 

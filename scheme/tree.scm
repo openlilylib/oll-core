@@ -64,7 +64,7 @@
       (let* ((ckey (car path))
              (cpath (cdr path))
              (child (hash-ref (children tree) ckey)))
-        (if (not (is-a? child <tree>))
+        (if (not (tree? child))
             ;; create child node if not present
             (begin (set! child (make <tree> #:key ckey))
               (hash-set! (children tree) ckey child)))
@@ -88,17 +88,18 @@
         (let* ((ckey (car path))
                (cpath (cdr path))
                (child (hash-ref (children tree) ckey)))
-          (if (is-a? child <tree>)
+          (if (tree? child)
               ;; recursively walk path
               (tree-unset! child cpath))
           ))
     val))
 
-; merge one tree into path TBD!! (not used very often)
+; merge value at path into tree
 (define-method (tree-merge! (tree <tree>) (path <list>) (proc <procedure>) val)
   (let ((ctree (tree-get-tree tree path)))
-    (if (is-a? ctree <tree>)
-        (set! (value ctree) (proc (value ctree) val))
+    (if (tree? ctree)
+        (set! (value ctree)
+              (if (has-value ctree) (proc (value ctree) val) val))
         (tree-set! tree path (proc #f val)))
     ))
 
@@ -107,14 +108,14 @@
 ; to discern use tree-get-node
 (define-method (tree-get (tree <tree>) (path <list>))
   (let ((ctree (tree-get-tree tree path)))
-    (if (is-a? ctree <tree>) (value ctree) #f)))
+    (if (tree? ctree) (value ctree) #f)))
 
 ; get the node at path
 ; returns '(key . value) pair - or #f if path is not present
 ; to be used if #f values are to be expected.
 (define-method (tree-get-node (tree <tree>) (path <list>))
   (let ((ctree (tree-get-tree tree path)))
-    (if (and (is-a? ctree <tree>) (has-value ctree))
+    (if (and (tree? ctree) (has-value ctree))
         (cons (last path) (value ctree)) #f)))
 
 ; return the sub-tree with path as its root
@@ -127,7 +128,7 @@
       (let* ((ckey (car path))
              (cpath (cdr path))
              (child (hash-ref (children tree) ckey)))
-        (if (is-a? child <tree>)
+        (if (tree? child)
             ;; recurse through path
             (tree-get-tree child cpath)
             ;; return #f immediately if node is not present
@@ -142,14 +143,14 @@
 (define-method (tree-get-from-path (tree <tree>) (path <list>) skey val)
   (if (equal? skey (key tree))(set! val (value tree)))
   (let ((child (hash-ref (children tree) skey)))
-    (if (is-a? child <tree>)(set! val (value child))))
+    (if (tree? child)(set! val (value child))))
   (if (= (length path) 0)
       val
       (let* ((ckey (car path))
              (cpath (cdr path))
              (child (hash-ref (children tree) ckey))
              )
-        (if (is-a? child <tree>)
+        (if (tree? child)
             (tree-get-from-path child cpath skey val)
             val)
         )))
@@ -164,7 +165,7 @@
   (if (and (equal? skey (key tree))(has-value tree))
       (set! val (cons skey (value tree))))
   (let ((child (hash-ref (children tree) skey)))
-    (if (and (is-a? child <tree>)(has-value child))
+    (if (and (tree? child)(has-value child))
         (set! val (cons skey (value child)))))
   (if (= (length path) 0)
       val
@@ -172,7 +173,7 @@
              (cpath (cdr path))
              (child (hash-ref (children tree) ckey))
              )
-        (if (is-a? child <tree>)
+        (if (tree? child)
             (tree-get-node-from-path child cpath skey val)
             val)
         )))
@@ -185,7 +186,7 @@
              (cpath (cdr path))
              (child (hash-ref (children tree) ckey))
              )
-        (if (is-a? child <tree>)
+        (if (tree? child)
             (tree-get-keys child cpath)
             #f)
         )))
@@ -210,7 +211,7 @@
                )
           (if (or (has-value tree) (not (list? relative))) (set! relative '()))
           (if (has-value tree) (set! def (value tree)))
-          (if (is-a? child <tree>)
+          (if (tree? child)
               (tree-dispatch child cpath `(,@relative ,ckey) def)
               `((,@relative ,@path) . ,def))
           ))))
@@ -229,7 +230,7 @@
                (cpath (cdr path))
                (child (hash-ref (children tree) ckey))
                )
-          (if (is-a? child <tree>) (tree-collect child cpath vals pred?))
+          (if (tree? child) (tree-collect child cpath vals pred?))
           ))
     (if (and (has-value tree)(pred? val)) (push vals val))
     (reverse (store vals))
@@ -264,7 +265,7 @@
         (sortby (assoc-get 'sortby opts stdsort))
         (doempty (assoc-get 'empty opts))
         (ctree (tree-get-tree tree path)))
-    (if (is-a? ctree <tree>)
+    (if (tree? ctree)
         (tree-walk ctree path callback `(sort . ,dosort) `(sortby . ,sortby) `(empty . ,doempty)))
     ))
 
