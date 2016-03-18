@@ -71,7 +71,7 @@ mytree = #(tree-create 'my-tree)
 #(display mytree)
 
 % a/b/d can only accept string? now
-#(tree-register-type! mytree '(a b d) string?)
+#(tree-set-type! mytree '(a b d) string?)
 % issues a warning and doesn't set the value
 #(tree-set! mytree '(a b d) 234)
 #(tree-set! #t mytree '(a b d) "234")

@@ -49,7 +49,7 @@
   (key #:accessor key #:init-keyword #:key #:init-value 'node)
   (value #:accessor value #:setter set-value! #:init-value #f)
   (has-value #:accessor has-value #:setter has-value! #:init-value #f)
-  (has-type #:accessor has-type #:setter has-type! #:init-value #f)
+  (type #:accessor type #:setter set-type! #:init-value #f)
   )
 
 ; set value at path
@@ -64,17 +64,17 @@
 (define-method (tree-set! (create <boolean>) (tree <tree>) (path <list>) val)
   (if (= (length path) 0)
       ;; end of path reached: set value
-      (let ((pred (has-type tree)))
-        (if pred
+      (let ((pred? (type tree)))
+        (if pred?
             ;; if tree has a type defined check value against it before setting
-            (if (pred val)
+            (if (pred? val)
                 (begin
                  (set-value! tree val)
                  (has-value! tree #t))
                 (begin
                  (ly:input-warning (*location*)
                    (format "TODO: Format warning about typecheck error in tree-set!
-Expected ~a, got ~a" pred val))
+Expected ~a, got ~a" (procedure-name pred?) val))
                  (set! val #f)))
             ;; if no typecheck is set simply set the value
             (begin
@@ -121,11 +121,11 @@ Path: ~a" path)))))
           ))
     val))
 
-(define-method (tree-register-type! (tree <tree>) (path <list>)(predicate <procedure>))
+(define-method (tree-set-type! (tree <tree>) (path <list>)(predicate <procedure>))
   (if (= (length path) 0)
       ;; end of path reached: register type
       (begin
-       (has-type! tree predicate)
+       (set-type! tree predicate)
        ; TODO: What to do if there already is a value?
        ; probably: check type and issue an oll-warning
        )
@@ -138,7 +138,7 @@ Path: ~a" path)))))
             (begin (set! child (make <tree> #:key ckey))
               (hash-set! (children tree) ckey child)))
         ;; recursively walk path
-        (tree-register-type! child cpath predicate))
+        (tree-set-type! child cpath predicate))
       ))
 
 ; merge value at path into tree
@@ -369,7 +369,7 @@ Path: ~a" path)))))
 ; export methods
 (export tree-set!)
 (export tree-unset!)
-(export tree-register-type!)
+(export tree-set-type!)
 (export tree-merge!)
 (export tree-get-tree)
 (export tree-get)
