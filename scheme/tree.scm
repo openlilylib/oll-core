@@ -103,6 +103,13 @@
         (tree-set! tree path (proc #f val)))
     ))
 
+; merge values of tree2 into tree1
+(define-method (tree-merge! (tree1 <tree>) (proc <procedure>) (tree2 <tree>))
+  (tree-walk tree2 '()
+    (lambda (path nkey value)
+      (tree-merge! tree1 path proc value)
+      )))
+
 ; get value at path
 ; returns #f if path is not present or if its value is #f
 ; to discern use tree-get-node
@@ -248,9 +255,9 @@
 
 ; walk the tree and call callback for every node
 (define-method (tree-walk (tree <tree>) (path <list>) (callback <procedure>) . opts)
-  (let ((dosort (assoc-get 'sort opts))
+  (let ((dosort (assoc-get 'sort opts #f))
         (sortby (assoc-get 'sortby opts stdsort))
-        (doempty (assoc-get 'empty opts)))
+        (doempty (assoc-get 'empty opts #f)))
     (if (or doempty (has-value tree))
         (callback path (key tree) (value tree)))
     (for-each (lambda (p)

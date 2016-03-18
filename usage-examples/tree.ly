@@ -37,7 +37,7 @@ mytree = #(tree-create 'my-tree)
 #(newline)
 #(display "-----------------------------------------")
 #(newline)
-% 
+%
 #(display "(tree-get-from-path mytree '(a b c d e f) 'b) : ")
 #(display (tree-get-from-path mytree '(a b c d e f) 'b))
 #(newline)
@@ -62,13 +62,20 @@ mytree = #(tree-create 'my-tree)
 
 #(display "-----------------------------------------")
 #(newline)
+% TBD explain tree-merge!
 #(tree-merge! mytree '(a b) + 33)
 #(display mytree)
 
+#(display "-----------------------------------------")
+#(newline)
 
-% TBD explain tree-merge!
 #(tree-set! mytree '(mods) #{ \with { \override NoteHead.color = #red } #})
 #(tree-merge! mytree '(mods) (lambda (m1 m2) #{ \with { $m1 $m2 } #}) #{ \with { \override Beam.color = #red } #})
+
+mytreeB = #(tree-create 'my-other-tree)
+#(tree-set! mytreeB '(a b) 42) % set value 42 at a/b
+#(tree-set! mytreeB '(global) 24) % set value 24 at global
+#(tree-merge! mytree + mytreeB)
 
 #(display mytree)
 
