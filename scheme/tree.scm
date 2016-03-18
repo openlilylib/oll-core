@@ -49,27 +49,54 @@
   (key #:accessor key #:init-keyword #:key #:init-value 'node)
   (value #:accessor value #:setter set-value! #:init-value #f)
   (has-value #:accessor has-value #:setter has-value! #:init-value #f)
+  (type #:accessor type #:setter set-type! #:init-value #f)
   )
 
 ; set value at path
+; if the node at path has a type first check against that
 ; if the path doesn't exist yet intermediate nodes are created implicitly
 (define-method (tree-set! (tree <tree>) (path <list>) val)
+  (tree-set! #t tree path val))
+
+; set value at path
+; if create is #t missing intermediate nodes are created implicitly
+; if the node at path has a type first check against that
+(define-method (tree-set! (create <boolean>) (tree <tree>) (path <list>) val)
   (if (= (length path) 0)
       ;; end of path reached: set value
-      (begin
-       (set-value! tree val)
-       (has-value! tree #t)
-       )
+      (let ((pred? (type tree)))
+        (if pred?
+            ;; if tree has a type defined check value against it before setting
+            (if (pred? val)
+                (begin
+                 (set-value! tree val)
+                 (has-value! tree #t))
+                (begin
+                 (ly:input-warning (*location*)
+                   (format "TODO: Format warning about typecheck error in tree-set!
+Expected ~a, got ~a" (procedure-name pred?) val))
+                 (set! val #f)))
+            ;; if no typecheck is set simply set the value
+            (begin
+             (set-value! tree val)
+             (has-value! tree #t)
+             )))
       ;; determine child
       (let* ((ckey (car path))
              (cpath (cdr path))
              (child (hash-ref (children tree) ckey)))
         (if (not (tree? child))
-            ;; create child node if not present
-            (begin (set! child (make <tree> #:key ckey))
-              (hash-set! (children tree) ckey child)))
-        ;; recursively walk path
-        (tree-set! child cpath val)))
+            ;; create child node if option is set
+            (if create
+                (begin 
+                 (set! child (make <tree> #:key ckey))
+                 (hash-set! (children tree) ckey child))))
+        (if (tree? child)
+            ;; recursively walk path
+            (tree-set! create child cpath val)
+            (ly:input-warning (*location*)
+              (format "TODO: Format missing path warning in tree-set!
+Path: ~a" path)))))
   val)
 
 ; unset value at path
@@ -93,6 +120,26 @@
               (tree-unset! child cpath))
           ))
     val))
+
+(define-method (tree-set-type! (tree <tree>) (path <list>)(predicate <procedure>))
+  (if (= (length path) 0)
+      ;; end of path reached: register type
+      (begin
+       (set-type! tree predicate)
+       ; TODO: What to do if there already is a value?
+       ; probably: check type and issue an oll-warning
+       )
+      ;; determine child
+      (let* ((ckey (car path))
+             (cpath (cdr path))
+             (child (hash-ref (children tree) ckey)))
+        (if (not (tree? child))
+            ;; create child node if not present
+            (begin (set! child (make <tree> #:key ckey))
+              (hash-set! (children tree) ckey child)))
+        ;; recursively walk path
+        (tree-set-type! child cpath predicate))
+      ))
 
 ; merge value at path into tree
 (define-method (tree-merge! (tree <tree>) (path <list>) (proc <procedure>) val)
@@ -322,6 +369,7 @@
 ; export methods
 (export tree-set!)
 (export tree-unset!)
+(export tree-set-type!)
 (export tree-merge!)
 (export tree-get-tree)
 (export tree-get)
