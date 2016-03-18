@@ -69,6 +69,12 @@ mytree = #(tree-create 'my-tree)
 #(newline)
 #(tree-merge! mytree '(a b) + 33)
 #(display mytree)
+
+#(tree-register-type! mytree '(a b d) string?)
+#(tree-set! mytree '(a b d) 234)
+#(tree-set! mytree '(a b d) "234")
+
+% TBD explain tree-merge!
 #(tree-set! mytree '(mods) #{ \with { \override NoteHead.color = #red } #})
 #(tree-merge! mytree '(mods) (lambda (m1 m2) #{ \with { $m1 $m2 } #}) #{ \with { \override Beam.color = #red } #})
 #(display "(tree-create 'my-other-tree)")
@@ -82,4 +88,3 @@ mytreeB = #(tree-create 'my-other-tree)
 #(tree-merge! mytree + mytreeB)
 
 #(display mytree)
-
