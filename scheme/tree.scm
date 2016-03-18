@@ -53,8 +53,15 @@
   )
 
 ; set value at path
+; if the node at path has a type first check against that
 ; if the path doesn't exist yet intermediate nodes are created implicitly
 (define-method (tree-set! (tree <tree>) (path <list>) val)
+  (tree-set! #t tree path val))
+
+; set value at path
+; if create is #t missing intermediate nodes are created implicitly
+; if the node at path has a type first check against that
+(define-method (tree-set! (create <boolean>) (tree <tree>) (path <list>) val)
   (if (= (length path) 0)
       ;; end of path reached: set value
       (let ((pred (has-type tree)))
@@ -79,11 +86,17 @@ Expected ~a, got ~a" pred val))
              (cpath (cdr path))
              (child (hash-ref (children tree) ckey)))
         (if (not (tree? child))
-            ;; create child node if not present
-            (begin (set! child (make <tree> #:key ckey))
-              (hash-set! (children tree) ckey child)))
-        ;; recursively walk path
-        (tree-set! child cpath val)))
+            ;; create child node if option is set
+            (if create
+                (begin 
+                 (set! child (make <tree> #:key ckey))
+                 (hash-set! (children tree) ckey child))))
+        (if (tree? child)
+            ;; recursively walk path
+            (tree-set! create child cpath val)
+            (ly:input-warning (*location*)
+              (format "TODO: Format missing path warning in tree-set!
+Path: ~a" path)))))
   val)
 
 ; unset value at path

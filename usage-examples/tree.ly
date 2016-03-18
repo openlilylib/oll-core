@@ -70,9 +70,15 @@ mytree = #(tree-create 'my-tree)
 #(tree-merge! mytree '(a b) + 33)
 #(display mytree)
 
+% a/b/d can only accept string? now
 #(tree-register-type! mytree '(a b d) string?)
+% issues a warning and doesn't set the value
 #(tree-set! mytree '(a b d) 234)
-#(tree-set! mytree '(a b d) "234")
+#(tree-set! #t mytree '(a b d) "234")
+% This doesn't set the value as a/b/e/f doesn't exist
+#(tree-set! #f mytree '(a b e f) 123)
+% This works because a is present
+#(tree-set! #f mytree '(a) "Oops")
 
 % TBD explain tree-merge!
 #(tree-set! mytree '(mods) #{ \with { \override NoteHead.color = #red } #})
