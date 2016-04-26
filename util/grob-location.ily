@@ -33,6 +33,8 @@
   It is written for ScholarLY \annotate but the functions should be generally usable
 %}
 
+\version "2.19.22"
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Helper functions for the annotation engraver
 % (provided by David Nalesnik)
@@ -73,33 +75,14 @@
    "Return the length of one single 'beat' as a moment"
    (ly:moment-div measure-length (ly:make-moment number-of-beats)))
 
-% From LilyPond 2.19.6 on you can use (ly:item-get-column item)
-#(define (get-paper-column grob)
-   "Return the paper column of a given grob.
-    This property knows about the rhyhmic position in a score"
-   (cond
-    ((not (ly:grob? grob)) #f)
-    ((grob::has-interface grob 'paper-column-interface) grob)
-    (else (get-paper-column
-           ;; Can't use 'X' for axis because 'X' is also a music variable
-           (ly:grob-parent grob 0)))))
-
-#(define (location grob)
-   "Return the musical/rhythmical position of a given grob.
+#(define (rhythmic-location grob)
+   "Return the musical/rhythmical position of a given grob
+    as a pair of a measure number and a moment in that measure.
     If the position can't be determined return an 'impossible'
     value in measure 0."
    (if (ly:grob? grob)
-       (let
-        ((loc
-          (if (lilypond-greater-than-or-equal? "2.19.17")
-              (grob::rhythmic-location grob)
-              (let ((col (get-paper-column grob)))
-                (if col
-                    (ly:grob-property col 'rhythmic-location)
-                    '())))))
-        (if (null? loc)
-            (cons 0 (ly:make-moment 0/4))
-            loc))
+       (or (grob::rhythmic-location grob)
+           (cons 0 (ly:make-moment 0/4)))
        (ly:error "Requested rhythmic-location of a grob, but ~a is not a grob," grob)))
 
 
@@ -128,7 +111,7 @@
    "Populate the alist 'props' with more details about the rhythmic location of 'grob'.
     It is assumed that a property 'meter' has already been set with a time sig pair."
    (let*
-    ((loc (location grob))
+    ((loc (rhythmic-location grob))
      (measure-pos (cdr loc))
      (meter (assq-ref props 'meter))
      (beats-in-meter (car meter))
