@@ -42,3 +42,9 @@
            (and (list? obj)
                 (every pair? obj)))
        #t #f))
+
+(define-public (list-or-symbol? obj)
+  "Returns true if obj is either a list or a symbol."
+   (or (list? obj)
+       (symbol? obj)))
+
