@@ -30,12 +30,12 @@
 (define-module (oll-core internal predicates))
 
 ;; String list predicate
-(define (stringlist? obj)
+(define-public (stringlist? obj)
    "Evaulates to #t when obj is a list containing exclusively of strings."
    (and (list? obj)
         (every string? obj)))
 
-(define (string-or-alist? obj)
+(define-public (string-or-alist? obj)
    "Returns true if obj is a string or a list of pairs (alist)
     (used for mandatory library options)"
    (if (or (string? obj)
