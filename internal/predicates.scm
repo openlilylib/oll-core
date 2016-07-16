@@ -42,3 +42,11 @@
            (and (list? obj)
                 (every pair? obj)))
        #t #f))
+
+#(define-public (symbol-list-or-string? object)
+   "Returns true if obj is a symbol list or a string
+    (used for arguments passed to os-path functions)."
+   (if (or (symbol-list? object)
+           (string? object))
+       #t #f))
+
