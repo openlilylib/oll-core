@@ -50,10 +50,10 @@
 Trying to access non-present alist '~a' with function '~a',
 using key '~a' and ~a.  This will create a new alist instead,
 which is probably not intended."
-      alst funcname key-name
-      (if val
-          (format "value '~a'" val)
-          "no value"))))
+        alst funcname key-name
+        (if val
+            (format "value '~a'" val)
+            "no value"))))
 
 ;; Set key <key-name> in alist <alst> to value <val>
 ;; If <in-place> is #t the key is replaced in-place if already present.
@@ -101,21 +101,21 @@ which is probably not intended."
          (ly:input-warning (*location*) "Not a list. Deleting '~A'" tree)
          (set! tree '())))
     (cond ((> (length path) 1)
-            (let ((subtree (assoc-get key-name tree '())))
-              (set-in-alist
-               tree
-               key-name
-               ;; Intermediate nodes are always updated in-place
-               (set-in-atree subtree (cdr path) val #t)
-               in-place)))
+           (let ((subtree (assoc-get key-name tree '())))
+             (set-in-alist
+              tree
+              key-name
+              ;; Intermediate nodes are always updated in-place
+              (set-in-atree subtree (cdr path) val #t)
+              in-place)))
       (else
-        (set-in-alist tree key-name val in-place)))))
+       (set-in-alist tree key-name val in-place)))))
 
 ;; Wrapper function around set-in-atree,
 ;; to be used by \setAtree and \addAtree
 (define (set-a-tree atree path val in-place)
-   (ly:parser-define! atree
-     (set-in-atree (ly:parser-lookup atree) path val in-place)))
+  (ly:parser-define! atree
+    (set-in-atree (ly:parser-lookup atree) path val in-place)))
 
 ;; Recursively walk the nested alist <tree> over the symbol-list <path>
 ;; and return the value for the last leaf in <path> or #f if the chain
@@ -155,9 +155,9 @@ which is probably not intended."
 ;; After this call we can rely on the existence
 ;; and emptyness of this.
 (define-public newAlist
-   (define-void-function (name)(symbol?)
-     "Creates or resets <name> as an empty list."
-         (ly:parser-define! name (list))))
+  (define-void-function (name)(symbol?)
+    "Creates or resets <name> as an empty list."
+    (ly:parser-define! name (list))))
 
 ;; Set the node <key-name> to the value <val>.
 ;; If <key-name> is present it is replaced in-place,
@@ -212,7 +212,7 @@ which is probably not intended."
 ;; a literal value #f and a missing key.
 (define-public getAtree
   (define-scheme-function (return-pair atree path)
-  ((boolean?) symbol? symbol-list-or-symbol?)
+    ((boolean?) symbol? symbol-list-or-symbol?)
     (check-alst 'getAtree atree path #f)
     (get-from-tree (ly:parser-lookup atree) path return-pair)))
 
