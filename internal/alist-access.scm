@@ -234,6 +234,18 @@ which is probably not intended."
 ;; Returns an empty list if noe
 (define-public extract-options
   (define-scheme-function (ctx-mods)((ly:context-mod?))
+    (ly:warning "\"extract-options\" from module alist-access is deprecated.
+Please use the equivalent context-mod->props instead.")
     (map (lambda (o)
            (cons (cadr o) (caddr o)))
       (ly:get-context-mods ctx-mods))))
+
+;; Convenience function, retrieves a property alist from a context-mod object.
+;; mod has to satisfy the ly:context-mod? predicate,
+;; returns an alist with all key-value pairs set.
+(define-public (context-mod->props mod)
+  (map
+   (lambda (prop)
+     (cons (cadr prop) (caddr prop)))
+   (ly:get-context-mods mod)))
+
