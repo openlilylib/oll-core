@@ -27,6 +27,54 @@
 
 % Provides functions for loading/handling submodules of a package
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Predicates for type-checking of library options
+
+% Simple regex check for Name plus email address in angled brackets:
+% "Ben Maintainer <ben@maintainer.org>"
+#(define (oll-maintainer? obj)
+   (let ((pat (make-regexp ".*<.*@.*>")))
+     (if (and (string? obj)
+              (regexp-exec pat obj))
+         #t #f)))
+
+% Returns true for one maintainer or a list of them
+#(define (oll-maintainers? obj)
+   (or (oll-maintainer? obj)
+       (and (list? obj)
+            (every oll-maintainer? obj))))
+
+% Returns true if obj is a string representation of an integer
+#(define (integer-string? obj)
+   (integer? (string->number obj)))
+
+% Returns true if a string is a three-element dot-joined list of integers
+#(define (oll-version-string? obj)
+   (and (string? obj)
+        (let ((lst (string-split obj #\.)))
+          (and (= 3 (length lst))
+               (every integer-string? lst)))))
+
+% Alist with mandatory options for library declarations
+% Each entry is a pair of option name symbol and type predicate
+#(define oll-lib-mandatory-options
+   `((maintainers . ,oll-maintainers?)
+     (version . ,oll-version-string?)
+     (short-description . ,string?)
+     (description . ,string?)
+     ))
+
+% Alist with recognized options for library declarations
+% If an option is in this list it is type-checked against the given predicate.
+#(define oll-lib-known-options
+   `((lilypond-min-version . ,oll-version-string?)
+     (lilypond-max-version . ,oll-version-string?)
+     ))
+
+
+
+
 % Each package that uses oll-core is encouraged to register itself, ensuring
 % there is an option tree available. After this there will be a top-level
 % branch for the package, with a first entry for the package's root directory
@@ -36,12 +84,50 @@
 % #1: symbol name for the package.
 %     Will be used to navigate the top level of the option tree.
 registerPackage =
-#(define-void-function (package-name)(symbol?)
-   (if (not (option-registered `(,package-name root)))
-       (setOption #t
-         `(,package-name root)
-         (os-path-dirname (location->normalized-path (*location*))))
-       (oll:warn "Package ~a already registered." package-name)))
+#(define-void-function (package-name properties)(symbol? ly:context-mod?)
+   (let ((name (string->symbol
+                (string-downcase
+                 (symbol->string package-name)))))
+     (if (option-registered `(,package-name root))
+         (oll:warn "Package ~a already registered." package-name)
+         (let*
+          ((props (context-mod->props properties))
+           (meta-path `(,name meta)))
+
+          ;; check if all required options are present
+          ;; and satisfy the given predicates
+          (if (not
+               (require-props
+                (format "Register package ~a" package-name)
+                oll-lib-mandatory-options
+                properties))
+              (oll:error "Error registering package ~a. Please contact maintainer."
+                package-name))
+
+          ;; determine package root directory
+          (setOption #t
+            `(,name root)
+            (os-path-dirname (location->normalized-path (*location*))))
+
+
+          (registerOption meta-path '())
+
+          ;; process and store all options
+          ;
+          ; TODO: Check type of known options!
+          ;
+          (for-each
+           (lambda (prop)
+             (setChildOption meta-path (car prop)(cdr prop)))
+           props)
+          ;
+          ; TODO:
+          ; Pretty-print package info as registration confirmation
+          ;
+          ))))
+
+
+
 
 % Packages can register 'modules' that are not implicitly loaded
 % together with the package itself. Modules can then be loaded
