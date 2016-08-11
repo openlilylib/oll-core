@@ -27,7 +27,8 @@
 
 (define-module (oll-core internal alist-access))
 (use-modules
- (lily))
+ (lily)
+ (ice-9 common-list))
 
 ;;
 ;; Functions for easier and robust access to nested association lists.
@@ -239,6 +240,72 @@ Please use the equivalent context-mod->props instead.")
     (map (lambda (o)
            (cons (cadr o) (caddr o)))
       (ly:get-context-mods ctx-mods))))
+
+;; predicate for require-props
+;; which accepts an a-list or a context-mod
+(define (al-or-props? obj)
+  (if (or (ly:context-mod? obj)
+          (and (list? obj)
+               (every pair? obj)))
+      #t #f))
+
+; temporary predicate, as this seems just too general ...
+(define (alist? obj)
+  (if (and (list? obj)
+           (every pair? obj))
+      #t #f))
+
+;; check a property list against a list of required properties and their predicates
+(define-public require-props
+  (define-scheme-function (function-name reqs props) (string? alist? al-or-props?)
+    (let*
+     ((success #t)
+      ;; props can be passed either as a property list or a context-mod
+      (props
+       (if (ly:context-mod? props)
+           (context-mod->props props)
+           props))
+
+      ;; determine missing properties
+      (missing-props
+       (filter
+        (lambda (req)
+          (not (assq-ref props req)))
+        (map car reqs))))
+
+     ;; Produce a warning for all missing properties
+     ;; and set the return value to #f
+     (if (not (null? missing-props))
+         (begin
+          (ly:input-warning (*location*)
+            "\nMissing required option(s) in \"~a\":\n - ~a"
+            function-name
+            (string-join
+             (map symbol->string missing-props) "\n - "))
+          (set! success #f))
+
+         ;; if all required props are present
+         ;; check for their types
+         ;
+         ; TODO:
+         ; investigate if that can be moved inside the previous loop
+         (let
+          ((mismatch-props
+            (filter (lambda (prop)
+                      (let
+                       ((pred-pair (assq (car prop) reqs)))
+                       (ly:message "pred-pair: ~a" pred-pair)
+                       (if pred-pair
+                           (not ((cdr pred-pair) (cdr prop)))
+                           #f)))
+                    props)))
+          ;; produce a warning for each mismatched property
+          (for-each
+           (lambda (mismatch)
+             (ly:input-warning (*location*) "Failed type check with option ~a.~a"
+               function-name (car mismatch)))
+           mismatch-props)
+          (null? mismatch-props))))))
 
 ;; Convenience function, retrieves a property alist from a context-mod object.
 ;; mod has to satisfy the ly:context-mod? predicate,
