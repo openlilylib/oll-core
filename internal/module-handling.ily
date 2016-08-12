@@ -170,11 +170,12 @@ Please contact package maintainer(s)\n - ~a"
 % then be loaded by \useModule.
 registerModules =
 #(define-void-function (package modules)(symbol? symbol-list?)
-   (for-each
-    (lambda (mod)
-      (setOption #t `(,package modules ,mod)
-        (append (getOption `(,package root)) (list mod))))
-    modules))
+   (let ((package (symbol->lowercase package)))
+     (for-each
+      (lambda (mod)
+        (registerOption `(,package modules ,mod root)
+          (append (getOption `(,package root)) (list mod))))
+      (map symbol->lowercase modules))))
 
 % Check if a module is registered.
 % Return the absolute path to the module's entry file
