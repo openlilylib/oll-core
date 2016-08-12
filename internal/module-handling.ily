@@ -182,7 +182,7 @@ registerModules =
 % or #f.
 #(define module-entry
    (define-scheme-function (package module)(symbol? symbol?)
-     (let ((module-dir (getOptionWithFallback `(,package modules ,module) #f)))
+     (let ((module-dir (getOptionWithFallback `(,package modules ,module root) #f)))
        (if module-dir
            (append module-dir (list "module.ily"))
            #f))))
