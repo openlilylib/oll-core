@@ -168,21 +168,31 @@ Please contact package maintainer(s)\n - ~a"
 % directory naming is limited to LilyPond's symbol? parsing.
 % The module must then contain the file module.ily, which will
 % then be loaded by \useModule.
-registerModules =
-#(define-void-function (package modules)(symbol? symbol-list?)
-   (let ((package (symbol->lowercase package)))
-     (for-each
-      (lambda (mod)
-        (registerOption `(,package modules ,mod root)
-          (append (getOption `(,package root)) (list mod))))
-      (map symbol->lowercase modules))))
+registerModule =
+#(define-void-function (path)(symbol-list?)
+   (let* ((path (map symbol->lowercase path))
+          (package (symbol->lowercase (car path)))
+         (module-path
+          (append
+           `(,package modules)
+           (cdr path)
+           '(root))))
+     (registerOption module-path
+       (append (getOption `(,package root)) (cdr path)))))
 
 % Check if a module is registered.
 % Return the absolute path to the module's entry file
 % or #f.
 #(define module-entry
-   (define-scheme-function (package module)(symbol? symbol?)
-     (let ((module-dir (getOptionWithFallback `(,package modules ,module root) #f)))
+   (define-scheme-function (path)(symbol-list?)
+     (let* ((package (car path))
+            (module (cdr path))
+            (module-path
+             (append
+              `(,package modules)
+              module
+              '(root)))
+            (module-dir (getOptionWithFallback module-path #f)))
        (if module-dir
            (append module-dir (list "module.ily"))
            #f))))
@@ -195,12 +205,12 @@ registerModules =
 % after the module has been loaded. Such options must have been registered
 % in the module definition file.
 loadModule =
-#(define-void-function (opts package module)
-   ((ly:context-mod?) symbol? symbol?)
-   (let ((module-file (module-entry package module)))
+#(define-void-function (opts path)
+   ((ly:context-mod?) symbol-list?)
+   (let ((module-file (module-entry path)))
      (if (not module-file)
          (oll:warn "Trying to load unregistered module '~a'"
-           (os-path-join-dots `(,package ,module)))
+           (os-path-join-dots path))
          (begin
           (ly:parser-parse-string (ly:parser-clone)
             ;

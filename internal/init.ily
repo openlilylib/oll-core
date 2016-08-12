@@ -69,7 +69,7 @@
 % but are available for \loadModule
 
 % Include files from a directory that match a pattern
-\registerModules oll-core include-pattern
+\registerModule oll-core.include-pattern
 
 % Welcome message.
 % First set log level to 'log so it will be displayed,
