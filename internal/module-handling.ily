@@ -222,27 +222,28 @@ loadModule =
    ((ly:context-mod?) symbol-list?)
    (if
     (member path (getOption '(loaded-modules)))
-    (oll:warn "Trying to reload module \"~a\". Skipping. Options will be ignored" 
+    (oll:warn "Trying to reload module \"~a\". Skipping. Options will be set anyway."
       (os-path-join-dots path))
-   (let ((module-file (module-entry path)))
-     (if (not module-file)
-         (oll:warn "Trying to load unregistered module '~a'"
-           (os-path-join-dots path))
-         (begin
-          (if (not (immediate-include (os-path-join-unix module-file)))
-              (oll:warn "No file found for module \"~a\"" path))
-          (setOption '(loaded-modules)
-            (append (getOption '(loaded-modules)) (list path)))
-          (if opts
-              (for-each
-               (lambda (opt)
-                 (let* ((path `(,package ,module ,(car opt)))
-                        (is-registered (option-registered? path)))
-                   (if is-registered
-                       (setOption path (cdr opt))
-                       (oll:warn "Trying to set unregistered option '~a'"
-                         (os-path-join-dots path)))))
-               (extract-options opts))))))))
+    (let ((module-file (module-entry path)))
+      (if (not module-file)
+          (oll:warn "Trying to load unregistered module '~a'"
+            (os-path-join-dots path))
+          (begin
+           (if (not (immediate-include (os-path-join-unix module-file)))
+               (oll:warn "No file found for module \"~a\"" path))
+           (setOption '(loaded-modules)
+             (append (getOption '(loaded-modules)) (list path)))))))
+   (if opts
+       (for-each
+        (lambda (opt)
+          (let* ((opt-path
+                  (append path (list (car opt))))
+                 (is-registered (option-registered? opt-path)))
+            (if is-registered
+                (setOption opt-path (cdr opt))
+                (oll:warn "Trying to set unregistered option '~a'"
+                  (os-path-join-dots opt-path)))))
+        (context-mod->props opts))))
 
 
 % Load an openLilyLib package determined by its name
@@ -292,28 +293,28 @@ loadPackage =
                       (setOption option-path option-value)
                       (oll:warn "Trying to set unregistered option ~a to ~a."
                         (os-path-join-dots option-path) option-value))))
-                  (filter
-                   (lambda (opt)
-                     (not (eq? 'modules (car opt))))
-                   options))
-                 ;; load modules if given as option
-                 ;; A single module can be given or a list of modules.
-                 ;; In this each module can be given as symbol or as a symbol list
-                 (cond
-                  ((string? modules)
-                   (loadModule (list name (string->symbol modules))))
-                  ((symbol-list? modules)
-                   (loadModule (append (list name) modules)))
-                  ((list? modules)
-                   (for-each
-                    (lambda (module)
-                      (cond
-                       ((symbol? module)
-                        (loadModule (list name module)))
-                       ((symbol-list? module)
-                        (loadModule
-                         (append (list name) module)))))
-                    modules))
-                  (else
-                   (oll:warn "Wrong type for option \"modules\". Expected symbol, symbol-list or list.")))
-                 ))))))
+               (filter
+                (lambda (opt)
+                  (not (eq? 'modules (car opt))))
+                options))
+              ;; load modules if given as option
+              ;; A single module can be given or a list of modules.
+              ;; In this each module can be given as symbol or as a symbol list
+              (cond
+               ((string? modules)
+                (loadModule (list name (string->symbol modules))))
+               ((symbol-list? modules)
+                (loadModule (append (list name) modules)))
+               ((list? modules)
+                (for-each
+                 (lambda (module)
+                   (cond
+                    ((symbol? module)
+                     (loadModule (list name module)))
+                    ((symbol-list? module)
+                     (loadModule
+                      (append (list name) module)))))
+                 modules))
+               (else
+                (oll:warn "Wrong type for option \"modules\". Expected symbol, symbol-list or list.")))
+              ))))))
