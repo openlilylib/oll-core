@@ -185,11 +185,11 @@ registerModule =
 #(define-void-function (path)(symbol-list?)
    (let* ((path (map symbol->lowercase path))
           (package (symbol->lowercase (car path)))
-         (module-path
-          (append
-           `(,package modules)
-           (cdr path)
-           '(root))))
+          (module-path
+           (append
+            `(,package modules)
+            (cdr path)
+            '(root))))
      (registerOption module-path
        (append (getOption `(,package root)) (cdr path)))))
 
