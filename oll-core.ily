@@ -53,6 +53,11 @@
 
 #(ly:set-option 'relative-includes #t)
 
+#(ly:input-warning (*location*)
+   "\n\nYou have loaded \"oll-core/oll-core.ily\" which is deprecated
+and will be removed at some point.
+Please load \"oll-core/package.ily\" instead.\n\n")
+
 % Initialize oll-core *once*
 #(if (not (defined? 'openlilylib-root))
      (begin

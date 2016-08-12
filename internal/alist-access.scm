@@ -294,7 +294,6 @@ Please use the equivalent context-mod->props instead.")
             (filter (lambda (prop)
                       (let
                        ((pred-pair (assq (car prop) reqs)))
-                       (ly:message "pred-pair: ~a" pred-pair)
                        (if pred-pair
                            (not ((cdr pred-pair) (cdr prop)))
                            #f)))

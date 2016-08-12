@@ -53,8 +53,8 @@ registerOption =
 
 % Convenience function to determine if an option is set.
 % can be used to avoid warnings when trying to access unregistered options.
-% Returns the option's value or #f
-#(define option-registered
+% Returns #t or #f
+#(define option-registered?
    (define-scheme-function (path) (symbol-list?)
      (pair? (getAtree #t 'oll-options path))))
 
@@ -70,7 +70,7 @@ registerOption =
 % #3: Any Scheme value
 setOption =
 #(define-void-function (force-set path val) ((boolean?) symbol-list? scheme?)
-   (let ((is-set (option-registered path)))
+   (let ((is-set (option-registered? path)))
      (if (and (not is-set) force-set)
          (begin
           (registerOption path '())
@@ -98,7 +98,7 @@ setOption =
 setChildOption =
 #(define-void-function (force-set parent-path option val)
    ((boolean?) symbol-list? symbol? scheme?)
-   (let ((is-set (option-registered parent-path)))
+   (let ((is-set (option-registered? parent-path)))
      (if (and (not is-set) force-set)
          ;; register missing parent option
          (begin

@@ -28,54 +28,34 @@
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Initializes oll-core and loads secondary internal functionality
+% This is the main entry file for openLilyLib.
+% To use openLilyLib this file has to be in LilyPond's include path.
+% including this file with
+%     \include "openlilylib.ily"
+% will initialize openLilyLib and make the library management available
+% as well as significant utility functionality.
+%
+% This does several things:
+% - defines a global variable 'openlilylib-root
+%   which is the absolute path to the root of openLilyLib
+%   (the parent of the folder this file is located in)
+% - adds openlilylib-root to Scheme's module path
+% - adds library/module handling support
+% - adds option handling
+% - adds logging tools
+% - adds miscellaneous helper functionality (e.g. version predicates)
 
+% We won't support 2.18 anymore as there are simply too many
+% substantial improvements in the 2.19 branch.
+% While development versions are usually more or less up to date,
+% 2.19.22 marks an important step regarding access to LilyPond's parser.
 \version "2.19.22"
 
-% Add openLilyLib root directory to Guile's module load path
-% After this Scheme modules can be addressed starting from openLilyLib's
-% root directory (the parent of oll-core)
-\include "add-guile-path.ily"
-\addGuilePath #(os-path-join-unix openlilylib-root)
+#(ly:set-option 'relative-includes #t)
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%% Common functionality
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% A collection of general-purpose predicates
-#(use-modules (oll-core internal predicates))
-
-% Version predicates to execute code for specific LilyPond versions
-#(use-modules (oll-core internal lilypond-version-predicates))
-
-% Helpers for handling Scheme association lists
-#(use-modules (oll-core internal alist-access))
-
-% Logging capabilities with different log levels
-\include "logging.ily"
-
-% Option handling,
-% for oll-core, other openLilyLib packages or arbitrary end-user code
-\include "options.ily"
-% Initialize option branch for oll-core
-\registerOption #'(oll-core root) #(this-parent)
-
-\registerOption loaded-packages #'(oll-core)
-\registerOption loaded-modules #'()
-
-% Functionality to load and manage modules
-\include "module-handling.ily"
-
-
-% Registering available modules
-% These modules are not automatically loaded with oll-core
-% but are available for \loadModule
-
-% Include files from a directory that match a pattern
-\registerModule oll-core.include-pattern
-
-% Welcome message.
-% First set log level to 'log so it will be displayed,
-% then set the default log level to 'warning.
-#(oll:log "oll-core: library infrastructure successfully loaded.")
-\setLogLevel #'warning
+% Initialize oll-core *once*
+#(if (not (defined? 'openlilylib-root))
+     (begin
+      (ly:parser-parse-string (ly:parser-clone) "\\include \"oll-core/internal/os-path.ily\"")
+      (define-public openlilylib-root (this-parent))
+      (ly:parser-include-string "\\include \"oll-core/internal/init.ily\"")))

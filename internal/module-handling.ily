@@ -27,6 +27,27 @@
 
 % Provides functions for loading/handling submodules of a package
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Helper functions
+
+% Return the lowercase version of a symbol
+#(define (symbol->lowercase sym)
+   (string->symbol
+    (string-downcase
+     (symbol->string sym))))
+
+% Immediate inclusion of files
+% Returns #t if file is found and #f if it is missing.
+% If the file is considered to have a language different from nederlands
+% it must be given at the beginning of the file
+#(define (immediate-include file)
+   (if (file-exists? file)
+       (let ((parser (ly:parser-clone)))
+         (ly:parser-parse-string parser "\\language \"nederlands\"")
+         (ly:parser-parse-string parser
+           (format "\\include \"~a\"" file))
+         #t)
+       #f))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Predicates for type-checking of library options
@@ -75,56 +96,74 @@
 
 
 
-% Each package that uses oll-core is encouraged to register itself, ensuring
-% there is an option tree available. After this there will be a top-level
-% branch for the package, with a first entry for the package's root directory
-% The root directory will be inferred from the directory the calling file
-% is in, so \registerPackage should be called from the package's root directory.
+% Each package that uses oll-core is encouraged to register itself upon loading.
+% This will ensure there's an option tree and some metadata about the package
+% available.  Additionally this may be used to ensure a package is loaded only
+% once. At least \usePackage will check for this and implicitly register the
+% package if it doesn't use \registerPackage in the initialization
 %
-% #1: symbol name for the package.
-%     Will be used to navigate the top level of the option tree.
+% A root directory will be inferred from the location of the caller, and there
+% are mandatory and optional (known) arguments that are checked against type
+% predicates.
 registerPackage =
 #(define-void-function (package-name properties)(symbol? ly:context-mod?)
-   (let ((name (string->symbol
-                (string-downcase
-                 (symbol->string package-name)))))
-     (if (option-registered `(,package-name root))
-         (oll:warn "Package ~a already registered." package-name)
-         (let*
-          ((props (context-mod->props properties))
-           (meta-path `(,name meta)))
+   (let ((name (symbol->lowercase package-name)))
+     (if (option-registered? `(,package-name root))
+         (oll:warn "Package ~a already registered." package-name))
+     (let*
+      ((props (context-mod->props properties))
+       (meta-path `(,name meta)))
 
-          ;; check if all required options are present
-          ;; and satisfy the given predicates
-          (if (not
-               (require-props
-                (format "Register package ~a" package-name)
-                oll-lib-mandatory-options
-                properties))
-              (oll:error "Error registering package ~a. Please contact maintainer."
-                package-name))
+      ;; check if all required options are present
+      ;; and satisfy the given predicates
+      (if (not
+           (require-props
+            (format "Register package ~a" package-name)
+            oll-lib-mandatory-options
+            properties))
+          (oll:error "Error registering package ~a. Please contact maintainer."
+            package-name))
 
-          ;; determine package root directory
-          (setOption #t
-            `(,name root)
-            (os-path-dirname (location->normalized-path (*location*))))
+      ;; determine package root directory
+      (setOption #t
+        `(,name root)
+        (os-path-dirname (location->normalized-path (*location*))))
 
 
-          (registerOption meta-path '())
+      (registerOption meta-path '())
 
-          ;; process and store all options
-          ;
-          ; TODO: Check type of known options!
-          ;
-          (for-each
-           (lambda (prop)
-             (setChildOption meta-path (car prop)(cdr prop)))
-           props)
-          ;
-          ; TODO:
-          ; Pretty-print package info as registration confirmation
-          ;
-          ))))
+      ;; process and store all options
+      ;; stop with error when facing an unknown option
+      ;; or a type check fails.
+      ;; while this is technically unimportant we want
+      ;; to "encourage" package maintainers to be correct
+      ;; about this.
+      (let
+       ((mandatory (map car oll-lib-mandatory-options))
+        (known (map car oll-lib-known-options)))
+       (for-each
+        (lambda (prop)
+          (let ((prop-key (car prop))
+                (prop-value (cdr prop)))
+            (if
+             (or (member prop-key mandatory)
+                 (and (member prop-key known)
+                      ((cdr (assq prop-key oll-lib-known-options)) prop-value)))
+             (setChildOption meta-path (car prop)(cdr prop))
+             (ly:error "Error in registration of package \"~a\".
+Unknown option \"~a\" or type mismatch: ~a.
+Please contact package maintainer(s)\n - ~a"
+               name prop-key prop-value
+               (let ((maintainers (assq-ref props 'maintainers)))
+                 (if (string? maintainers)
+                     maintainers
+                     (string-join maintainers "\n - "))
+                 )))))
+        props))
+
+      ;; print a confirmation of successful registration
+      (ly:message "\nPackage ~a @~a registered successfully.\n\n"
+        package-name (assq-ref props 'version)))))
 
 
 
@@ -142,20 +181,31 @@ registerPackage =
 % directory naming is limited to LilyPond's symbol? parsing.
 % The module must then contain the file module.ily, which will
 % then be loaded by \useModule.
-registerModules =
-#(define-void-function (package modules)(symbol? symbol-list?)
-   (for-each
-    (lambda (mod)
-      (setOption #t `(,package modules ,mod)
-        (append (getOption `(,package root)) (list mod))))
-    modules))
+registerModule =
+#(define-void-function (path)(symbol-list?)
+   (let* ((path (map symbol->lowercase path))
+          (package (symbol->lowercase (car path)))
+          (module-path
+           (append
+            `(,package modules)
+            (cdr path)
+            '(root))))
+     (registerOption module-path
+       (append (getOption `(,package root)) (cdr path)))))
 
 % Check if a module is registered.
 % Return the absolute path to the module's entry file
 % or #f.
 #(define module-entry
-   (define-scheme-function (package module)(symbol? symbol?)
-     (let ((module-dir (getOptionWithFallback `(,package modules ,module) #f)))
+   (define-scheme-function (path)(symbol-list?)
+     (let* ((package (car path))
+            (module (cdr path))
+            (module-path
+             (append
+              `(,package modules)
+              module
+              '(root)))
+            (module-dir (getOptionWithFallback module-path #f)))
        (if module-dir
            (append module-dir (list "module.ily"))
            #f))))
@@ -168,24 +218,103 @@ registerModules =
 % after the module has been loaded. Such options must have been registered
 % in the module definition file.
 loadModule =
-#(define-void-function (opts package module)
-   ((ly:context-mod?) symbol? symbol?)
-   (let ((module-file (module-entry package module)))
-     (if (not module-file)
-         (oll:warn "Trying to load unregistered module '~a'"
-           (os-path-join-dots `(,package ,module)))
-         (begin
-          (ly:parser-parse-string (ly:parser-clone)
-            ;
-            ; TODO: Check how this is to be done on Windows"
-            (format "\\include \"~a\"" (os-path-join module-file)))
-          (if opts
+#(define-void-function (opts path)
+   ((ly:context-mod?) symbol-list?)
+   (if
+    (member path (getOption '(loaded-modules)))
+    (oll:warn "Trying to reload module \"~a\". Skipping. Options will be set anyway."
+      (os-path-join-dots path))
+    (let ((module-file (module-entry path)))
+      (if (not module-file)
+          (oll:warn "Trying to load unregistered module '~a'"
+            (os-path-join-dots path))
+          (begin
+           (if (not (immediate-include (os-path-join-unix module-file)))
+               (oll:warn "No file found for module \"~a\"" path))
+           (setOption '(loaded-modules)
+             (append (getOption '(loaded-modules)) (list path)))))))
+   (if opts
+       (for-each
+        (lambda (opt)
+          (let* ((opt-path
+                  (append path (list (car opt))))
+                 (is-registered (option-registered? opt-path)))
+            (if is-registered
+                (setOption opt-path (cdr opt))
+                (oll:warn "Trying to set unregistered option '~a'"
+                  (os-path-join-dots opt-path)))))
+        (context-mod->props opts))))
+
+
+% Load an openLilyLib package determined by its name
+% If options are passed in a \with {} clause they are set after the package is loaded
+% initialization file has been loaded. If the initializiation did not
+% register the options (in the form LIBRARY.OPTION) this will cause
+% warnings about trying to set unregistered options.
+loadPackage =
+#(define-void-function (options name)
+   ((ly:context-mod?) symbol? )
+   (let*
+    ;; ensure the library name is lowercase
+    ((display-name name)
+     (name (symbol->lowercase name)))
+    "Load an openLilyLib library and initialize it"
+    (if (member name (getOption '(loaded-packages)))
+        (ly:message "Package ~a already loaded. Skipping\n\n" name)
+        ;; Load package if not already loaded
+        (let*
+         ((package-root (append openlilylib-root (list name)))
+          (package-file
+           (format "~a/package.ily"
+             (os-path-join-unix package-root))))
+
+         ;; Create a root option for the library
+         (registerOption (list name) '())
+
+         ;; Load package entry file
+         ;; or issue a warning if it isn't found (presumably the start of numerous erros)
+         (if (not (immediate-include package-file))
+             (oll:warn "No entry file found for package \"~a\"" display-name))
+         (setOption '(loaded-packages)
+           (append (getOption '(loaded-packages)) (list name)))
+
+         ;; Set package options if given
+         (if options
+             (let*
+              ((option-path (list name))
+               (options (context-mod->props options))
+               (modules (assq-ref options 'modules)))
               (for-each
                (lambda (opt)
-                 (let* ((path `(,package ,module ,(car opt)))
-                        (is-registered (option-registered path)))
-                   (if is-registered
-                       (setOption path (cdr opt))
-                       (oll:warn "Trying to set unregistered option '~a'"
-                         (os-path-join-dots path)))))
-               (extract-options opts)))))))
+                 (let
+                  ((option-path (append option-path (list (car opt))))
+                   (option-value (cdr opt)))
+                  (if (option-registered? option-path)
+                      (setOption option-path option-value)
+                      (oll:warn "Trying to set unregistered option ~a to ~a."
+                        (os-path-join-dots option-path) option-value))))
+               (filter
+                (lambda (opt)
+                  (not (eq? 'modules (car opt))))
+                options))
+              ;; load modules if given as option
+              ;; A single module can be given or a list of modules.
+              ;; In this each module can be given as symbol or as a symbol list
+              (cond
+               ((string? modules)
+                (loadModule (list name (string->symbol modules))))
+               ((symbol-list? modules)
+                (loadModule (append (list name) modules)))
+               ((list? modules)
+                (for-each
+                 (lambda (module)
+                   (cond
+                    ((symbol? module)
+                     (loadModule (list name module)))
+                    ((symbol-list? module)
+                     (loadModule
+                      (append (list name) module)))))
+                 modules))
+               (else
+                (oll:warn "Wrong type for option \"modules\". Expected symbol, symbol-list or list.")))
+              ))))))
