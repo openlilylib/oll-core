@@ -36,6 +36,19 @@
     (string-downcase
      (symbol->string sym))))
 
+% Immediate inclusion of files
+% Returns #t if file is found and #f if it is missing.
+% If the file is considered to have a language different from nederlands
+% it must be given at the beginning of the file
+#(define (immediate-include file)
+   (if (file-exists? file)
+       (let ((parser (ly:parser-clone)))
+         (ly:parser-parse-string parser "\\language \"nederlands\"")
+         (ly:parser-parse-string parser
+           (format "\\include \"~a\"" file))
+         #t)
+       #f))
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Predicates for type-checking of library options
 
