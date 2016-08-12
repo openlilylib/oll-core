@@ -239,3 +239,77 @@ loadModule =
                        (oll:warn "Trying to set unregistered option '~a'"
                          (os-path-join-dots path)))))
                (extract-options opts)))))))
+
+
+% Load an openLilyLib package determined by its name
+% If options are passed in a \with {} clause they are set after the package is loaded
+% initialization file has been loaded. If the initializiation did not
+% register the options (in the form LIBRARY.OPTION) this will cause
+% warnings about trying to set unregistered options.
+loadPackage =
+#(define-void-function (options name)
+   ((ly:context-mod?) symbol? )
+   (let*
+    ;; ensure the library name is lowercase
+    ((display-name name)
+     (name (symbol->lowercase name)))
+    "Load an openLilyLib library and initialize it"
+    (if (member name (getOption '(loaded-packages)))
+        (ly:message "Package ~a already loaded. Skipping\n\n" name)
+        ;; Load package if not already loaded
+        (let*
+         ((package-root (append openlilylib-root (list name)))
+          (package-file
+           (format "~a/package.ily"
+             (os-path-join-unix package-root))))
+
+         ;; Create a root option for the library
+         (registerOption (list name) '())
+
+         ;; Load package entry file
+         ;; or issue a warning if it isn't found (presumably the start of numerous erros)
+         (if (not (immediate-include package-file))
+             (oll:warn "No entry file found for package \"~a\"" display-name))
+         (setOption '(loaded-packages)
+           (append (getOption '(loaded-packages)) (list name)))
+
+         ;; Set package options if given
+         (if options
+             (let*
+              ((option-path (list name))
+               (options (context-mod->props options))
+               (modules (assq-ref options 'modules)))
+              (for-each
+               (lambda (opt)
+                 (let
+                  ((option-path (append option-path (list (car opt))))
+                   (option-value (cdr opt)))
+                  (if (option-registered? option-path)
+                      (setOption option-path option-value)
+                      (oll:warn "Trying to set unregistered option ~a to ~a."
+                        (os-path-join-dots option-path) option-value))))
+                  (filter
+                   (lambda (opt)
+                     (not (eq? 'modules (car opt))))
+                   options))
+                 ;; load modules if given as option
+                 ;; A single module can be given or a list of modules.
+                 ;; In this each module can be given as symbol or as a symbol list
+                 (cond
+                  ((string? modules)
+                   (loadModule (list name (string->symbol modules))))
+                  ((symbol-list? modules)
+                   (loadModule (append (list name) modules)))
+                  ((list? modules)
+                   (for-each
+                    (lambda (module)
+                      (cond
+                       ((symbol? module)
+                        (loadModule (list name module)))
+                       ((symbol-list? module)
+                        (loadModule
+                         (append (list name) module)))))
+                    modules))
+                  (else
+                   (oll:warn "Wrong type for option \"modules\". Expected symbol, symbol-list or list.")))
+                 ))))))
