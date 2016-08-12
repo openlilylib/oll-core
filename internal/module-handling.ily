@@ -220,15 +220,19 @@ registerModule =
 loadModule =
 #(define-void-function (opts path)
    ((ly:context-mod?) symbol-list?)
+   (if
+    (member path (getOption '(loaded-modules)))
+    (oll:warn "Trying to reload module \"~a\". Skipping. Options will be ignored" 
+      (os-path-join-dots path))
    (let ((module-file (module-entry path)))
      (if (not module-file)
          (oll:warn "Trying to load unregistered module '~a'"
            (os-path-join-dots path))
          (begin
-          (ly:parser-parse-string (ly:parser-clone)
-            ;
-            ; TODO: Check how this is to be done on Windows"
-            (format "\\include \"~a\"" (os-path-join module-file)))
+          (if (not (immediate-include (os-path-join-unix module-file)))
+              (oll:warn "No file found for module \"~a\"" path))
+          (setOption '(loaded-modules)
+            (append (getOption '(loaded-modules)) (list path)))
           (if opts
               (for-each
                (lambda (opt)
@@ -238,7 +242,7 @@ loadModule =
                        (setOption path (cdr opt))
                        (oll:warn "Trying to set unregistered option '~a'"
                          (os-path-join-dots path)))))
-               (extract-options opts)))))))
+               (extract-options opts))))))))
 
 
 % Load an openLilyLib package determined by its name
