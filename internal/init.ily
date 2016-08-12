@@ -60,6 +60,9 @@
 % Initialize option branch for oll-core
 \registerOption #'(oll-core root) #(this-parent)
 
+\registerOption loaded-packages #'(oll-core)
+\registerOption loaded-modules #'()
+
 % Functionality to load and manage modules
 \include "module-handling.ily"
 
