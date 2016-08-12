@@ -95,7 +95,7 @@
 registerPackage =
 #(define-void-function (package-name properties)(symbol? ly:context-mod?)
    (let ((name (symbol->lowercase package-name)))
-     (if (option-registered `(,package-name root))
+     (if (option-registered? `(,package-name root))
          (oll:warn "Package ~a already registered." package-name))
      (let*
       ((props (context-mod->props properties))
@@ -220,7 +220,7 @@ loadModule =
               (for-each
                (lambda (opt)
                  (let* ((path `(,package ,module ,(car opt)))
-                        (is-registered (option-registered path)))
+                        (is-registered (option-registered? path)))
                    (if is-registered
                        (setOption path (cdr opt))
                        (oll:warn "Trying to set unregistered option '~a'"
