@@ -27,6 +27,14 @@
 
 % Provides functions for loading/handling submodules of a package
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Helper functions
+
+% Return the lowercase version of a symbol
+#(define (symbol->lowercase sym)
+   (string->symbol
+    (string-downcase
+     (symbol->string sym))))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Predicates for type-checking of library options
@@ -86,9 +94,7 @@
 % predicates.
 registerPackage =
 #(define-void-function (package-name properties)(symbol? ly:context-mod?)
-   (let ((name (string->symbol
-                (string-downcase
-                 (symbol->string package-name)))))
+   (let ((name (symbol->lowercase package-name)))
      (if (option-registered `(,package-name root))
          (oll:warn "Package ~a already registered." package-name))
      (let*
