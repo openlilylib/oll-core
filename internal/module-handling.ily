@@ -75,56 +75,76 @@
 
 
 
-% Each package that uses oll-core is encouraged to register itself, ensuring
-% there is an option tree available. After this there will be a top-level
-% branch for the package, with a first entry for the package's root directory
-% The root directory will be inferred from the directory the calling file
-% is in, so \registerPackage should be called from the package's root directory.
+% Each package that uses oll-core is encouraged to register itself upon loading.
+% This will ensure there's an option tree and some metadata about the package
+% available.  Additionally this may be used to ensure a package is loaded only
+% once. At least \usePackage will check for this and implicitly register the
+% package if it doesn't use \registerPackage in the initialization
 %
-% #1: symbol name for the package.
-%     Will be used to navigate the top level of the option tree.
+% A root directory will be inferred from the location of the caller, and there
+% are mandatory and optional (known) arguments that are checked against type
+% predicates.
 registerPackage =
 #(define-void-function (package-name properties)(symbol? ly:context-mod?)
    (let ((name (string->symbol
                 (string-downcase
                  (symbol->string package-name)))))
      (if (option-registered `(,package-name root))
-         (oll:warn "Package ~a already registered." package-name)
-         (let*
-          ((props (context-mod->props properties))
-           (meta-path `(,name meta)))
+         (oll:warn "Package ~a already registered." package-name))
+     (let*
+      ((props (context-mod->props properties))
+       (meta-path `(,name meta)))
 
-          ;; check if all required options are present
-          ;; and satisfy the given predicates
-          (if (not
-               (require-props
-                (format "Register package ~a" package-name)
-                oll-lib-mandatory-options
-                properties))
-              (oll:error "Error registering package ~a. Please contact maintainer."
-                package-name))
+      ;; check if all required options are present
+      ;; and satisfy the given predicates
+      (if (not
+           (require-props
+            (format "Register package ~a" package-name)
+            oll-lib-mandatory-options
+            properties))
+          (oll:error "Error registering package ~a. Please contact maintainer."
+            package-name))
 
-          ;; determine package root directory
-          (setOption #t
-            `(,name root)
-            (os-path-dirname (location->normalized-path (*location*))))
+      ;; determine package root directory
+      (setOption #t
+        `(,name root)
+        (os-path-dirname (location->normalized-path (*location*))))
 
 
-          (registerOption meta-path '())
+      (registerOption meta-path '())
 
-          ;; process and store all options
-          ;
-          ; TODO: Check type of known options!
-          ;
-          (for-each
-           (lambda (prop)
-             (setChildOption meta-path (car prop)(cdr prop)))
-           props)
-          ;
-          ; TODO:
-          ; Pretty-print package info as registration confirmation
-          ;
-          ))))
+      ;; process and store all options
+      ;; stop with error when facing an unknown option
+      ;; or a type check fails.
+      ;; while this is technically unimportant we want
+      ;; to "encourage" package maintainers to be correct
+      ;; about this.
+      (let
+       ((mandatory (map car oll-lib-mandatory-options))
+        (known (map car oll-lib-known-options)))
+       (for-each
+        (lambda (prop)
+          (let ((prop-key (car prop))
+                (prop-value (cdr prop)))
+            (if
+             (or (member prop-key mandatory)
+                 (and (member prop-key known)
+                      ((cdr (assq prop-key oll-lib-known-options)) prop-value)))
+             (setChildOption meta-path (car prop)(cdr prop))
+             (ly:error "Error in registration of package \"~a\".
+Unknown option \"~a\" or type mismatch: ~a.
+Please contact package maintainer(s)\n - ~a"
+               name prop-key prop-value
+               (let ((maintainers (assq-ref props 'maintainers)))
+                 (if (string? maintainers)
+                     maintainers
+                     (string-join maintainers "\n - "))
+                 )))))
+        props))
+
+      ;; print a confirmation of successful registration
+      (ly:message "\nPackage ~a @~a registered successfully.\n\n"
+        package-name (assq-ref props 'version)))))
 
 
 
