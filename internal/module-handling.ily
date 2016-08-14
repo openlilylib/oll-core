@@ -30,12 +30,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Helper functions
 
-% Return the lowercase version of a symbol
-#(define (symbol->lowercase sym)
-   (string->symbol
-    (string-downcase
-     (symbol->string sym))))
-
 % Immediate inclusion of files
 % Returns #t if file is found and #f if it is missing.
 % If the file is considered to have a language different from nederlands
@@ -107,63 +101,62 @@
 % predicates.
 registerPackage =
 #(define-void-function (package-name properties)(symbol? ly:context-mod?)
-   (let ((name (symbol->lowercase package-name)))
-     (if (option-registered? `(,package-name root))
-         (oll:warn "Package ~a already registered." package-name))
-     (let*
-      ((props (context-mod->props properties))
-       (meta-path `(,name meta)))
+   (if (option-registered? `(,package-name root))
+       (oll:warn "Package ~a already registered." package-name))
+   (let*
+    ((props (context-mod->props properties))
+     (meta-path `(,package-name meta)))
 
-      ;; check if all required options are present
-      ;; and satisfy the given predicates
-      (if (not
-           (require-props
-            (format "Register package ~a" package-name)
-            oll-lib-mandatory-options
-            properties))
-          (oll:error "Error registering package ~a. Please contact maintainer."
-            package-name))
+    ;; check if all required options are present
+    ;; and satisfy the given predicates
+    (if (not
+         (require-props
+          (format "Register package ~a" package-name)
+          oll-lib-mandatory-options
+          properties))
+        (oll:error "Error registering package ~a. Please contact maintainer."
+          package-name))
 
-      ;; determine package root directory
-      (setOption #t
-        `(,name root)
-        (os-path-dirname (location->normalized-path (*location*))))
+    ;; determine package root directory
+    (setOption #t
+      `(,package-name root)
+      (os-path-dirname (location->normalized-path (*location*))))
 
 
-      (registerOption meta-path '())
+    (registerOption meta-path '())
 
-      ;; process and store all options
-      ;; stop with error when facing an unknown option
-      ;; or a type check fails.
-      ;; while this is technically unimportant we want
-      ;; to "encourage" package maintainers to be correct
-      ;; about this.
-      (let
-       ((mandatory (map car oll-lib-mandatory-options))
-        (known (map car oll-lib-known-options)))
-       (for-each
-        (lambda (prop)
-          (let ((prop-key (car prop))
-                (prop-value (cdr prop)))
-            (if
-             (or (member prop-key mandatory)
-                 (and (member prop-key known)
-                      ((cdr (assq prop-key oll-lib-known-options)) prop-value)))
-             (setChildOption meta-path (car prop)(cdr prop))
-             (ly:error "Error in registration of package \"~a\".
+    ;; process and store all options
+    ;; stop with error when facing an unknown option
+    ;; or a type check fails.
+    ;; while this is technically unimportant we want
+    ;; to "encourage" package maintainers to be correct
+    ;; about this.
+    (let
+     ((mandatory (map car oll-lib-mandatory-options))
+      (known (map car oll-lib-known-options)))
+     (for-each
+      (lambda (prop)
+        (let ((prop-key (car prop))
+              (prop-value (cdr prop)))
+          (if
+           (or (member prop-key mandatory)
+               (and (member prop-key known)
+                    ((cdr (assq prop-key oll-lib-known-options)) prop-value)))
+           (setChildOption meta-path (car prop)(cdr prop))
+           (ly:error "Error in registration of package \"~a\".
 Unknown option \"~a\" or type mismatch: ~a.
 Please contact package maintainer(s)\n - ~a"
-               name prop-key prop-value
-               (let ((maintainers (assq-ref props 'maintainers)))
-                 (if (string? maintainers)
-                     maintainers
-                     (string-join maintainers "\n - "))
-                 )))))
-        props))
+             name prop-key prop-value
+             (let ((maintainers (assq-ref props 'maintainers)))
+               (if (string? maintainers)
+                   maintainers
+                   (string-join maintainers "\n - "))
+               )))))
+      props))
 
-      ;; print a confirmation of successful registration
-      (ly:message "\nPackage ~a @~a registered successfully.\n\n"
-        package-name (assq-ref props 'version)))))
+    ;; print a confirmation of successful registration
+    (ly:message "\nPackage ~a @~a registered successfully.\n\n"
+      package-name (assq-ref props 'version))))
 
 
 
@@ -183,8 +176,7 @@ Please contact package maintainer(s)\n - ~a"
 % then be loaded by \useModule.
 registerModule =
 #(define-void-function (path)(symbol-list?)
-   (let* ((path (map symbol->lowercase path))
-          (package (symbol->lowercase (car path)))
+   (let* ((package (car path))
           (module-path
            (append
             `(,package modules)
@@ -254,10 +246,6 @@ loadModule =
 loadPackage =
 #(define-void-function (options name)
    ((ly:context-mod?) symbol? )
-   (let*
-    ;; ensure the library name is lowercase
-    ((display-name name)
-     (name (symbol->lowercase name)))
     "Load an openLilyLib library and initialize it"
     (if (member name (getOption '(loaded-packages)))
         (ly:message "Package ~a already loaded. Skipping\n\n" name)
@@ -274,7 +262,7 @@ loadPackage =
          ;; Load package entry file
          ;; or issue a warning if it isn't found (presumably the start of numerous erros)
          (if (not (immediate-include package-file))
-             (oll:warn "No entry file found for package \"~a\"" display-name))
+             (oll:warn "No entry file found for package \"~a\"" name))
          (setOption '(loaded-packages)
            (append (getOption '(loaded-packages)) (list name)))
 
@@ -317,4 +305,4 @@ loadPackage =
                  modules))
                (else
                 (oll:warn "Wrong type for option \"modules\". Expected symbol, symbol-list or list.")))
-              ))))))
+              )))))
