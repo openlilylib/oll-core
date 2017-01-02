@@ -45,11 +45,28 @@
 %
 % #1: option path in list or dot notation.
 %     The first item should be the library name
-% #2: initial value
+% #2 (optional): type predicate
+%     If a predicate is given the given initial value must match.
+% #3: initial value
 %     If the user doesn't set the option explicitly this value is assumed
 registerOption =
-#(define-void-function (opt-path init)(symbol-list? scheme?)
-   (setAtree 'oll-options opt-path init ))
+#(define-scheme-function (opt-path pred init)(symbol-list? (procedure?) scheme?)
+   (let
+    ((init-val
+      (cond
+       ((not pred) init)
+       ((pred init) init)
+       (else
+        (begin
+         (oll:warn "Type mismatch for option ~a.
+  Expected predicate: ~a
+  Given: ~a
+  Using #f instead"
+           (string-join (map symbol->string opt-path) ".") pred init)
+         #f)))))
+    (setAtree 'oll-options opt-path init-val)
+    )
+   )
 
 % Convenience function to determine if an option is set.
 % can be used to avoid warnings when trying to access unregistered options.
@@ -122,7 +139,7 @@ getOption =
          ;; getAtree has returned #f
          (begin
           (oll:warn
-            "Trying to access non-existent option: ~a" (os-path-join-dots path))
+           "Trying to access non-existent option: ~a" (os-path-join-dots path))
           #f))))
 
 % Same as \getOption, but retrieving non-existing options returns
