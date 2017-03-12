@@ -12,7 +12,7 @@ allows to automatically run test suites every time there is a push to the
 repository. If any of the tests fail, then the owners of the repository will be
 notified.
 
-This directory contains a script (`simple_tests.py`) that recursively scans the
+This directory contains a script (`automated_tests.py`) that recursively scans the
 OpenLilyLib directory tree, looking for test cases. These test files are then
 compiled with a configurable version of LilyPond. If the compilation exits with
 a non-zero exit status, then the test is considered failed.
@@ -69,12 +69,12 @@ problems specific to different LilyPond versions can be spotted in one go.
 Running locally
 ---------------
 
-The tests as specified by `simple_tests.py` can also be run locally, by issuing
+The tests as specified by `automated_tests.py` can also be run locally, by issuing
 the following command (for Unix-like systems). The testing script will use
 whatever version of LilyPond the command `lilypond` points to.
 
 ```
-test/simple_tests.py
+test/automated_tests.py
 ```
 
 that will run the tests using whatever LilyPond version the command `lilypond`
