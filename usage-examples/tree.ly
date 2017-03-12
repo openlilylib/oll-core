@@ -1,5 +1,5 @@
 \version "2.19.38"
-\include "package.ily"
+\include "oll-core.ily"
 
 #(use-modules (oll-core scheme tree))
 
