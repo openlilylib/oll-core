@@ -4,4 +4,4 @@
 *.eps
 *.log
 *.midi
-*.pyc
+/test/*.pyc
