@@ -32,7 +32,7 @@
 
 \version "2.19.22"
 
-\include "../oll-core.ily"
+\include "oll-core/package.ily"
 
 % Use the module from oll-core
 #(use-modules (oll-core scheme stack))
