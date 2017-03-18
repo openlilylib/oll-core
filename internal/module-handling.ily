@@ -292,7 +292,11 @@ loadPackage =
                ((string? modules)
                 (loadModule (list name (string->symbol modules))))
                ((symbol-list? modules)
-                (loadModule (append (list name) modules)))
+                (for-each
+                 (lambda (module)
+                   (loadModule (list name module)))
+                modules))
+             ;; Do we need the following?
                ((list? modules)
                 (for-each
                  (lambda (module)
