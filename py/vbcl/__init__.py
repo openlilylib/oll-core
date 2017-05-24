@@ -14,6 +14,23 @@ long_text_end = re.compile(r"^  >")
 list_items_start = re.compile(r"^(.*): \[")
 list_items_end = re.compile(r"^  \]")
 
+defaults = {
+    'name': 'NN',
+    'display-name': 'NN',
+    'short-description': 'No short description available',
+    'description': 'No description available',
+    'dependencies': [],
+    'oll-core': '0.0.0',
+    'maintainers': [],
+    'version': '0.0.0',
+    'license': 'None'
+}
+
+def set_defaults(d):
+    """Ensure mandatory properties are set to 'empty' values."""
+    for key in defaults:
+        d[key] = d.get(key, defaults[key])
+    return d
 
 def parse(lines):
     """Returns a dictionary corresponding to a parsed VBCL string list."""
@@ -54,13 +71,15 @@ def parse(lines):
                     m = nv_pair.search(lines[i])
                     if m:
                         d[m.group(1).strip()] = m.group(2).strip()
-    return d
+    cfg = set_defaults(d)
+    return cfg
     
 def parse_file(filename):
     """Returns a dictionary corresponding to a parsed VBCL config file."""
 
     with open(filename) as f:
-        return parse(f.read().split('\n'))
+        cfg_dict = parse(f.read().split('\n'))
+        return cfg_dict
     f.close()
             
      
