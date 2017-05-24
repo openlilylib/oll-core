@@ -6,19 +6,19 @@
 
 import re
 
+# compile the match patterns
+comment = re.compile(r"^#")
+nv_pair = re.compile(r"^(.*): (.*)$")
+long_text_start = re.compile(r"^(.*): <")
+long_text_end = re.compile(r"^  >")
+list_items_start = re.compile(r"^(.*): \[")
+list_items_end = re.compile(r"^  \]")
+
 
 def parse_file(file):
     """Returns a dictionary corresponding to a parsed VBCL config file."""
 
     d = dict()
-    
-    # compile the match patterns
-    comment = re.compile(r"^#")
-    nv_pair = re.compile(r"^(.*): (.*)$")
-    long_text_start = re.compile(r"^(.*): <")
-    long_text_end = re.compile(r"^  >")
-    list_items_start = re.compile(r"^(.*): \[")
-    list_items_end = re.compile(r"^  \]")
     
     with open(file) as f:
         for line in f:
