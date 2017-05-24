@@ -19,47 +19,39 @@ def parse(lines):
     """Returns a dictionary corresponding to a parsed VBCL string list."""
     d = {}
     i = -1
-    k = -1
-    
-    for line in lines:
+    line_count = len(lines)
+
+    while i < line_count - 1:
         i += 1
-        if k > i:
-            continue
 
         # comments - discard
-        if comment.search(line):
+        if comment.search(lines[i]):
             continue
         else:
             # long text
-            m = long_text_start.search(line)
+            m = long_text_start.search(lines[i])
             if m:
-                j = -1
-                text = str()
-                for line in lines[i+1:]:
-                    j += 1
-                    if long_text_end.search(line):
-                        d[m.group(1)] = text.strip('\n')
-                        k = i + j
-                        break
-                    text += line.strip(' ') + ' ' # add only a single space
+                text = []
+                i += 1
+                while not (i == line_count or  long_text_end.search(lines[i])):
+                    text.append(lines[i].strip())
+                    i += 1
+                d[m.group(1)] = ' '.join(text)
                 continue
             else:
                 # list
-                m = list_items_start.search(line)
+                m = list_items_start.search(lines[i])
                 if m:
-                    j = -1
-                    items = list()
-                    for line in lines[i+1:]:
-                        j += 1
-                        if list_items_end.search(line):
-                            d[m.group(1)] = items
-                            k = i + j
-                            break
-                        items.append(line.strip(' \n'))
+                    items = []
+                    i += 1
+                    while not (i == line_count or list_items_end.search(lines[i])):
+                        items.append(lines[i].strip())
+                        i += 1
+                    d[m.group(1)] = items
                     continue
                 else:
                     # name value pair
-                    m = nv_pair.search(line)
+                    m = nv_pair.search(lines[i])
                     if m:
                         d[m.group(1).strip()] = m.group(2).strip()
     return d
