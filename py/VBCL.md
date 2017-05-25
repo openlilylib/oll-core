@@ -38,9 +38,9 @@ Nested lists are not supported at this time.
 
 
 >name: [  
- item1  
- item2  
- ...  
+&nbsp;&nbsp;item1  
+&nbsp;&nbsp;item2  
+&nbsp;&nbsp;...  
  ]
 
 ### Author
