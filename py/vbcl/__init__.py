@@ -50,32 +50,26 @@ def parse(lines):
                 m = long_text_start.search(line)
                 if m:
                     text = str()
-                    try:
-                        while True:
-                            line = next(it)
-                            if long_text_end.search(line):
-                                d[m.group(1)] = text.strip('\n')
-                                break
-                            text += (line.strip(' '))
-                            text += '\n'
-                            continue
-                    except StopIteration:
-                        pass
+                    while True:
+                        line = next(it)
+                        if long_text_end.search(line):
+                            d[m.group(1)] = text.strip('\n')
+                            break
+                        text += (line.strip(' '))
+                        text += '\n'
+                        continue
                 else:
                     # list
                     m = list_items_start.search(line)
                     if m:
                         items = list()
-                        try:
-                            while True:
-                                line = next(it)
-                                if list_items_end.search(line):
-                                    d[m.group(1)] = items
-                                    break
-                                items.append(line.strip(' \n'))
-                                continue
-                        except StopIteration:
-                            pass
+                        while True:
+                            line = next(it)
+                            if list_items_end.search(line):
+                                d[m.group(1)] = items
+                                break
+                            items.append(line.strip(' \n'))
+                            continue
                     else:
                         # name value pair
                         m = nv_pair.search(line)
