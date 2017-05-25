@@ -26,60 +26,71 @@ defaults = {
     'license': 'None'
 }
 
+
 def set_defaults(d):
     """Ensure mandatory properties are set to 'empty' values."""
     for key in defaults:
         d[key] = d.get(key, defaults[key])
     return d
 
+
 def parse(lines):
     """Returns a dictionary corresponding to a parsed VBCL string list."""
-    d = {}
-    i = -1
-    line_count = len(lines)
+    d = dict()
+    it = iter(lines)
 
-    while i < line_count - 1:
-        i += 1
-
-        # comments - discard
-        if comment.search(lines[i]):
-            continue
-        else:
-            # long text
-            m = long_text_start.search(lines[i])
-            if m:
-                text = []
-                i += 1
-                while not (i == line_count or  long_text_end.search(lines[i])):
-                    text.append(lines[i].strip())
-                    i += 1
-                d[m.group(1)] = ' '.join(text)
+    try:
+        while True:
+            line = next(it)
+            # comments - discard
+            if comment.search(line):
                 continue
             else:
-                # list
-                m = list_items_start.search(lines[i])
+                # long text
+                m = long_text_start.search(line)
                 if m:
-                    items = []
-                    i += 1
-                    while not (i == line_count or list_items_end.search(lines[i])):
-                        items.append(lines[i].strip())
-                        i += 1
-                    d[m.group(1)] = items
-                    continue
+                    text = str()
+                    try:
+                        while True:
+                            line = next(it)
+                            if long_text_end.search(line):
+                                d[m.group(1)] = text.strip('\n')
+                                break
+                            text += (line.strip(' '))
+                            text += '\n'
+                            continue
+                    except StopIteration:
+                        pass
                 else:
-                    # name value pair
-                    m = nv_pair.search(lines[i])
+                    # list
+                    m = list_items_start.search(line)
                     if m:
-                        d[m.group(1).strip()] = m.group(2).strip()
+                        items = list()
+                        try:
+                            while True:
+                                line = next(it)
+                                if list_items_end.search(line):
+                                    d[m.group(1)] = items
+                                    break
+                                items.append(line.strip(' \n'))
+                                continue
+                        except StopIteration:
+                            pass
+                    else:
+                        # name value pair
+                        m = nv_pair.search(line)
+                        if m:
+                            d[m.group(1).strip()] = m.group(2).strip()
+    except StopIteration:
+        pass
+
     cfg = set_defaults(d)
     return cfg
-    
+
+
 def parse_file(filename):
     """Returns a dictionary corresponding to a parsed VBCL config file."""
 
     with open(filename) as f:
         cfg_dict = parse(f.read().split('\n'))
         return cfg_dict
-    f.close()
-            
-     
