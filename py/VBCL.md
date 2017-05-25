@@ -2,7 +2,7 @@
 
 # VBCL - The Very Basic Configuration Language
 
-VBCL has been created to use as a configuration file language with a high degree of simplicity. It supports name value pairs at the same time as supporting list and long text description types. By providing the ability to specify types, VBCL is a step above INI files and other simple configuration file formats. But VBCL is not intended to be as sophisticated as JSON or YAML. The reason for creating yet another configuration file format is to have something that can be very easily parsed with Scheme as provided by Guile 1.8, for lilypond, and equally simply parsed with Python 3, for Frescobaldi, for example. This file format can be trivially parsed with simple regular expression parsers where more advanced parsing machinery is lacking (in Guile 1.8 in particular).
+VBCL has been created to use as a configuration file language with a high degree of simplicity. It supports name value pairs at the same time as supporting list and long text description types. By providing the ability to specify types, VBCL is a step above INI files and other simple configuration file formats. But VBCL is not intended to be as sophisticated as JSON or YAML or even TOML. The reason for creating yet another configuration file format is to have something that can be very easily parsed with Scheme as provided by Guile 1.8, for lilypond, and equally simply parsed with Python 3, for Frescobaldi, for example. This file format can be trivially parsed with simple regular expression parsers where more advanced parsing machinery is lacking (in Guile 1.8 in particular).
 
 ### Format
 
@@ -32,7 +32,7 @@ Long text lines can be used. The concept is that paragraph style text can be use
 &nbsp;&nbsp;>  
 
 #### Lists
-Arbitrary lists can be specified. Note that list items will be parsed as strings. If numerical types are needed that is up to the program calling the parser to do.
+Arbitrary lists can be specified. Note that list items will be parsed as strings. If numerical types are needed that is up to the program calling the parser to do. List entries consists of a name followed by a ':' followed by the list start marker '[. There is one list item per line, which must be indented with whitespace. The list end marker is ']' on a separate line, indented by whitespace. List items are text of arbitrary length, on a single line.
 
 
 >name: [  
