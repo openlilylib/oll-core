@@ -8,10 +8,10 @@ import re
 
 # compile the match patterns
 comment = re.compile(r"^#")
-nv_pair = re.compile(r"^(.*): (.*)$")
-long_text_start = re.compile(r"^(.*): <")
+nv_pair = re.compile(r"^(.*):\s+(.*)$")
+long_text_start = re.compile(r"^(.*):\s+<")
 long_text_end = re.compile(r"^\s*>")
-list_items_start = re.compile(r"^(.*): \[")
+list_items_start = re.compile(r"^(.*):\s+\[")
 list_items_end = re.compile(r"^\s*\]")
 
 defaults = {
