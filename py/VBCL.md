@@ -38,7 +38,7 @@ Arbitrary lists can be specified. Note that list items will be parsed as strings
 >name: [  
  item1  
  item2  
- ...
+ ...  
  ]
 
 ### Author
