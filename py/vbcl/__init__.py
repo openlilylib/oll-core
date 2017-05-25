@@ -10,9 +10,9 @@ import re
 comment = re.compile(r"^#")
 nv_pair = re.compile(r"^(.*): (.*)$")
 long_text_start = re.compile(r"^(.*): <")
-long_text_end = re.compile(r"^  >")
+long_text_end = re.compile(r"^\s*>")
 list_items_start = re.compile(r"^(.*): \[")
-list_items_end = re.compile(r"^  \]")
+list_items_end = re.compile(r"^\s*\]")
 
 defaults = {
     'name': 'NN',
