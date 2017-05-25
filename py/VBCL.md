@@ -6,38 +6,41 @@ VBCL has been created to use as a configuration file language with a high degree
 
 ### Format
 
+Blank lines are ignored. Do not forget there needs to be a newline at the end of the file.
+
 #### Comments
+Lines beginning with # are discarded.
+
+> \# comment ...
 
 #### Name Value Pairs
+Name value pairs consist of a name followed by a ':' followed by a value. Name and value may be arbitrary text. The pair may only occupy a single line. There is no line continuation syntax for this type.
 
-#### Lists
+>name: value
 
 #### Long Text Lines
+Long text lines can be used. The concept is that paragraph style text can be used and the newlines will be preserved in the parsed content. Such lines use a start marker '<' after a name, and an end marker '>' on a line by itself. Text lines must be indented with whitespace.
 
-name value pairs, arbitrary text including whitespace, single line.
 
-n: v
 
-long text, text lines to be started with whitespace indent, e.g. two spaces.
-terminate with '  >'
+>long-text: <  
+&nbsp;&nbsp;Lorem ipsum dolor sit amet, consectetur adipiscing elit.  
+&nbsp;&nbsp;Nulla interdum mattis tellus. Donec vehicula eros eget neque   
+&nbsp;&nbsp;volutpat consequat. Vestibulum imperdiet non metus mattis  
+&nbsp;&nbsp;auctor. Proin vitae neque purus.  
+&nbsp;&nbsp;...  
+&nbsp;&nbsp;>  
 
-name: <
- long text over as many lines as needed
+#### Lists
+Arbitrary lists can be specified. Note that list items will be parsed as strings. If numerical types are needed that is up to the program calling the parser to do.
+
+
+>name: [  
+ item1  
+ item2  
  ...
- >
-
-comments.
-
-lists: any number of lines, two spaces at start of each item line.
-terminate with '  ]'.
-
-name: [
- item1
- item2
  ]
 
-lines starting with are ignored
-
-blank lines are ignored
-
-Do not forget there needs to be a newline at the end of the file.
+### Author
+Andrew Bernard  
+andrew.bernard@gmail.com
