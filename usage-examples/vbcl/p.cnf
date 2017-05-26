@@ -27,7 +27,7 @@
 #  item1
 #  item2
 #  ]
-#  
+#
 # # lines starting with # are ignored
 #
 # blank lines are ignored
@@ -46,11 +46,11 @@ description: <
   To be done.
   In multiline strings.
   >
-dependencies: <
+dependencies: [
   first one
   second one
   third one
-  >
+  ]
 junk: 1
 oll-core: 0.5.0
 maintainers: [
