@@ -32,7 +32,7 @@ Block comments are not supported.
 
 #### Name Value Pairs
 Name value pairs consist of a name followed by a ':' followed by whitespace
-followed by a value. Both Name and value may be arbitrary text. The pair may
+followed by a value. Both name and value may be arbitrary text. The pair may
 only occupy a single line. There is no line continuation syntax for this type.
 
 >name: value
@@ -56,7 +56,7 @@ auctor. Proin vitae neque purus.
 Arbitrary lists can be specified. Note that list items will be parsed as
 strings. If numerical types are needed that is up to the program calling the
 parser to do. List entries consists of a name followed by a ':' followed by
-whitespace followed by the list start marker '[. There is one list item per
+whitespace followed by the list start marker '['. There is one list item per
 line, which may be indented with optional whitespace, which should be stripped
 by the parser. The list end marker is ']' on a separate line, preceded by
 optional whitespace. List items are text of arbitrary length, each on a single
