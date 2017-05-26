@@ -20,7 +20,9 @@ second one
 third one
 ]
 
+# spurious entries such as the next parsed but can be ignored.
 junk: 1
+
 oll-core: 0.5.0
 maintainers: [
 Klaus Blum <BenBigNoise@gmx.de>
@@ -30,5 +32,4 @@ Urs Liska <ul@openlilylib.org>
 version: 0.0.1
 license: GPL3
 repository: https://github.com/openlilylib/analysis/
-trash:	    22
 
