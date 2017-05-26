@@ -45,7 +45,7 @@
 		#t)
 	       
 	       ;; long text
-	       ((matcher "(^[ \t]*(.*):[ \t]*<)" elem)
+	       ((matcher "(^[[:space:]]*(.*):[[:space:]]*<)" elem)
 		;; inner loop
 		;; put the pair in the alist. the data is a string of lines.
 		(set! result
@@ -55,7 +55,7 @@
 		       result)))
 
 	       ;; lists
-	       ((matcher "((.*):[ \t]*\\[)" elem)
+	       ((matcher "(^[[:space:]]*(.*):[[:space:]]*\\[)" elem)
 	       	;;put the pair in the alist. the data is a vector.
 	       	(set! result (cons
 	       		      (cons
@@ -64,7 +64,7 @@
 	       		       result)))
 
 	       ;; name value pairs
-	       ((matcher  "^(.*): (.*)" elem)
+	       ((matcher  "^[[:space:]]*(.*):[[:space:]]+([[:alnum:]:/\\.]+)" elem)
 		;;put the pair in the alist.
 		(set! result (cons
 			      (cons
@@ -97,7 +97,7 @@
 
       ;; main code body
       (let lp ((elem (iter)))
-	(if (matcher "^[ \t]*>" elem)
+	(if (matcher "^[[:space:]]*>" elem)
 	    data
 	    (begin
 	       (set! data (string-append data elem))
@@ -123,7 +123,7 @@
 
       ;; main code body
       (let lp ((elem (iter)))
-	(if (matcher "^[ \t]*]" elem)
+	(if (matcher "^[[:space:]]*]" elem)
 	    (reverse result)
 	    (begin
 	      (set! result (cons (string-trim-right elem) result))
