@@ -2,10 +2,10 @@
 
 (use-modules (oll-core scheme vbcl))
 
-
 (define main
   (lambda ()
-    (let ((cfg (parse-vbcl-config "p.cnf")))
+    (let* ((lines (file->list "package.cnf"))
+	   (cfg (parse-vbcl-config lines)))
       (format #t "config alist:\n")
       (format #t "=================================================\n")
       (format #t "~a\n\n" cfg)
@@ -14,9 +14,10 @@
       (format #t "=================================================\n")
       (format #t "name: ~a\n" (assoc-ref cfg "name"))
       (format #t "display name: ~a\n" (assoc-ref cfg "display-name"))
-      (format #t "short description: ~a\n\n" (assoc-ref cfg "short-description"))
-      (format #t "description: ~a\n\n" (assoc-ref cfg "description"))
-      (format #t "dependencies: ~a\n\n" (assoc-ref cfg "dependencies"))
+      (format #t "short description:\n~a\n" (assoc-ref cfg "short-description"))
+      (format #t "description:\n~a\n" (assoc-ref cfg "description"))
+      (format #t "dependencies:\n")
+      (vector-display (assoc-ref cfg "dependencies"))
       (format #t "oll-core: ~a\n" (assoc-ref cfg "oll-core"))
       (format #t "maintainers:\n")
       (vector-display (assoc-ref cfg "maintainers"))

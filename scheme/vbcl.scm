@@ -7,24 +7,25 @@
 ;; for guile 1.8
 
 (define-module (oll-core scheme vbcl))
-(export parse-vbcl-config)
+(export
+ parse-vbcl-config
+ file->list)
 
 (use-modules (ice-9 regex))
 (use-modules (ice-9 rdelim))
 (use-modules (srfi srfi-1))
-;;(use-modules (local control))
+(use-modules (oll-core scheme iterator))
 
 
-;; parse config file.
+;; parse VBCL config file.
 ;; return an alist of settings.
 
 (define parse-vbcl-config
-  (lambda (file)
-    (let ((h (open-input-file file)) ; state vars
-	  (m #f)
+  (lambda (lines)
+    (let ((m #f)
 	  (result '())
-	  (done #f))
-
+	  (iter (list-iter lines)))
+      
       ;; helper functions
       (define matcher
 	(lambda (pat line)
@@ -32,65 +33,61 @@
 	  (if m #t #f)))
 
       ;; main code body
-      (let lp ((line (read-a-line h)))
-	(if (eof-object? (peek-char h))
+      (let outer-lp ((elem (iter)))
+	(if (equal? 'list-ended elem)
 	    (begin
 	      ;; done
-	      (close-input-port h)
 	      result)
 	    (begin
 	      (cond
 	       ;; comments
-	       ((matcher "^#" line)
+	       ((matcher "^#" elem)
 		#t)
 	       
 	       ;; long text
-	       ((matcher "((.*): <)" line)
+	       ((matcher "(^[ \t]*(.*):[ \t]*<)" elem)
+		;; inner loop
 		;; put the pair in the alist. the data is a string of lines.
-		(set! result (cons
-			      (cons
-			       (string-trim-right (match:substring m 2))
-			       (parse-long-textline-entries h))
-			      result)))
+		(set! result
+		      (cons
+		       (cons (string-trim-right (match:substring m 2))
+			     (parse-long-textline-entries iter))
+		       result)))
 
 	       ;; lists
-	       ((matcher "((.*): \\[)" line)
-		;; put the pair in the alist. the data is a vector.
-		(set! result (cons
-			      (cons
-			       (string-trim-right (match:substring m 2))
-			       (list->vector (parse-list-entries h)))
-			      result)))
+	       ((matcher "((.*):[ \t]*\\[)" elem)
+	       	;;put the pair in the alist. the data is a vector.
+	       	(set! result (cons
+	       		      (cons
+	       		       (string-trim-right (match:substring m 2))
+	       		       (list->vector (parse-list-entries iter)))
+	       		       result)))
 
 	       ;; name value pairs
-	       ((matcher  "^[ \t]*(.*): (.*)" line)
-		;; put the pair in the alist
+	       ((matcher  "^(.*): (.*)" elem)
+		;;put the pair in the alist.
 		(set! result (cons
 			      (cons
 			       (string-trim-right (match:substring m 1))
 			       (string-trim-right (match:substring m 2)))
 			      result)))
-	       ) ; cond
-	      
-	      (lp (read-a-line h))
-	      ) ; begin
-
-	    )))))
+	       )
+	      (outer-lp (iter))
+	      ))))))
 
 ;; inner loop processing, most easily isolated using functions
 
 (define parse-long-textline-entries
-  (lambda (h)
+  (lambda (iter)
 
     ;; return string of lines until end condition found - the delimiter
-    ;; for the type of object.  e.g. > or ]
+    ;; for this type of object: '>'.
 
     ;; needs to be a separate function to avoid altering the state in
     ;; the context from which it is run.
 
-    (let* ((m #f) 
-	   (data "")
-	   (line (read-a-line h)))
+    (let ((m #f) 
+	   (data ""))
 
       ;; helper
       (define matcher
@@ -99,31 +96,24 @@
 	  (if m #t #f)))
 
       ;; main code body
-      (while #t
-	     (cond
-	      ((matcher "^[ \t]*>" line)
-	       (break))
-
-	      ((matcher "^  (.*)$" line)
-	       (set! data (string-append data "\n" (match:substring m 1))))
-	      )
-	     (set! line (read-a-line h))
-	     ) ; while
-      data
-      )))
+      (let lp ((elem (iter)))
+	(if (matcher "^[ \t]*>" elem)
+	    data
+	    (begin
+	       (set! data (string-append data elem))
+	      (lp (iter))))))))
 
 (define parse-list-entries
-  (lambda (h)
+  (lambda (iter)
 
     ;; return list of lines until end condition found - the delimiter
-    ;; for the type of object.  e.g. > or ]
+    ;; for this type of object: ']'.
 
     ;; needs to be a separate function to avoid altering the state in
     ;; the context from which it is run.
     
     (let* ((m #f)
-	   (result '())
-	   (line (read-a-line h)))
+	   (result '()))
 
       ;; helper
       (define matcher
@@ -132,27 +122,22 @@
 	  (if m #t #f)))
 
       ;; main code body
-      (while #t
-	     (cond
-	      ((matcher "^[ \t]*]" line)
-	       (break))
+      (let lp ((elem (iter)))
+	(if (matcher "^[ \t]*]" elem)
+	    (reverse result)
+	    (begin
+	      (set! result (cons (string-trim-right elem) result))
+	      (lp (iter))))))))
 
-	      ((matcher "^  (.*)$" line)
-	       (set! result (cons (match:substring m 1) result)))
-	      )
-	     (set! line (read-a-line h))
-	     ) ; while
-      result
-      )))
-
-;; read line char at a time
-;; (because read-line seems to have strange issues, or maybe not!)
-(define read-a-line
-  (lambda (p)
-    (let lp ((c (read-char p))
-	     (buf '()))
-      (if (or (eof-object? c) (eqv? #\nl c))
-	  (list->string (reverse buf))
-	  (begin
-	    (lp (read-char p) (cons c buf)))))))
+;; read a file as a list of lines
+(define file->list
+  (lambda (file)
+      (let ((h (open-input-file file))
+	    (lines '()))
+	(let lp ((line (read-line h 'concat)))
+	  (if (eof-object? line)
+	      (reverse lines)
+	      (begin
+		(set! lines (cons line lines))
+		(lp (read-line h 'concat))))))))
 
