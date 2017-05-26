@@ -10,12 +10,12 @@
   (lambda (lis)
     (define iter
       (lambda ()
-        (call-with-current-continuation control-state)))
+        (call/cc control-state)))
     (define control-state
       (lambda (return)
         (for-each
 	 (lambda (element)
-	   (set! return (call-with-current-continuation
+	   (set! return (call/cc
 			 (lambda (resume-here)
 			   (set! control-state resume-here)
 			   (return element)))))
