@@ -3,6 +3,7 @@
 ;; Andrew Bernard 2017
 
 (define-module (oll-core scheme iterator))
+(export list-iter)
 
 ;; list iterator
 (define list-iter
