@@ -12,7 +12,7 @@
        (for-each (lambda (x) (format #t "- ~a\n" x)) l))))
 
 #(let
-  ((cfg (parse-vbcl-config "vbcl/p.cnf")))
+  ((cfg (parse-vbcl-config (file->list "vbcl/p.cnf"))))
   (format #t "config alist:\n")
   (format #t "=================================================\n")
   (pretty-print cfg)
