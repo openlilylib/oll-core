@@ -11,8 +11,11 @@
      (let ((l (vector->list v)))
        (for-each (lambda (x) (format #t "- ~a\n" x)) l))))
 
-#(let
-  ((cfg (parse-vbcl-config (file->list "vbcl/p.cnf"))))
+#(let*
+  ((cfg-lines (file->list "vbcl/packaged.cnf")))
+  (if cfg-lines
+      (let ((cfg (parse-vbcl-config cfg-lines)))
+   
   (format #t "config alist:\n")
   (format #t "=================================================\n")
   (pretty-print cfg)
@@ -32,4 +35,5 @@
   (format #t "license: ~a\n" (assoc-ref cfg "license"))
   (format #t "repository: ~a\n" (assoc-ref cfg "repository"))
   )
+      (format #t "Config file not found\n")))
 
