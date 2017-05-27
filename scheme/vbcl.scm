@@ -132,6 +132,7 @@
 ;; read a file as a list of lines
 (define file->list
   (lambda (file)
+    (if (file-exists? file)
       (let ((h (open-input-file file))
 	    (lines '()))
 	(let lp ((line (read-line h 'concat)))
@@ -139,5 +140,6 @@
 	      (reverse lines)
 	      (begin
 		(set! lines (cons line lines))
-		(lp (read-line h 'concat))))))))
+		(lp (read-line h 'concat))))))
+      #f)))
 

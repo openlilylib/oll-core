@@ -27,6 +27,9 @@
 
 % Provides functions for loading/handling submodules of a package
 
+% Parser for VBCL config files
+#(use-modules (oll-core scheme vbcl))
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Helper functions
 
@@ -246,63 +249,65 @@ loadModule =
 loadPackage =
 #(define-void-function (options name)
    ((ly:context-mod?) symbol? )
-    "Load an openLilyLib library and initialize it"
-    (if (member name (getOption '(loaded-packages)))
-        (ly:message "Package ~a already loaded. Skipping\n\n" name)
-        ;; Load package if not already loaded
-        (let*
-         ((package-root (append openlilylib-root (list name)))
-          (package-file
-           (format "~a/package.ily"
-             (os-path-join-unix package-root))))
+   "Load an openLilyLib library and initialize it"
+   (if (member name (getOption '(loaded-packages)))
+       (ly:message "Package ~a already loaded. Skipping\n\n" name)
+       ;; Load package if not already loaded
+       (let*
+        ((package-root (append openlilylib-root (list name)))
+         (package-file
+          (format "~a/package.ily" (os-path-join-unix package-root)))
+         (cfg (vbcl-parse-config
+               (format "~a/package.cnf" (os-path-join-unix package-root))))
+         )
 
-         ;; Create a root option for the library
-         (registerOption (list name) '())
+        ;; Create a root option for the library
+        (registerOption (list name) '())
 
-         ;; Load package entry file
-         ;; or issue a warning if it isn't found (presumably the start of numerous erros)
-         (if (not (immediate-include package-file))
-             (oll:warn "No entry file found for package \"~a\"" name))
-         (setOption '(loaded-packages)
-           (append (getOption '(loaded-packages)) (list name)))
+        ;; Load package entry file
+        ;; or issue a warning if it isn't found (presumably the start of numerous erros)
+        (if (not (immediate-include package-file))
+            (oll:warn "No entry file found for package \"~a\"" name))
+        (setOption '(loaded-packages)
+          (append (getOption '(loaded-packages)) (list name)))
 
-         ;; Set package options if given
-         (if options
-             (let*
-              ((option-path (list name))
-               (options (context-mod->props options))
-               (modules (assq-ref options 'modules)))
-              (for-each
+        ;; Set package options if given
+        (if options
+            (let*
+             ((option-path (list name))
+              (options (context-mod->props options))
+              (modules (assq-ref options 'modules)))
+             (for-each
+              (lambda (opt)
+                (let
+                 ((option-path (append option-path (list (car opt))))
+                  (option-value (cdr opt)))
+                 (if (option-registered? option-path)
+                     (setOption option-path option-value)
+                     (oll:warn "Trying to set unregistered option ~a to ~a."
+                       (os-path-join-dots option-path) option-value))))
+              (filter
                (lambda (opt)
-                 (let
-                  ((option-path (append option-path (list (car opt))))
-                   (option-value (cdr opt)))
-                  (if (option-registered? option-path)
-                      (setOption option-path option-value)
-                      (oll:warn "Trying to set unregistered option ~a to ~a."
-                        (os-path-join-dots option-path) option-value))))
-               (filter
-                (lambda (opt)
-                  (not (eq? 'modules (car opt))))
-                options))
-              ;; load modules if given as option
-              ;; A single module can be given or a list of modules.
-              ;; In this each module can be given as symbol or as a symbol list
-              (cond
-               ((string? modules)
-                (loadModule (list name (string->symbol modules))))
-               ((symbol-list? modules)
-                (loadModule (append (list name) modules)))
-               ((list? modules)
-                (for-each
-                 (lambda (module)
-                   (cond
-                    ((symbol? module)
-                     (loadModule (list name module)))
-                    ((symbol-list? module)
-                     (loadModule
-                      (append (list name) module)))))
-                 modules))
-               (else
-                (oll:warn "Wrong type for option \"modules\". Expected symbol, symbol-list or list.")))
-              )))))
+                 (not (eq? 'modules (car opt))))
+               options))
+             ;; load modules if given as option
+             ;; A single module can be given or a list of modules.
+             ;; In this each module can be given as symbol or as a symbol list
+             (cond
+              ((string? modules)
+               (loadModule (list name (string->symbol modules))))
+              ((symbol-list? modules)
+               (loadModule (append (list name) modules)))
+              ((list? modules)
+               (for-each
+                (lambda (module)
+                  (cond
+                   ((symbol? module)
+                    (loadModule (list name module)))
+                   ((symbol-list? module)
+                    (loadModule
+                     (append (list name) module)))))
+                modules))
+              (else
+               (oll:warn "Wrong type for option \"modules\". Expected symbol, symbol-list or list.")))
+             )))))
