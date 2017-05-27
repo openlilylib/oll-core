@@ -64,7 +64,7 @@
 	       		       result)))
 
 	       ;; name value pairs
-	       ((matcher  "^[[:space:]]*(.*):[[:space:]]+([[:alnum:]:/\\.]+)" elem)
+	       ((matcher  "^[[:space:]]*(.*):[[:space:]]+([^[:space:]]+)" elem)
 		;;put the pair in the alist.
 		(set! result (cons
 			      (cons
