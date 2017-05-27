@@ -31,3 +31,5 @@
   (lambda (v)
     (let ((l (vector->list v)))
       (for-each (lambda (x) (format #t "- ~a\n" x)) l))))
+
+(main)
