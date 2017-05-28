@@ -28,23 +28,13 @@
 % Provides functions for loading/handling submodules of a package
 
 % Parser for VBCL config files
-#(use-modules (oll-core scheme vbcl))
+#(use-modules
+  (oll-core scheme vbcl)
+  (oll-core scheme file-handling))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Helper functions
 
-% Immediate inclusion of files
-% Returns #t if file is found and #f if it is missing.
-% If the file is considered to have a language different from nederlands
-% it must be given at the beginning of the file
-#(define (immediate-include file)
-   (if (file-exists? file)
-       (let ((parser (ly:parser-clone)))
-         (ly:parser-parse-string parser "\\language \"nederlands\"")
-         (ly:parser-parse-string parser
-           (format "\\include \"~a\"" file))
-         #t)
-       #f))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Predicates for type-checking of library options
@@ -257,8 +247,9 @@ loadPackage =
         ((package-root (append openlilylib-root (list name)))
          (package-file
           (format "~a/package.ily" (os-path-join-unix package-root)))
-         (cfg (vbcl-parse-config
-               (format "~a/package.cnf" (os-path-join-unix package-root))))
+         (cfg (parse-vbcl-config
+               (file->list
+               (format "~a/package.cnf" (os-path-join-unix package-root)))))
          )
 
         ;; Create a root option for the library
