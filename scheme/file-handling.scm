@@ -31,9 +31,11 @@
 (define-module (oll-core scheme file-handling))
 (export
  immediate-include
+ read-lines-from-file
  )
 
 (use-modules (lily))
+(use-modules (ice-9 rdelim))
 
 ;; Immediate inclusion of files
 ;; Returns #t if file is found and #f if it is missing.
@@ -47,3 +49,18 @@
           (format "\\include \"~a\"" file))
         #t)
       #f))
+
+;; read a file as a list of lines
+(define read-lines-from-file
+  (lambda (file)
+    (if (file-exists? file)
+      (let ((h (open-input-file file))
+	    (lines '()))
+	(let lp ((line (read-line h 'concat)))
+	  (if (eof-object? line)
+	      (reverse lines)
+	      (begin
+		(set! lines (cons line lines))
+		(lp (read-line h 'concat))))))
+      #f)))
+

@@ -8,8 +8,7 @@
 
 (define-module (oll-core scheme vbcl))
 (export
- parse-vbcl-config
- file->list)
+ parse-vbcl-config)
 
 (use-modules (ice-9 regex))
 (use-modules (ice-9 rdelim))
@@ -25,7 +24,7 @@
     (let ((m #f)
 	  (result '())
 	  (iter (list-iter lines)))
-      
+
       ;; helper functions
       (define matcher
 	(lambda (pat line)
@@ -43,7 +42,7 @@
 	       ;; comments
 	       ((matcher "^#" elem)
 		#t)
-	       
+
 	       ;; long text
 	       ((matcher "(^[[:space:]]*(.*):[[:space:]]*<)" elem)
 		;; inner loop
@@ -86,7 +85,7 @@
     ;; needs to be a separate function to avoid altering the state in
     ;; the context from which it is run.
 
-    (let ((m #f) 
+    (let ((m #f)
 	   (data ""))
 
       ;; helper
@@ -111,7 +110,7 @@
 
     ;; needs to be a separate function to avoid altering the state in
     ;; the context from which it is run.
-    
+
     (let* ((m #f)
 	   (result '()))
 
@@ -128,18 +127,3 @@
 	    (begin
 	      (set! result (cons (string-trim-right elem) result))
 	      (lp (iter))))))))
-
-;; read a file as a list of lines
-(define file->list
-  (lambda (file)
-    (if (file-exists? file)
-      (let ((h (open-input-file file))
-	    (lines '()))
-	(let lp ((line (read-line h 'concat)))
-	  (if (eof-object? line)
-	      (reverse lines)
-	      (begin
-		(set! lines (cons line lines))
-		(lp (read-line h 'concat))))))
-      #f)))
-
