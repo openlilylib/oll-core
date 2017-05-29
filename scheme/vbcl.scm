@@ -99,7 +99,7 @@
 	(if (matcher "^[[:space:]]*>" elem)
 	    data
 	    (begin
-	       (set! data (string-append data elem))
+	       (set! data (string-append data (string-trim-both elem #\space)))
 	      (lp (iter))))))))
 
 (define parse-list-entries
@@ -125,5 +125,5 @@
 	(if (matcher "^[[:space:]]*]" elem)
 	    (reverse result)
 	    (begin
-	      (set! result (cons (string-trim-right elem) result))
+	      (set! result (cons (string-trim-both elem) result))
 	      (lp (iter))))))))
