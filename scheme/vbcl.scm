@@ -44,30 +44,30 @@
 		#t)
 
 	       ;; long text
-	       ((matcher "(^[[:space:]]*(.*):[[:space:]]*<)" elem)
-		;; inner loop
+	       ((matcher "^[[:space:]]*(.*):[[:space:]]*<" elem)
 		;; put the pair in the alist. the data is a string of lines.
 		(set! result
 		      (cons
-		       (cons (string-trim-right (match:substring m 2))
-			     (parse-long-textline-entries iter))
+		       (cons
+			(string->symbol (string-trim-right (match:substring m 1)))
+			(parse-long-textline-entries iter))
 		       result)))
 
 	       ;; lists
-	       ((matcher "(^[[:space:]]*(.*):[[:space:]]*\\[)" elem)
+	       ((matcher "^[[:space:]]*(.*):[[:space:]]*\\[" elem)
 	       	;;put the pair in the alist. the data is a vector.
 	       	(set! result (cons
 	       		      (cons
-	       		       (string-trim-right (match:substring m 2))
-	       		       (list->vector (parse-list-entries iter)))
+			       (string->symbol (string-trim-right (match:substring m 1)))
+	       		       (parse-list-entries iter))
 	       		       result)))
 
 	       ;; name value pairs
-	       ((matcher  "^[[:space:]]*(.*):[[:space:]]+(.*)" elem)
+	       ((matcher "^[[:space:]]*(.*):[[:space:]]+(.*)" elem)
 		;;put the pair in the alist.
 		(set! result (cons
 			      (cons
-			       (string-trim-right (match:substring m 1))
+			       (string->symbol (string-trim-right (match:substring m 1)))
 			       (string-trim-right (match:substring m 2)))
 			      result)))
 	       )
