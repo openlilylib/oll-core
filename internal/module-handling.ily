@@ -27,22 +27,23 @@
 
 % Provides functions for loading/handling submodules of a package
 
-% Parser for VBCL config files
 #(use-modules
   (oll-core scheme vbcl)
   (oll-core scheme file-handling))
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Helper functions
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Predicates for type-checking of library options
+% Predicates for type-checking of package options
 
 % Simple regex check for Name plus email address in angled brackets:
 % "Ben Maintainer <ben@maintainer.org>"
+%
+% TODO: This seems not correct as in Scheme the dot isn't treated as a special character
+%
+#(define oll-maintainer-regex
+   (make-regexp ".*<.*@.*>"))
 #(define (oll-maintainer? obj)
-   (let ((pat (make-regexp ".*<.*@.*>")))
+   (let ((pat oll-maintainer-regex))
      (if (and (string? obj)
               (regexp-exec pat obj))
          #t #f)))
@@ -53,147 +54,136 @@
        (and (list? obj)
             (every oll-maintainer? obj))))
 
-% Returns true if obj is a string representation of an integer
-#(define (integer-string? obj)
-   (integer? (string->number obj)))
+% Simple URL regex.
+% Matches HTTP(S) or git@ URLs
+#(define url-regex
+   (make-regexp "^(https?://.*[.].*/?|git@.*[.].*:).*/?"))
+% URL predicate
+#(define (url? obj)
+   (if (and (string? obj)
+            (regexp-exec url-regex obj))
+       #t #f))
 
-% Returns true if a string is a three-element dot-joined list of integers
+% Version string regex
+% Matches strings with at least two integers separated by dot(s)
+#(define version-string-regex
+   (make-regexp "([0-9].)+[0-9]+"))
 #(define (oll-version-string? obj)
-   (and (string? obj)
-        (let ((lst (string-split obj #\.)))
-          (and (= 3 (length lst))
-               (every integer-string? lst)))))
+   (if (and (string? obj)
+            (regexp-exec version-string-regex obj))
+       #t #f))
+
+
 
 % Alist with mandatory options for library declarations
-% Each entry is a pair of option name symbol and type predicate
-#(define oll-lib-mandatory-options
-   `((maintainers . ,oll-maintainers?)
-     (version . ,oll-version-string?)
-     (short-description . ,string?)
-     (description . ,string?)
+% Each entry is a list with
+% - option name
+% - type predicate
+% - Default value
+#(define oll-mandatory-props
+   `((name ,string? "No package name specified")
+     (display-name ,string? "No package display name specified")
+     (short-description ,string? "No short description available")
+     (description ,string? "No description available")
+     (maintainers ,oll-maintainers? "No maintainer(s) available")
+     (version ,oll-version-string? "0.0.0")
+     (oll-core ,oll-version-string? "0.0.0")
+     (license ,string? "No license specified")
+     (repository ,url? "http://no.repository.specified/")
      ))
+
+#(define (check-mandatory meta)
+   "Test a set of metadata for all mandatory properties.
+    Missing or mistyped props are set to the default value,
+    plus a warning is issued.
+    Returns the updated association list."
+   (for-each
+    (lambda (prop)
+      (let ((entry (assq (first prop) meta)))
+        (if entry
+            ;; check type of present mandatory option
+            (if (not ((second prop) (cdr entry)))
+                (begin
+                 (oll:warn "Wrong type for mandatory option ~a:\n~a. Use default ~a"
+                   (first prop) (cdr entry) (third prop))
+                 (set! meta (assq-set! meta (first prop) (third prop)))))
+            (begin
+             ;; warn about missing mandatory option and set default
+             (oll:warn "Missing mandatory option ~a.\nSet to default ~a"
+               (first proper) (third prop))
+             (set! meta (assq-set! meta (first prop) (third prop)))))))
+    oll-mandatory-props)
+   meta)
 
 % Alist with recognized options for library declarations
 % If an option is in this list it is type-checked against the given predicate.
-#(define oll-lib-known-options
+#(define oll-accepted-props
    `((lilypond-min-version . ,oll-version-string?)
      (lilypond-max-version . ,oll-version-string?)
+     (dependencies . ,list?)
+     ;; "missing": modules, as it is handled specially
      ))
 
+#(define (check-accepted meta)
+   "Test a set of metadata for all known/accepted properties.
+    Mistyped props are discarded/removed, plus a warning is issued.
+    Returns the updated association list."
+   (for-each
+    (lambda (prop)
+      (let ((accepted-prop (assq (car prop) oll-accepted-props)))
+        (if accepted-prop
+            ;; passed option is in list of known options
+            (if (not ((cdr accepted-prop) (cdr prop)))
+                (begin
+                 ;; warn about wrong type for known option, discard
+                 (oll:warn "Wrong type for known option ~a. Discarded\n~a" (car prop) (cdr prop))
+                 (set! meta (assq-remove! meta (car prop)))
+                 ))
+            (begin
+             ;; warn about unknown option, discard
+             (oll:warn "Unknown option ~a: ~a. Discarded" (car prop) (cdr prop))))))
+    (let ((mandatory-props (map first oll-mandatory-props)))
+      (filter
+       (lambda (prop)
+         (if (member prop mandatory-props) #t #f)) meta)))
+   meta)
 
 
-
-% Each package that uses oll-core is encouraged to register itself upon loading.
-% This will ensure there's an option tree and some metadata about the package
-% available.  Additionally this may be used to ensure a package is loaded only
-% once. At least \usePackage will check for this and implicitly register the
-% package if it doesn't use \registerPackage in the initialization
-%
-% A root directory will be inferred from the location of the caller, and there
-% are mandatory and optional (known) arguments that are checked against type
-% predicates.
-registerPackage =
-#(define-void-function (package-name properties)(symbol? ly:context-mod?)
-   (if (option-registered? `(,package-name root))
-       (oll:warn "Package ~a already registered." package-name))
+#(define (parse-meta lines)
+   "Parse the VBCL string list and perform type checking and defaulting.
+    Returns an alist (with given and default values) or #f in case of any
+    failure."
    (let*
-    ((props (context-mod->props properties))
-     (meta-path `(,package-name meta)))
-
-    ;; check if all required options are present
-    ;; and satisfy the given predicates
-    (if (not
-         (require-props
-          (format "Register package ~a" package-name)
-          oll-lib-mandatory-options
-          properties))
-        (oll:error "Error registering package ~a. Please contact maintainer."
-          package-name))
-
-    ;; determine package root directory
-    (setOption #t
-      `(,package-name root)
-      (os-path-dirname (location->normalized-path (*location*))))
+    ((orig-meta (parse-vbcl-config lines))
+     (meta (if orig-meta (check-accepted (check-mandatory orig-meta)) #f)))
+    meta))
 
 
-    (registerOption meta-path '())
-
-    ;; process and store all options
-    ;; stop with error when facing an unknown option
-    ;; or a type check fails.
-    ;; while this is technically unimportant we want
-    ;; to "encourage" package maintainers to be correct
-    ;; about this.
-    (let
-     ((mandatory (map car oll-lib-mandatory-options))
-      (known (map car oll-lib-known-options)))
-     (for-each
-      (lambda (prop)
-        (let ((prop-key (car prop))
-              (prop-value (cdr prop)))
-          (if
-           (or (member prop-key mandatory)
-               (and (member prop-key known)
-                    ((cdr (assq prop-key oll-lib-known-options)) prop-value)))
-           (setChildOption meta-path (car prop)(cdr prop))
-           (ly:error "Error in registration of package \"~a\".
-Unknown option \"~a\" or type mismatch: ~a.
-Please contact package maintainer(s)\n - ~a"
-             name prop-key prop-value
-             (let ((maintainers (assq-ref props 'maintainers)))
-               (if (string? maintainers)
-                   maintainers
-                   (string-join maintainers "\n - "))
-               )))))
-      props))
-
-    ;; print a confirmation of successful registration
-    (ly:message "\nPackage ~a @~a registered successfully.\n\n"
-      package-name (assq-ref props 'version))))
+#(define (register-package name root meta)
+   "Create a package's entries in the global option tree"
+   (let*
+    ((meta-path `(loaded-packages ,name meta)))
+    ;; add the bare name to the list of loaded packages
+    (setOption '(loaded-packages)
+      (append (getOption '(loaded-packages)) (list name)))
+    ;; create node <package-name>->root and store the package root
+    (registerOption `(,name root) root)
+    ;; create node <package-name>->meta and store the parsed metadata
+    (registerOption `(,name meta) meta)
+    ;; create node <package-name>->modules to store module options later
+    (registerOption `(,name modules) '())
+    #t))
 
 
+%{
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Module loading code (take care of that later)
 
-
-% Packages can register 'modules' that are not implicitly loaded
-% together with the package itself. Modules can then be loaded
-% upon request.
-%
-% #1: The package name
-% #2: A list of modules, formatted as a symbol list, either way of
-%    #'(mod-a mod-b mod-c)
-%    mod-a.mod-b.mod-c
-% Each module lives within a subdirectory of the package, named
-% exactly like the symbol passed to \registerModules, so the
-% directory naming is limited to LilyPond's symbol? parsing.
-% The module must then contain the file module.ily, which will
-% then be loaded by \useModule.
-registerModule =
-#(define-void-function (path)(symbol-list?)
-   (let* ((package (car path))
-          (module-path
-           (append
-            `(,package modules)
-            (cdr path)
-            '(root))))
-     (registerOption module-path
-       (append (getOption `(,package root)) (cdr path)))))
-
-% Check if a module is registered.
-% Return the absolute path to the module's entry file
-% or #f.
-#(define module-entry
-   (define-scheme-function (path)(symbol-list?)
-     (let* ((package (car path))
-            (module (cdr path))
-            (module-path
-             (append
-              `(,package modules)
-              module
-              '(root)))
-            (module-dir (getOptionWithFallback module-path #f)))
-       (if module-dir
-           (append module-dir (list "module.ily"))
-           #f))))
+#(define (module-list? obj)
+   (if (and
+        (symbol-list? obj)
+        (= (length obj) 2))
+       #t #f))
 
 % Load a module from within a package.
 % Module locations are looked up from the package's 'modules' options,
@@ -203,6 +193,221 @@ registerModule =
 % after the module has been loaded. Such options must have been registered
 % in the module definition file.
 loadModule =
+#(define-void-function (opts path)
+   ((ly:context-mod?) module-list?)
+   (let*
+    ((package (car path))
+     (module (cdr path)))
+   (if
+    (member module (getOption (list 'loaded-modules package)))
+    (oll:warn "Trying to reload module \"~a\". Skipping. Options will be set anyway."
+      (os-path-join-dots path))
+    (let ((module-file (module-entry path)))
+      (if (not module-file)
+          (oll:warn "Trying to load unregistered module '~a'"
+            (os-path-join-dots path))
+          (begin
+           (if (not (immediate-include (os-path-join-unix module-file)))
+               (oll:warn "No file found for module \"~a\"" path))
+           (setOption '(loaded-modules)
+             (append (getOption '(loaded-modules)) (list path)))))))
+   (if opts
+       (for-each
+        (lambda (opt)
+          (let* ((opt-path
+                  (append path (list (car opt))))
+                 (is-registered (option-registered? opt-path)))
+            (if is-registered
+                (setOption opt-path (cdr opt))
+                (oll:warn "Trying to set unregistered option '~a'"
+                  (os-path-join-dots opt-path)))))
+        (context-mod->props opts))))
+   )
+
+% Module loading code (take care of that later)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%}
+
+
+loadModule =
+#(define-void-function (options module)
+   ((ly:context-mod?) symbol-list?)
+   (let*
+    ((package (car module))
+     (opts (if options (context-mod->props options) #f))
+     )
+    (registerOption (append (list (car module) 'modules) (cdr module)) '())
+
+   ;
+   ; TODO:
+   ; Check if package has already been loaded.
+   ; If not load it implicitly, without options and then load the modules
+   ;
+   (display opts)
+
+   ))
+
+%Allowed arguments for \loadModules:
+% - single string (single module)
+% - single symbol (single module)
+% - symbol-list (single submodule)
+% - list with each entry being:
+%   - symbol (single module)
+%   - symbol-list (single submodule)"
+#(define (oll-module-list? obj)
+   (if (or (string? obj)
+           (symbol? obj)
+           (symbol-list? obj)
+           (and (list? obj)
+                (every (lambda (entry)
+                         (or (symbol? entry) (symbol-list? entry))) obj)))
+       #t #f))
+
+loadModules =
+#(define-void-function (package modules)(symbol? oll-module-list?)
+   "Load one or more package modules.
+    This function dispatches the given module(s) argument to one
+    or multiple calls to (loadModule).
+    A package name has to be provided as a symbol.
+    If the package isn't loaded yet it will be implicitly loaded.
+    For the type of the module(s list) refer to oll-module-list? above)."
+   (cond
+    ((string? modules)
+     ;; single module
+     (loadModule (list package (string->symbol modules))))
+    ((symbol? modules)
+     ;; single module
+     (loadModule (list package modules)))
+    ((symbol-list? modules)
+     ;; single submodule
+     (loadModule (append (list package) modules)))
+    ((list? modules)
+     ;; a list of multiple modules is provided
+     (for-each
+      (lambda (module)
+        (cond
+         ((symbol? module)
+          ;; simple module, package has to be provided separately
+          (loadModule (list package module)))
+         ((symbol-list? module)
+          ;; submodule
+          (loadModule (append (list package) module)))))
+      modules))))
+
+loadPackage =
+#(define-void-function (options name)
+   ((ly:context-mod?) symbol?)
+   "Load an openLilyLib package"
+   (if (not (member name (getOption '(loaded-packages))))
+       ;; load the package because it's new
+       (let*
+        ((package-root (append openlilylib-root (list name)))
+         (package-file (os-path-join-unix (append package-root '("package.ily"))))
+         (exists (file-exists? package-file))
+         (loaded (immediate-include package-file)))
+        (if (not loaded)
+            (if exists
+                (oll:warn
+                 "Error loading package file ~a. Please contact maintainer.\n\n"
+                 package-file)
+                (oll:warn
+                 "No entry file found for package '~a'. Please check spelling and/or package installation." name))
+
+            ;; loading of the package file has completed successfully
+            ;; read metadata and register package
+            (let*
+             ((meta-file (os-path-join-unix (append package-root '("package.cnf"))))
+              (meta-lines (read-lines-from-file meta-file))
+              (meta (if meta-lines (parse-meta meta-lines) #f))
+              (registered (if meta (register-package name package-root meta) #f)))
+
+             ;; log (un)successful loading of package and metadata
+             (oll:log "Package ~a @~a loaded successfully,"
+               name (getOption `(,name meta version)))
+             (if registered
+                 (oll:log "package metadata successfully read.\n\n")
+                 (oll:warn "Dubious or missing metadata for package ~a ignored.
+Package not registered. Please contact maintainer!\n\n" name))
+
+             ;; process optional arguments (package options)
+             (if options
+                 (let*
+                  ((options (context-mod->props options))
+                   (modules (assq-ref options 'modules)))
+                  (for-each
+                   (lambda (opt)
+                     (let*
+                      ((option-name (car opt))
+                       (option-path (list name option-name)))
+                      (if (not (eq? option-name 'modules))
+                          ; TODO:
+                          ; can this be simplified once #17 is closed?
+                          (if (option-registered? option-path)
+                              (setOption option-path (cdr opt))
+                              (oll:warn "Unknown option '~a = ~a' for package '~a'"
+                                (car opt) (cdr opt) name)))))
+                   options)
+
+                  ;; load modules if given as option
+                  ;; A single module can be given or a list of modules.
+                  ;; In this each module can be given as symbol or as a symbol list
+                  (if modules
+                      (if (string? modules)
+                          (loadModule (list name (string->symbol modules)))
+                          (for-each
+                           (lambda (module)
+                             (loadModule (list name module)))
+                           modules)))
+                  )) ;; end (if options)
+             ; TODO: load modules (if given)
+             ) ;; end (if loaded)
+
+            )) ;; end loading package
+       (oll:log "Package '~a' already loaded. Skipping\n\n" name)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%{
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Obsolete code
+
+
+
+% Load a module from within a package.
+% Module locations are looked up from the package's 'modules' options,
+% and trying to load a non-existent module will cause a warning.
+%
+% An optional \with {} clause can contain options that will be set
+% after the module has been loaded. Such options must have been registered
+% in the module definition file.
+lModule =
 #(define-void-function (opts path)
    ((ly:context-mod?) symbol-list?)
    (if
@@ -231,74 +436,26 @@ loadModule =
         (context-mod->props opts))))
 
 
-% Load an openLilyLib package determined by its name
-% If options are passed in a \with {} clause they are set after the package is loaded
-% initialization file has been loaded. If the initializiation did not
-% register the options (in the form LIBRARY.OPTION) this will cause
-% warnings about trying to set unregistered options.
-loadPackage =
-#(define-void-function (options name)
-   ((ly:context-mod?) symbol? )
-   "Load an openLilyLib library and initialize it"
-   (if (member name (getOption '(loaded-packages)))
-       (ly:message "Package ~a already loaded. Skipping\n\n" name)
-       ;; Load package if not already loaded
-       (let*
-        ((package-root (append openlilylib-root (list name)))
-         (package-file
-          (format "~a/package.ily" (os-path-join-unix package-root)))
-         (cfg (parse-vbcl-config
-               (file->list
-               (format "~a/package.cnf" (os-path-join-unix package-root)))))
-         )
+% Obsolete code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        ;; Create a root option for the library
-        (registerOption (list name) '())
 
-        ;; Load package entry file
-        ;; or issue a warning if it isn't found (presumably the start of numerous erros)
-        (if (not (immediate-include package-file))
-            (oll:warn "No entry file found for package \"~a\"" name))
-        (setOption '(loaded-packages)
-          (append (getOption '(loaded-packages)) (list name)))
 
-        ;; Set package options if given
-        (if options
-            (let*
-             ((option-path (list name))
-              (options (context-mod->props options))
-              (modules (assq-ref options 'modules)))
-             (for-each
-              (lambda (opt)
-                (let
-                 ((option-path (append option-path (list (car opt))))
-                  (option-value (cdr opt)))
-                 (if (option-registered? option-path)
-                     (setOption option-path option-value)
-                     (oll:warn "Trying to set unregistered option ~a to ~a."
-                       (os-path-join-dots option-path) option-value))))
-              (filter
-               (lambda (opt)
-                 (not (eq? 'modules (car opt))))
-               options))
-             ;; load modules if given as option
-             ;; A single module can be given or a list of modules.
-             ;; In this each module can be given as symbol or as a symbol list
-             (cond
-              ((string? modules)
-               (loadModule (list name (string->symbol modules))))
-              ((symbol-list? modules)
-               (loadModule (append (list name) modules)))
-              ((list? modules)
-               (for-each
-                (lambda (module)
-                  (cond
-                   ((symbol? module)
-                    (loadModule (list name module)))
-                   ((symbol-list? module)
-                    (loadModule
-                     (append (list name) module)))))
-                modules))
-              (else
-               (oll:warn "Wrong type for option \"modules\". Expected symbol, symbol-list or list.")))
-             )))))
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% New approach
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%}
