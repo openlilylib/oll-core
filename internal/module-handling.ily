@@ -74,6 +74,24 @@
        #t #f))
 
 
+%Allowed arguments for \loadModules:
+% - single string (single module)
+% - single symbol (single module)
+% - symbol-list (single submodule)
+% - list with each entry being:
+%   - symbol (single module)
+%   - symbol-list (single submodule)"
+#(define (oll-module-list? obj)
+   (if (or (string? obj)
+           (symbol? obj)
+           (symbol-list? obj)
+           (and (list? obj)
+                (every (lambda (entry)
+                         (or (string? entry)
+                             (symbol? entry)
+                             (symbol-list? entry))) obj)))
+       #t #f))
+
 
 % Alist with mandatory options for library declarations
 % Each entry is a list with
@@ -81,72 +99,27 @@
 % - type predicate
 % - Default value
 #(define oll-mandatory-props
-   `((name ,string? "No package name specified")
-     (display-name ,string? "No package display name specified")
-     (short-description ,string? "No short description available")
-     (description ,string? "No description available")
-     (maintainers ,oll-maintainers? "No maintainer(s) available")
-     (version ,oll-version-string? "0.0.0")
-     (oll-core ,oll-version-string? "0.0.0")
-     (license ,string? "No license specified")
-     (repository ,url? "http://no.repository.specified/")
-     ))
-
-#(define (check-mandatory meta)
-   "Test a set of metadata for all mandatory properties.
-    Missing or mistyped props are set to the default value,
-    plus a warning is issued.
-    Returns the updated association list."
-   (for-each
-    (lambda (prop)
-      (let ((entry (assq (first prop) meta)))
-        (if entry
-            ;; check type of present mandatory option
-            (if (not ((second prop) (cdr entry)))
-                (begin
-                 (oll:warn "Wrong type for mandatory option ~a:\n~a. Use default ~a"
-                   (first prop) (cdr entry) (third prop))
-                 (set! meta (assq-set! meta (first prop) (third prop)))))
-            (begin
-             ;; warn about missing mandatory option and set default
-             (oll:warn "Missing mandatory option ~a.\nSet to default ~a"
-               (first proper) (third prop))
-             (set! meta (assq-set! meta (first prop) (third prop)))))))
-    oll-mandatory-props)
-   meta)
+   (make-mandatory-props
+    `((name ,string? "No package name specified")
+      (display-name ,string? "No package display name specified")
+      (short-description ,string? "No short description available")
+      (description ,string? "No description available")
+      (maintainers ,oll-maintainers? "No <maintainer(s)@available>")
+      (version ,oll-version-string? "0.0.0")
+      (oll-core ,oll-version-string? "0.0.0")
+      (license ,string? "No license specified")
+      (repository ,url? "http://no.repository.specified/")
+      )))
 
 % Alist with recognized options for library declarations
 % If an option is in this list it is type-checked against the given predicate.
 #(define oll-accepted-props
-   `((lilypond-min-version . ,oll-version-string?)
-     (lilypond-max-version . ,oll-version-string?)
-     (dependencies . ,list?)
-     ;; "missing": modules, as it is handled specially
-     ))
-
-#(define (check-accepted meta)
-   "Test a set of metadata for all known/accepted properties.
-    Mistyped props are discarded/removed, plus a warning is issued.
-    Returns the updated association list."
-   (for-each
-    (lambda (prop)
-      (let ((accepted-prop (assq (car prop) oll-accepted-props)))
-        (if accepted-prop
-            ;; passed option is in list of known options
-            (if (not ((cdr accepted-prop) (cdr prop)))
-                (begin
-                 ;; warn about wrong type for known option, discard
-                 (oll:warn "Wrong type for known option ~a. Discarded\n~a" (car prop) (cdr prop))
-                 (set! meta (assq-remove! meta (car prop)))
-                 ))
-            (begin
-             ;; warn about unknown option, discard
-             (oll:warn "Unknown option ~a: ~a. Discarded" (car prop) (cdr prop))))))
-    (let ((mandatory-props (map first oll-mandatory-props)))
-      (filter
-       (lambda (prop)
-         (if (member prop mandatory-props) #t #f)) meta)))
-   meta)
+   (make-accepted-props
+    `((lilypond-min-version . ,oll-version-string?)
+      (lilypond-max-version . ,oll-version-string?)
+      (dependencies . ,list?)
+      (modules . ,oll-module-list?)
+      )))
 
 
 #(define (parse-meta lines)
@@ -155,7 +128,9 @@
     failure."
    (let*
     ((orig-meta (parse-vbcl-config lines))
-     (meta (if orig-meta (check-accepted (check-mandatory orig-meta)) #f)))
+     (meta (if orig-meta
+               (check-props oll-mandatory-props oll-accepted-props orig-meta)
+               #f)))
     meta))
 
 
@@ -244,25 +219,9 @@ loadModule =
    ; Check if package has already been loaded.
    ; If not load it implicitly, without options and then load the modules
    ;
-   (display opts)
+   (display "")
 
    ))
-
-%Allowed arguments for \loadModules:
-% - single string (single module)
-% - single symbol (single module)
-% - symbol-list (single submodule)
-% - list with each entry being:
-%   - symbol (single module)
-%   - symbol-list (single submodule)"
-#(define (oll-module-list? obj)
-   (if (or (string? obj)
-           (symbol? obj)
-           (symbol-list? obj)
-           (and (list? obj)
-                (every (lambda (entry)
-                         (or (symbol? entry) (symbol-list? entry))) obj)))
-       #t #f))
 
 loadModules =
 #(define-void-function (package modules)(symbol? oll-module-list?)
@@ -360,7 +319,6 @@ Package not registered. Please contact maintainer!\n\n" name))
                              (loadModule (list name module)))
                            modules)))
                   )) ;; end (if options)
-             ; TODO: load modules (if given)
              ) ;; end (if loaded)
 
             )) ;; end loading package
