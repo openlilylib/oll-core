@@ -29,11 +29,17 @@
 
 (define-module (oll-core internal tools))
 
+(use-modules (srfi srfi-1))
+
 ;; String list predicate
 (define-public (stringlist? obj)
    "Evaulates to #t when obj is a list containing exclusively of strings."
    (and (list? obj)
         (every string? obj)))
+
+;; convert elements of a string list to a symbol list
+(define-public (stringlist->symbol-list obj)
+  (map string->symbol obj))
 
 (define-public (string-or-alist? obj)
    "Returns true if obj is a string or a list of pairs (alist)
