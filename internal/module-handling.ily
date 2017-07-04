@@ -150,57 +150,14 @@
 
 
 %{
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Module loading code (take care of that later)
-
-#(define (module-list? obj)
-   (if (and
-        (symbol-list? obj)
-        (= (length obj) 2))
-       #t #f))
-
-% Load a module from within a package.
-% Module locations are looked up from the package's 'modules' options,
-% and trying to load a non-existent module will cause a warning.
-%
-% An optional \with {} clause can contain options that will be set
-% after the module has been loaded. Such options must have been registered
-% in the module definition file.
-loadModule =
-#(define-void-function (opts path)
-   ((ly:context-mod?) module-list?)
-   (let*
-    ((package (car path))
-     (module (cdr path)))
-   (if
-    (member module (getOption (list 'loaded-modules package)))
-    (oll:warn "Trying to reload module \"~a\". Skipping. Options will be set anyway."
-      (os-path-join-dots path))
-    (let ((module-file (module-entry path)))
-      (if (not module-file)
-          (oll:warn "Trying to load unregistered module '~a'"
-            (os-path-join-dots path))
-          (begin
-           (if (not (immediate-include (os-path-join-unix module-file)))
-               (oll:warn "No file found for module \"~a\"" path))
-           (setOption '(loaded-modules)
-             (append (getOption '(loaded-modules)) (list path)))))))
-   (if opts
-       (for-each
-        (lambda (opt)
-          (let* ((opt-path
-                  (append path (list (car opt))))
-                 (is-registered (option-registered? opt-path)))
-            (if is-registered
-                (setOption opt-path (cdr opt))
-                (oll:warn "Trying to set unregistered option '~a'"
-                  (os-path-join-dots opt-path)))))
-        (context-mod->props opts))))
-   )
-
-% Module loading code (take care of that later)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+  Load an openLilyLib package.
+  Mandatory argument is the package name, given as a (case insensitive) symbol.
+  Package options can be given as an optional \with {} clause.
+  Options that are not registered in the package will be discarded
+    (along with a warning message).
+  With the special option 'modules' a symbol-list of (top-level) modules
+  can be loaded. Submodules are not supported in this invocation, and
+  module names are interpreted case insensitively.
 %}
 
 
