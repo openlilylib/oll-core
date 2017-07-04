@@ -27,7 +27,7 @@
 #  item1
 #  item2
 #  ]
-#  
+#
 # # lines starting with # are ignored
 #
 # blank lines are ignored
@@ -45,6 +45,9 @@ description: <
   basic functionality of common topics such as module handling, logging,
   and other tools.
   >
+modules: [
+  include-pattern
+  ]
 maintainers: [
   Urs Liska <ul@openlilylib.org>
   ]
