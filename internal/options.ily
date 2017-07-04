@@ -32,6 +32,150 @@
 
 #(use-modules (ice-9 pretty-print))
 
+
+% predicate for check-props
+% which accepts an a-list or a context-mod
+#(define (al-or-props? obj)
+   (if (or (ly:context-mod? obj)
+           (and (list? obj)
+                (every pair? obj)))
+       #t #f))
+
+% temporary predicate, as this seems just too general ...
+#(define (alist? obj)
+   (if (and (list? obj)
+            (every pair? obj))
+       #t #f))
+
+% Predicate for a mandatory option:
+% a three-element list consisting of
+% - name (symbol?)
+% - element predicate (procedure?)
+% - default value (tested against predicate)
+#(define (oll-mand-prop? obj)
+   (if (and (list? obj)
+            (= (length obj) 3)
+            (symbol? (first obj))
+            (procedure? (second obj))
+            ((second obj) (third obj)))
+       #t #f))
+
+% Predicate for mandatory options:
+% list of oll-mand-prop? items
+#(define (oll-mand-props? obj)
+   (if (and (list? obj)
+            (every oll-mand-prop? obj))
+       #t #f))
+
+% Precidate for an accepted options:
+% pair of property name and predicate
+#(define (oll-accepted-prop? obj)
+   (if (and (pair? obj)
+            (symbol? (car obj))
+            (procedure? (cdr obj)))
+       #t #f))
+
+% Predicate for accepted options:
+% list of oll-accepted-prop? items
+#(define (oll-accepted-props? obj)
+   (if (and (list? obj)
+            (every oll-accepted-prop? obj))
+       #t #f))
+
+% Convenience functions to add some type checking
+% to the bundling of package option templates.
+% To be used by package creators only
+#(define (make-mandatory-props props)
+   (if (oll-mand-props? props)
+       props
+       (begin
+        (oll:warn "Wrong argument type: oll-mand-props? expected")
+        '())))
+
+#(define (make-accepted-props props)
+   (if (oll-accepted-props? props)
+       props
+       (begin
+        (oll:warn "Wrong argument type: oll-accepted-props? expected")
+        '())))
+
+
+% Convenience function, retrieves a property alist from a context-mod object.
+% mod has to satisfy the ly:context-mod? predicate,
+% returns an alist with all key-value pairs set.
+#(define-public (context-mod->props mod)
+   (map
+    (lambda (prop)
+      (cons (cadr prop) (caddr prop)))
+    (ly:get-context-mods mod)))
+
+
+% check a property alist (or a ly:context-mod?) for adherence to
+% a given set of rules/templates
+% Returns a possibly modified version of the given property list
+% - force-mand (optional)
+%   if #t mandatory options are added with default values
+% - mand
+%   list of mandatory options with name, predicate and default
+% - accepted
+%   list of accepted/known options with name and predicate
+#(define check-props
+   (define-scheme-function (force-mand mand accepted props)
+     ((boolean?) oll-mand-props? oll-accepted-props? al-or-props?)
+     (let*
+      ((props (if (ly:context-mod? props) (context-mod->props props) props))
+
+       ;; determine missing properties
+       ;; if we're not interested in them simply create an empty list
+       (missing-props
+        (if force-mand
+            (filter
+             (lambda (m)
+               (not (assq-ref props m)))
+             (map car mand))
+            '())))
+
+      ;; check all given properties
+      (for-each
+       (lambda (prop)
+         (let ((accepted-prop (assq (car prop) accepted))
+               (mand-prop (assq (car prop) mand)))
+           (cond
+            (accepted-prop
+             ;; passed option is in list of known options
+             (if (not ((cdr accepted-prop) (cdr prop)))
+                 (begin
+                  ;; warn about wrong type for known option, discard
+                  (oll:warn "Wrong type for known option ~a. Discarded\n~a" (car prop) (cdr prop))
+                  (set! props (assq-remove! props (car prop)))
+                  )))
+            (mand-prop
+             ;; check type of present mandatory option
+             (if (not ((second mand-prop) (cdr prop)))
+                 (begin
+                  (oll:warn "Wrong type for mandatory option ~a:\n~a. Use default ~a"
+                    (first mand-prop) (cdr prop) (third mand-prop))
+                  (set! props (assq-set! props (first prop) (third mand-prop)))))
+             )
+            (else
+             (begin
+              ;; warn about unknown option, discard
+              (oll:warn "Unknown option ~a: ~a. Discarded" (car prop) (cdr prop))
+              (set! props (assq-remove! props (car prop)))
+              )))))
+       props)
+
+      ;; return props, appended with missing mandatory options
+      ;; (if force-mand is #f then missing-props will be empty)
+      (append props
+        (map
+         (lambda (p)
+           (cons p (assq-ref props p)))
+         missing-props))
+      )))
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Interface to store and retrieve options from one global option alist.
 % The following functions rely on functionality in the
@@ -122,7 +266,7 @@ getOption =
          ;; getAtree has returned #f
          (begin
           (oll:warn
-            "Trying to access non-existent option: ~a" (os-path-join-dots path))
+           "Trying to access non-existent option: ~a" (os-path-join-dots path))
           #f))))
 
 % Same as \getOption, but retrieving non-existing options returns

@@ -27,13 +27,19 @@
 
 ;; This files contains general-purpose predicates for use with LilyPond and openLilylib
 
-(define-module (oll-core internal predicates))
+(define-module (oll-core internal tools))
+
+(use-modules (srfi srfi-1))
 
 ;; String list predicate
 (define-public (stringlist? obj)
    "Evaulates to #t when obj is a list containing exclusively of strings."
    (and (list? obj)
         (every string? obj)))
+
+;; convert elements of a string list to a symbol list
+(define-public (stringlist->symbol-list obj)
+  (map string->symbol obj))
 
 (define-public (string-or-alist? obj)
    "Returns true if obj is a string or a list of pairs (alist)
@@ -43,10 +49,17 @@
                 (every pair? obj)))
        #t #f))
 
-#(define-public (symbol-list-or-string? object)
+(define-public (symbol-list-or-string? object)
    "Returns true if obj is a symbol list or a string
     (used for arguments passed to os-path functions)."
    (if (or (symbol-list? object)
            (string? object))
        #t #f))
+
+
+
+
+(define-public (symbol-downcase sym)
+   (string->symbol (string-downcase (symbol->string sym))))
+
 
