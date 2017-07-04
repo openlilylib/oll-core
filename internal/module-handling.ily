@@ -41,7 +41,7 @@
 % TODO: This seems not correct as in Scheme the dot isn't treated as a special character
 %
 #(define oll-maintainer-regex
-   (make-regexp ".*<.*@.*>"))
+   (make-regexp "^([[:alnum:]]+)[[:space:]]*<([[:alnum:]]+)(\\.[[:alnum:]]*)*@([[:alnum:]]+)(\\.[[:alnum:]]+)*>"))
 #(define (oll-maintainer? obj)
    (let ((pat oll-maintainer-regex))
      (if (and (string? obj)
