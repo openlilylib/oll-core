@@ -67,7 +67,7 @@
 % Version string regex
 % Matches strings with at least two integers separated by dot(s)
 #(define version-string-regex
-   (make-regexp "([0-9].)+[0-9]+"))
+   (make-regexp "^([[:digit:]]+\\.)+([[:digit:]]+)$"))
 #(define (oll-version-string? obj)
    (if (and (string? obj)
             (regexp-exec version-string-regex obj))
