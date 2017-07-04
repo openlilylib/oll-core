@@ -24,54 +24,43 @@
 ;%                                                                             %
 ;% openLilyLib is maintained by Urs Liska, ul@openlilylib.org                  %
 ;% and others.                                                                 %
-;%       Copyright Jan-Peter Voigt, Urs Liska, 2016                            %
+;%       Copyright Urs Liska 2017                                              %
 ;%                                                                             %
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-(define-module (oll-core scheme stack))
+(define-module (oll-core file-handling))
+(export
+ immediate-include
+ read-lines-from-file
+ )
 
-(use-modules (oop goops)(lily))
+(use-modules (lily))
+(use-modules (ice-9 rdelim))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; stack
+;; Immediate inclusion of files
+;; Returns #t if file is found and #f if it is missing.
+;; If the file is considered to have a language different from nederlands
+;; it must be given at the beginning of the file
+(define (immediate-include file)
+  (if (file-exists? file)
+      (let ((parser (ly:parser-clone)))
+        (ly:parser-parse-string parser "\\language \"nederlands\"")
+        (ly:parser-parse-string parser
+          (format "\\include \"~a\"" file))
+        #t)
+      #f))
 
-; a stack implementation with methods push, pop and get
-(define-class <stack> ()
-  (name #:accessor name #:setter set-name! #:init-value "stack")
-  (store #:accessor store #:setter set-store! #:init-value '())
-  )
+;; read a file as a list of lines
+(define read-lines-from-file
+  (lambda (file)
+    (if (file-exists? file)
+      (let ((h (open-input-file file))
+	    (lines '()))
+	(let lp ((line (read-line h 'concat)))
+	  (if (eof-object? line)
+	      (reverse lines)
+	      (begin
+		(set! lines (cons line lines))
+		(lp (read-line h 'concat))))))
+      #f)))
 
-; push value on the stack
-(define-method (push (stack <stack>) val)
-  (set! (store stack) (cons val (store stack))))
-
-; get topmost value from stack without removing it
-(define-method (get (stack <stack>))
-  (let ((st (store stack)))
-    (if (> (length st) 0)
-        (car st)
-        #f)))
-
-; return and remove topmost value
-(define-method (pop (stack <stack>))
-  (let ((st (store stack)))
-    (if (> (length st) 0)
-        (let ((ret (car st)))
-          (set! (store stack) (cdr st))
-          ret)
-        #f)))
-
-; display stack
-(define-method (display (stack <stack>) port)
-  (for-each (lambda (e)
-              (format #t "~A> " (name stack))(display e)(newline)) (store stack)))
-
-; create stack object
-(define-public (stack-create)(make <stack>))
-
-; export methods
-(export push)
-(export get)
-(export pop)
-(export store)
-(export name)

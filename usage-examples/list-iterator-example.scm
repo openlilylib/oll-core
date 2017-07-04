@@ -2,7 +2,7 @@
 ;;
 ;; Andrew Bernard 2017
 
-(use-modules (oll-core scheme iterator))
+(use-modules (oll-core iterator))
 
 (define main
   (lambda ()

@@ -37,6 +37,7 @@
 % root directory (the parent of oll-core)
 \include "add-guile-path.ily"
 \addGuilePath #(os-path-join-unix openlilylib-root)
+\addGuilePath #(os-path-join-unix (append openlilylib-root '(oll-core scheme)))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Common functionality

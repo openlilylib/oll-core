@@ -6,14 +6,14 @@
 ;;
 ;; for guile 1.8
 
-(define-module (oll-core scheme vbcl))
+(define-module (oll-core vbcl))
 (export
  parse-vbcl-config)
 
 (use-modules (ice-9 regex))
 (use-modules (ice-9 rdelim))
 (use-modules (srfi srfi-1))
-(use-modules (oll-core scheme iterator))
+(use-modules (oll-core iterator))
 
 
 ;; parse VBCL config file.

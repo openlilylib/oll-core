@@ -35,7 +35,7 @@
 \include "oll-core/package.ily"
 
 % Use the module from oll-core
-#(use-modules (oll-core scheme stack))
+#(use-modules (oll-core stack))
 
 % Create an empty <stack> object
 mystack = #(stack-create)

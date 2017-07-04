@@ -3,7 +3,7 @@
 ;; Andrew Bernard 2017
 
 
-(define-module (oll-core scheme control))
+(define-module (oll-core control))
 
 (use-syntax (ice-9 syncase))
 

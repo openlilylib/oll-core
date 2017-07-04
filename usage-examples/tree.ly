@@ -1,7 +1,7 @@
 \version "2.19.38"
 \include "oll-core/package.ily"
 
-#(use-modules (oll-core scheme tree))
+#(use-modules (oll-core tree))
 
 % create tree object
 #(display "(tree-create 'my-tree) : ")
