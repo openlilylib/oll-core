@@ -56,12 +56,12 @@
 
 % Simple URL regex.
 % Matches HTTP(S) or git@ URLs
-#(define url-regex
-   (make-regexp "^(https?://.*[.].*/?|git@.*[.].*:).*/?"))
+#(define repo-url-regex
+   (make-regexp "^((https?://)([[:alnum:]]+\\.)+([[:alnum:]]+/)|git@([[:alnum:]]+\\.)+([[:alnum:]]+:))([[:alnum:]]+/)*([[:alnum:]]+(\\.[[:alnum:]]+)?|/)?$"))
 % URL predicate
-#(define (url? obj)
+#(define (repo-url obj)
    (if (and (string? obj)
-            (regexp-exec url-regex obj))
+            (regexp-exec repo-url-regex obj))
        #t #f))
 
 % Version string regex
@@ -108,7 +108,7 @@
       (version ,oll-version-string? "0.0.0")
       (oll-core ,oll-version-string? "0.0.0")
       (license ,string? "No license specified")
-      (repository ,url? "http://no.repository.specified/")
+      (repository ,repo-url "http://no.repository.specified/")
       )))
 
 % Alist with recognized options for library declarations
