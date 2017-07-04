@@ -74,20 +74,17 @@
        #t #f))
 
 %Allowed arguments for \loadModules:
-% - single string (single module)
-% - single symbol (single module)
 % - symbol-list (single submodule)
 % - list with each entry being:
 %   - symbol (single module)
 %   - symbol-list (single submodule)"
 #(define (oll-module-list? obj)
-   (if (or (string? obj)
-           (symbol? obj)
-           (symbol-list? obj)
+   (if (or (symbol-list? obj)
+           (stringlist? obj)
            (and (list? obj)
+                (any symbol-list? obj)
                 (every (lambda (entry)
-                         (or (string? entry)
-                             (symbol? entry)
+                         (or (symbol? entry)
                              (symbol-list? entry))) obj)))
        #t #f))
 
@@ -140,12 +137,12 @@
     ;; add the bare name to the list of loaded packages
     (setOption '(loaded-packages)
       (append (getOption '(loaded-packages)) (list name)))
+    ;; create node loaded-modules-><package-name> to store loaded modules
+    (registerOption `(loaded-modules ,name) '())
     ;; create node <package-name>->root and store the package root
     (registerOption `(,name root) root)
     ;; create node <package-name>->meta and store the parsed metadata
     (registerOption `(,name meta) meta)
-    ;; create node <package-name>->modules to store module options later
-    (registerOption `(,name modules) '())
     #t))
 
 
@@ -159,57 +156,6 @@
   can be loaded. Submodules are not supported in this invocation, and
   module names are interpreted case insensitively.
 %}
-
-
-loadModule =
-#(define-void-function (options module)
-   ((ly:context-mod?) symbol-list?)
-   (let*
-    ((package (car module))
-     (opts (if options (context-mod->props options) #f))
-     )
-    (registerOption (append (list (car module) 'modules) (cdr module)) '())
-
-   ;
-   ; TODO:
-   ; Check if package has already been loaded.
-   ; If not load it implicitly, without options and then load the modules
-   ;
-   (display "")
-
-   ))
-
-loadModules =
-#(define-void-function (package modules)(symbol? oll-module-list?)
-   "Load one or more package modules.
-    This function dispatches the given module(s) argument to one
-    or multiple calls to (loadModule).
-    A package name has to be provided as a symbol.
-    If the package isn't loaded yet it will be implicitly loaded.
-    For the type of the module(s list) refer to oll-module-list? above)."
-   (cond
-    ((string? modules)
-     ;; single module
-     (loadModule (list package (string->symbol modules))))
-    ((symbol? modules)
-     ;; single module
-     (loadModule (list package modules)))
-    ((symbol-list? modules)
-     ;; single submodule
-     (loadModule (append (list package) modules)))
-    ((list? modules)
-     ;; a list of multiple modules is provided
-     (for-each
-      (lambda (module)
-        (cond
-         ((symbol? module)
-          ;; simple module, package has to be provided separately
-          (loadModule (list package module)))
-         ((symbol-list? module)
-          ;; submodule
-          (loadModule (append (list package) module)))))
-      modules))))
-
 loadPackage =
 #(define-void-function (options name)
    ((ly:context-mod?) symbol?)
@@ -280,3 +226,110 @@ Package not registered. Please contact maintainer!\n\n" name))
 
               )) ;; end loading package
          (oll:log "Package '~a' already loaded. Skipping\n\n" name))))
+
+%{
+  Load a single package module.
+  Mandatory argument is a symbol-list, consisting of the package name and
+  the relative module path. Elements are case insensitive.
+  If the package isn't loaded yet it will implicitly be attempted.
+  If loading of the package fails the module isn't loaded either.
+  The optional first argument can specify module options in a \with {} clause.
+  Allowed options are specified by the module.
+%}
+loadModule =
+#(define-void-function (options module-path)
+   ((ly:context-mod?) symbol-list?)
+   (let*
+    ((module-path (map symbol-downcase module-path))
+     (package (car module-path))
+     (module (cdr module-path)))
+
+    ;; implicitly load package when not already loaded
+    (if (not (member package (getOption '(loaded-packages))))
+        (loadPackage package))
+
+    (let
+     ((loaded (member module (getOptionWithFallback (list 'loaded-modules package) '()))))
+     ;; check if module (and package) has already been loaded and warn appropriately
+     ;; (as this may indicate erroneous input files)
+     (if loaded
+         (oll:warn "Trying to reload module \"~a\". Skipping. Options will be set anyway."
+           (os-path-join-dots (append (list package) module)))
+         ;; else load module and register
+         (let*
+          ((module-file
+            (os-path-join-unix
+             (append
+              openlilylib-root
+              module-path
+              (list 'module.ily))))
+           (exists (file-exists? module-file)))
+
+          ;; try loading module file and (re)set flag
+          (set! loaded (immediate-include module-file))
+          (if loaded
+              ;; register in the option tree
+              (setOption `(loaded-modules ,package)
+                (append (getOption `(loaded-modules ,package)) (list module)))
+              ;; loading failed
+              (if exists
+                  (oll:warn
+                   "Error loading module file ~a. Please contact maintainer.\n\n"
+                   module-file)
+                  (oll:warn
+                   "No entry file found for module '~a'. Please check spelling and/or package installation."
+                   (os-path-join-dots module-path))
+                  ))))
+
+     ;; if module is (now) loaded process options if present
+     (if loaded
+         (let ((opts (if options (context-mod->props options) '())))
+           (for-each
+            (lambda (opt)
+              (let*
+               ((name (car opt))
+                (value (cdr opt))
+                (path (append module-path (list name))))
+               (if (option-registered? path)
+                   (setOption path value)
+                   (oll:warn "Unknown module option '~a'" (os-path-join-dots path)))))
+            opts))))))
+
+
+%{
+  Load multiple modules from a given package.
+  This command does *not* allow module options.
+  The first argument is the package name, passed as a case insensitive symbol.
+  The second argument is a list of modules, passed in one of the following ways:
+  - a symbol list, with a number of top-level modules
+    e.g. \loadModules analysis frames.arrows
+  - a list with symbols and at least one symbol-list, specifying
+    top-level *and* submodules
+    e.g. \loadModules package-foo
+         #'(module-one
+            module-two
+            (a nested submodule)
+            module-three)
+    NOTE: it is crucial that this list contains *at least* one nested list
+    because otherwise the whole expression would be interpreted as a
+    plain symbol-list!
+%}
+loadModules =
+#(define-void-function (package modules)(symbol? oll-module-list?)
+   (let
+    ((modules
+      (if (stringlist? modules) ;; incoming ffrom VBCL
+          (stringlist->symbol-list modules)
+          modules)))
+    (if (symbol-list? modules)
+        ;; list of top-level modules
+        (for-each
+         (lambda (m)
+           (loadModule (list package m)))
+         modules)
+        ;; a list of multiple modules and submodules
+        (for-each
+         (lambda (m)
+           (let ((module (if (list? m) m (list m))))
+             (loadModule (append (list package) module))))
+         modules))))
