@@ -58,21 +58,14 @@
 % for oll-core, other openLilyLib packages or arbitrary end-user code
 \include "options.ily"
 % Initialize option branch for oll-core
-\registerOption #'(oll-core root) #(this-parent)
+\registerOption oll-core.root #(this-parent)
 
+% Create these nodes as oll-core is not loaded through \loadPackage
 \registerOption loaded-packages #'(oll-core)
-\registerOption loaded-modules #'()
+\registerOption loaded-modules.oll-core #'()
 
 % Functionality to load and manage modules
 \include "module-handling.ily"
-
-
-% Registering available modules
-% These modules are not automatically loaded with oll-core
-% but are available for \loadModule
-
-% Include files from a directory that match a pattern
-\registerModule oll-core.include-pattern
 
 % Welcome message.
 % First set log level to 'log so it will be displayed,
