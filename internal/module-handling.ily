@@ -41,7 +41,7 @@
 % TODO: This seems not correct as in Scheme the dot isn't treated as a special character
 %
 #(define oll-maintainer-regex
-   (make-regexp "^([[:graph:]]+[[:space:]]*)+<([[:alnum:]]+)(\\.[[:alnum:]]*)*@([[:alnum:]]+)(\\.[[:alnum:]]+)*>"))
+   (make-regexp "^([[:graph:]]+[[:space:]]*)*<([[:alnum:]]+)(\\.[[:alnum:]]*)*@([[:alnum:]]+)(\\.[[:alnum:]]+)*>"))
 #(define (oll-maintainer? obj)
    (let ((pat oll-maintainer-regex))
      (if (and (string? obj)
@@ -59,7 +59,7 @@
 #(define repo-url-regex
    (make-regexp "^((https?://)([[:alnum:]]+\\.)+([[:alnum:]]+/)|git@([[:alnum:]]+\\.)+([[:alnum:]]+:))([[:alnum:]]+/)*([[:alnum:]]+(\\.[[:alnum:]]+)?|/)?$"))
 % URL predicate
-#(define (repo-url obj)
+#(define (repo-url? obj)
    (if (and (string? obj)
             (regexp-exec repo-url-regex obj))
        #t #f))
@@ -72,7 +72,6 @@
    (if (and (string? obj)
             (regexp-exec version-string-regex obj))
        #t #f))
-
 
 %Allowed arguments for \loadModules:
 % - single string (single module)
@@ -104,11 +103,11 @@
       (display-name ,string? "No package display name specified")
       (short-description ,string? "No short description available")
       (description ,string? "No description available")
-      (maintainers ,oll-maintainers? "No <maintainer(s)@available>")
+      (maintainers ,oll-maintainers? "No <maintainer.s@available>")
       (version ,oll-version-string? "0.0.0")
       (oll-core ,oll-version-string? "0.0.0")
       (license ,string? "No license specified")
-      (repository ,repo-url "http://no.repository.specified/")
+      (repository ,repo-url? "http://no.repository.specified/")
       )))
 
 % Alist with recognized options for library declarations
