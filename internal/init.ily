@@ -43,7 +43,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % A collection of general-purpose predicates
-#(use-modules (oll-core internal predicates))
+#(use-modules (oll-core internal tools))
 
 % Version predicates to execute code for specific LilyPond versions
 #(use-modules (oll-core internal lilypond-version-predicates))
