@@ -257,68 +257,69 @@ loadPackage =
 #(define-void-function (options name)
    ((ly:context-mod?) symbol?)
    "Load an openLilyLib package"
-   (if (not (member name (getOption '(loaded-packages))))
-       ;; load the package because it's new
-       (let*
-        ((package-root (append openlilylib-root (list name)))
-         (package-file (os-path-join-unix (append package-root '("package.ily"))))
-         (exists (file-exists? package-file))
-         (loaded (immediate-include package-file)))
-        (if (not loaded)
-            (if exists
-                (oll:warn
-                 "Error loading package file ~a. Please contact maintainer.\n\n"
-                 package-file)
-                (oll:warn
-                 "No entry file found for package '~a'. Please check spelling and/or package installation." name))
+   (let ((name (symbol-downcase name)))
+     (if (not (member name (getOption '(loaded-packages))))
+         ;; load the package because it's new
+         (let*
+          ((package-root (append openlilylib-root (list name)))
+           (package-file (os-path-join-unix (append package-root '("package.ily"))))
+           (exists (file-exists? package-file))
+           (loaded (immediate-include package-file)))
+          (if (not loaded)
+              (if exists
+                  (oll:warn
+                   "Error loading package file ~a. Please contact maintainer.\n\n"
+                   package-file)
+                  (oll:warn
+                   "No entry file found for package '~a'. Please check spelling and/or package installation." name))
 
-            ;; loading of the package file has completed successfully
-            ;; read metadata and register package
-            (let*
-             ((meta-file (os-path-join-unix (append package-root '("package.cnf"))))
-              (meta-lines (read-lines-from-file meta-file))
-              (meta (if meta-lines (parse-meta meta-lines) #f))
-              (registered (if meta (register-package name package-root meta) #f)))
+              ;; loading of the package file has completed successfully
+              ;; read metadata and register package
+              (let*
+               ((meta-file (os-path-join-unix (append package-root '("package.cnf"))))
+                (meta-lines (read-lines-from-file meta-file))
+                (meta (if meta-lines (parse-meta meta-lines) #f))
+                (registered (if meta (register-package name package-root meta) #f)))
 
-             ;; log (un)successful loading of package and metadata
-             (oll:log "Package ~a @~a loaded successfully,"
-               name (getOption `(,name meta version)))
-             (if registered
-                 (oll:log "package metadata successfully read.\n\n")
-                 (oll:warn "Dubious or missing metadata for package ~a ignored.
+               ;; log (un)successful loading of package and metadata
+               (oll:log "Package ~a @~a loaded successfully,"
+                 name (getOption `(,name meta version)))
+               (if registered
+                   (oll:log "package metadata successfully read.\n\n")
+                   (oll:warn "Dubious or missing metadata for package ~a ignored.
 Package not registered. Please contact maintainer!\n\n" name))
 
-             ;; process optional arguments (package options)
-             (if options
-                 (let*
-                  ((options (context-mod->props options))
-                   (modules (assq-ref options 'modules)))
-                  (for-each
-                   (lambda (opt)
-                     (let*
-                      ((option-name (car opt))
-                       (option-path (list name option-name)))
-                      (if (not (eq? option-name 'modules))
-                          ; TODO:
-                          ; can this be simplified once #17 is closed?
-                          (if (option-registered? option-path)
-                              (setOption option-path (cdr opt))
-                              (oll:warn "Unknown option '~a = ~a' for package '~a'"
-                                (car opt) (cdr opt) name)))))
-                   options)
+               ;; process optional arguments (package options)
+               (if options
+                   (let*
+                    ((options (context-mod->props options))
+                     (modules (assq-ref options 'modules)))
+                    (for-each
+                     (lambda (opt)
+                       (let*
+                        ((option-name (car opt))
+                         (option-path (list name option-name)))
+                        (if (not (eq? option-name 'modules))
+                            ; TODO:
+                            ; can this be simplified once #17 is closed?
+                            (if (option-registered? option-path)
+                                (setOption option-path (cdr opt))
+                                (oll:warn "Unknown option '~a = ~a' for package '~a'"
+                                  (car opt) (cdr opt) name)))))
+                     options)
 
-                  ;; load modules if given as option
-                  ;; A single module can be given or a list of modules.
-                  ;; In this each module can be given as symbol or as a symbol list
-                  (if modules
-                      (if (string? modules)
-                          (loadModule (list name (string->symbol modules)))
-                          (for-each
-                           (lambda (module)
-                             (loadModule (list name module)))
-                           modules)))
-                  )) ;; end (if options)
-             ) ;; end (if loaded)
+                    ;; load modules if given as option
+                    ;; A single module can be given or a list of modules.
+                    ;; In this each module can be given as symbol or as a symbol list
+                    (if modules
+                        (if (string? modules)
+                            (loadModule (list name (string->symbol modules)))
+                            (for-each
+                             (lambda (module)
+                               (loadModule (list name module)))
+                             modules)))
+                    )) ;; end (if options)
+               ) ;; end (if loaded)
 
-            )) ;; end loading package
-       (oll:log "Package '~a' already loaded. Skipping\n\n" name)))
+              )) ;; end loading package
+         (oll:log "Package '~a' already loaded. Skipping\n\n" name))))
