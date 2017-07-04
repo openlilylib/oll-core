@@ -3,3 +3,5 @@
 *.pdf
 *.eps
 *.log
+*.midi
+*.pyc
