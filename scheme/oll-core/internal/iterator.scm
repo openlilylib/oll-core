@@ -2,7 +2,7 @@
 ;;
 ;; Andrew Bernard 2017
 
-(define-module (oll-core iterator))
+(define-module (oll-core internal iterator))
 (export list-iter)
 
 ;; list iterator

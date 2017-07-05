@@ -1,6 +1,6 @@
 ;; VBCL parser test program
 
-(use-modules (oll-core vbcl))
+(use-modules (oll-core internal vbcl))
 (use-modules (ice-9 rdelim))
 
 (define main

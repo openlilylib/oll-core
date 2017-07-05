@@ -28,7 +28,7 @@
 ;%                                                                             %
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-(define-module (oll-core file-handling))
+(define-module (oll-core internal file-handling))
 (export
  immediate-include
  read-lines-from-file

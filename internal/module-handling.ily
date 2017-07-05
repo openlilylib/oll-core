@@ -28,8 +28,8 @@
 % Provides functions for loading/handling submodules of a package
 
 #(use-modules
-  (oll-core vbcl)
-  (oll-core file-handling))
+  (oll-core internal vbcl)
+  (oll-core internal file-handling))
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

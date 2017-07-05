@@ -3,8 +3,8 @@
 
 \include "oll-core/package.ily"
 
-#(use-modules (oll-core vbcl))
-#(use-modules (oll-core file-handling))
+#(use-modules (oll-core internal vbcl))
+#(use-modules (oll-core internal file-handling))
 
 % display list as lines of items
 #(define list-display
