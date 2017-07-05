@@ -306,6 +306,50 @@ displayOptions =
    (pretty-print
     oll-options #:display? #t))
 
+% Display the metadata of a package
+describePackage =
+#(define-void-function (name)(symbol?)
+   (if (member name (getOption '(loaded-packages)))
+       (begin
+        (format #t "\n\nopenLilyLib: Metadata of package '~a':\n=====\n" name)
+        (pretty-print (getOptionWithFallback `(,name meta) "None available")))
+       (format #t "\n\nopenLilyLib: Package '~a' is not loaded.\n\n" name)))
+
+% Display the options of a package or module (if available)
+% Package options will also include options of loaded modules
+displayModuleOptions =
+#(define-void-function (path)(symbol-list?)
+   (let*
+    ((package (car path))
+     (module (cdr path)))
+    (if (null? module)
+        ;; display *package* options
+        (if (member package (getOption '(loaded-packages)))
+            ;; package is loaded
+            (begin
+             (format #t "\n\nopenLilyLib: Options of package '~a':\n=====\n" package)
+             (let
+              ((options (filter
+                         (lambda (o)
+                           (not (member (car o) '(root meta))))
+                         (getOptionWithFallback (list package) '()))))
+              (if (not (null? options))
+                  ;; there are package options
+                  (pretty-print options)
+                  ;; no package options available
+                  (format #t "None available.\n\n"))))
+            ;; package is not loaded
+            (format #t "\n\nopenLilyLib: Can't show options, package '~a' is not loaded.\n\n" package))
+        ;; display *module* options
+        (if (member module (getOptionWithFallback `(loaded-modules ,package) '()))
+            ;; module is loaded
+            (begin
+             (format #t "\n\nopenLilyLib: Options of module '~a':\n=====\n" (os-path-join-dots path))
+             (pretty-print (getOptionWithFallback path "None available")))
+            ;; module is not loaded
+            (format #t "Can't show options, module '~a' is not loaded.\n\n" path)))))
+
+
 % TODO:
 % Provide commands to bulk-process this.
 % Maybe also make it possible to load options froma  JSON file
