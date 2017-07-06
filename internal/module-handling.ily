@@ -41,7 +41,7 @@
 % TODO: This seems not correct as in Scheme the dot isn't treated as a special character
 %
 #(define oll-maintainer-regex
-   (make-regexp "^([[:graph:]]+[[:space:]]*)*<([[:alnum:]]+)(\\.[[:alnum:]]*)*@([[:alnum:]]+)(\\.[[:alnum:]]+)*>"))
+   (make-regexp "^([[:graph:]]+[[:space:]]*)*<([[:graph:]]+)(\\.[[:graph:]]*)*@([[:graph:]]+)(\\.[[:graph:]]+)*>"))
 #(define (oll-maintainer? obj)
    (let ((pat oll-maintainer-regex))
      (if (and (string? obj)
@@ -57,7 +57,7 @@
 % Simple URL regex.
 % Matches HTTP(S) or git@ URLs
 #(define repo-url-regex
-   (make-regexp "^((https?://)([[:alnum:]]+\\.)+([[:alnum:]]+/)|git@([[:alnum:]]+\\.)+([[:alnum:]]+:))([[:alnum:]]+/)*([[:alnum:]]+(\\.[[:alnum:]]+)?|/)?$"))
+   (make-regexp "^((https?://)([[:graph:]-]+\\.)+([[:graph:]-]+/)|git@([[:graph:]-]+\\.)+([[:graph:]-]+:))([[:graph:]-]+/)*([[:graph:]]+(\\.[[:graph:]]+)?|/)?$"))
 % URL predicate
 #(define (repo-url? obj)
    (if (and (string? obj)
