@@ -170,7 +170,7 @@
       (append props
         (map
          (lambda (p)
-           (cons p (assq-ref props p)))
+           (cons p (cdr (assq-ref mand p))))
          missing-props))
       )))
 
