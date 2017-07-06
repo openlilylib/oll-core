@@ -232,6 +232,8 @@ Package not registered. Please contact maintainer!\n\n" name))
   Load a single package module.
   Mandatory argument is a symbol-list, consisting of the package name and
   the relative module path. Elements are case insensitive.
+  The module path can either point to a directory containing a module.ily
+  file or directly to an .ily file, given without the extension.
   If the package isn't loaded yet it will implicitly be attempted.
   If loading of the package fails the module isn't loaded either.
   The optional first argument can specify module options in a \with {} clause.
@@ -258,16 +260,24 @@ loadModule =
            (os-path-join-dots (append (list package) module)))
          ;; else load module and register
          (let*
-          ((module-file
+          ((module-base
             (os-path-join-unix
              (append
               openlilylib-root
-              module-path
-              (list 'module.ily))))
-           (exists (file-exists? module-file)))
+              module-path)))
+           ;; try either a 'module.ily' within a directory ...
+           (module-file (string-append module-base "/module.ily"))
+           ;; ... or a .ily file
+           (module-component (string-append module-base ".ily"))
+           (exists
+            (cond
+             ((file-exists? module-file) module-file)
+             ((file-exists? module-component) module-component)
+             (else #f)))
+           )
 
           ;; try loading module file and (re)set flag
-          (set! loaded (immediate-include module-file))
+          (set! loaded (immediate-include exists))
           (if loaded
               ;; register in the option tree
               (setOption `(loaded-modules ,package)
