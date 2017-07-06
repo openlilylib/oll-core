@@ -202,7 +202,7 @@ thisFileCompiled =
    "Return #t if the file where this function is called
     is the one that is currently compiled by LilyPond."
    (let ((outname (ly:parser-output-name (*parser*)))
-         (locname (location->normalized-path (*location*))))
+         (locname (os-path-join-unix (location->normalized-path (*location*)))))
      (ly:message outname)
      (regexp-match? (string-match (format "^(.*/)?~A\\.i?ly$" outname) locname))))
 
