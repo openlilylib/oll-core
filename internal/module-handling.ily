@@ -243,7 +243,7 @@ loadModule =
 #(define-void-function (options module-path)
    ((ly:context-mod?) symbol-list?)
    (let*
-    ((module-path (map symbol-downcase module-path))
+    (;(module-path (map symbol-downcase module-path))
      (package (car module-path))
      (module (cdr module-path)))
 
