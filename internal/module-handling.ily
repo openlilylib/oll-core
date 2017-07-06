@@ -104,6 +104,7 @@
       (version ,oll-version-string? "0.0.0")
       (oll-core ,oll-version-string? "0.0.0")
       (license ,string? "No license specified")
+      (website ,repo-url? "http://no.website.specified/")
       (repository ,repo-url? "http://no.repository.specified/")
       )))
 
@@ -125,7 +126,7 @@
    (let*
     ((orig-meta (parse-vbcl-config lines))
      (meta (if orig-meta
-               (check-props oll-mandatory-props oll-accepted-props orig-meta)
+               (check-props #t oll-mandatory-props oll-accepted-props orig-meta)
                #f)))
     meta))
 
