@@ -37,13 +37,15 @@
 % root directory (the parent of oll-core)
 \include "add-guile-path.ily"
 \addGuilePath #(os-path-join-unix openlilylib-root)
+\addGuilePath #(os-path-join-unix (append openlilylib-root '(oll-core scheme)))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Common functionality
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % A collection of general-purpose predicates
-#(use-modules (oll-core internal predicates))
+#(use-modules (oll-core internal tools))
+#(use-modules (oll-core internal control))
 
 % Version predicates to execute code for specific LilyPond versions
 #(use-modules (oll-core internal lilypond-version-predicates))
@@ -58,21 +60,14 @@
 % for oll-core, other openLilyLib packages or arbitrary end-user code
 \include "options.ily"
 % Initialize option branch for oll-core
-\registerOption #'(oll-core root) #(this-parent)
+\registerOption oll-core.root #(this-parent)
 
+% Create these nodes as oll-core is not loaded through \loadPackage
 \registerOption loaded-packages #'(oll-core)
-\registerOption loaded-modules #'()
+\registerOption loaded-modules.oll-core #'()
 
 % Functionality to load and manage modules
 \include "module-handling.ily"
-
-
-% Registering available modules
-% These modules are not automatically loaded with oll-core
-% but are available for \loadModule
-
-% Include files from a directory that match a pattern
-\registerModule oll-core.include-pattern
 
 % Welcome message.
 % First set log level to 'log so it will be displayed,

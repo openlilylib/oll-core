@@ -28,13 +28,13 @@
 ;%                                                                             %
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-(define-module (oll-core scheme tree))
+(define-module (oll-core tree))
 
 (use-modules
  (oop goops)
  (lily)
  (srfi srfi-1)
- (oll-core scheme stack))
+ (oll-core stack))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; tree
@@ -88,7 +88,7 @@ Expected ~a, got ~a" (procedure-name pred?) val))
         (if (not (tree? child))
             ;; create child node if option is set
             (if create
-                (begin 
+                (begin
                  (set! child (make <tree> #:key ckey))
                  (hash-set! (children tree) ckey child))))
         (if (tree? child)
@@ -275,9 +275,9 @@ Path: ~a" path)))))
   (tree-collect tree path (stack-create) (lambda (v) #t)))
 (define-method (tree-collect (tree <tree>) (path <list>) (pred? <procedure>))
   (tree-collect tree path (stack-create) pred?))
-(define-method (tree-collect (tree <tree>) (path <list>) (vals (@@ (oll-core scheme stack) <stack>))) ; there is also a <stack> class in (oop goops)
+(define-method (tree-collect (tree <tree>) (path <list>) (vals (@@ (oll-core stack) <stack>))) ; there is also a <stack> class in (oop goops)
   (tree-collect tree path vals (lambda (v) #t)))
-(define-method (tree-collect (tree <tree>) (path <list>) (vals (@@ (oll-core scheme stack) <stack>)) (pred? <procedure>))
+(define-method (tree-collect (tree <tree>) (path <list>) (vals (@@ (oll-core stack) <stack>)) (pred? <procedure>))
   (let ((val (value tree)))
     (if (> (length path) 0)
         (let* ((ckey (car path))

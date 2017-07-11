@@ -1,0 +1,57 @@
+#
+# openLilyLib/oll-core configuration
+#
+
+# Very Basic Configuration Language VBCL
+#
+# Format
+#
+# name value pairs, arbitrary text including whitespace, single line.
+#
+# n: v
+#
+# long text, text lines to be started with whitespace indent, e.g. two spaces.
+# terminate with '  >'
+#
+# name: <
+#  long text over as many lines as needed
+#  ...
+#  >
+#
+# comments.
+#
+# lists: any number of lines, two spaces at start of each item line.
+# terminate with '  ]'.
+#
+# name: [
+#  item1
+#  item2
+#  ]
+#
+# # lines starting with # are ignored
+#
+# blank lines are ignored
+#
+# Do not forget there needs to be a newline at the end of the file.
+#
+
+
+name: oll-core
+display-name: openLilyLib Core
+short-description: Extension Package Infrastructure for GNU LilyPond
+description: <
+  openLilyLib is a framework for creating extension packages for the
+  GNU LilyPond notation software. The oll-core package provides the
+  basic functionality of common topics such as module handling, logging,
+  and other tools.
+  >
+modules: [
+  include-pattern
+  ]
+maintainers: [
+  Urs Liska <ul@openlilylib.org>
+  ]
+version: 0.5.0
+license: GPL3
+repository:  https://github.com/openlilylib/oll-core/
+

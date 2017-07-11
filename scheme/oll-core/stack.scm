@@ -3,8 +3,11 @@
 ;% This file is part of openLilyLib,                                           %
 ;%                      ===========                                            %
 ;% the community library project for GNU LilyPond                              %
-;% (https://github.com/openlilylib/openlilylib                                 %
+;% (https://github.com/openlilylib)                                            %
 ;%              -----------                                                    %
+;%                                                                             %
+;% Library: oll-core                                                           %
+;%          ========                                                           %
 ;%                                                                             %
 ;% openLilyLib is free software: you can redistribute it and/or modify         %
 ;% it under the terms of the GNU General Public License as published by        %
@@ -21,32 +24,54 @@
 ;%                                                                             %
 ;% openLilyLib is maintained by Urs Liska, ul@openlilylib.org                  %
 ;% and others.                                                                 %
-;%       Copyright Urs Liska, 2015                                             %
+;%       Copyright Jan-Peter Voigt, Urs Liska, 2016                            %
 ;%                                                                             %
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-;; This files contains general-purpose predicates for use with LilyPond and openLilylib
+(define-module (oll-core stack))
 
-(define-module (oll-core internal predicates))
+(use-modules (oop goops)(lily))
 
-;; String list predicate
-(define-public (stringlist? obj)
-   "Evaulates to #t when obj is a list containing exclusively of strings."
-   (and (list? obj)
-        (every string? obj)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; stack
 
-(define-public (string-or-alist? obj)
-   "Returns true if obj is a string or a list of pairs (alist)
-    (used for mandatory library options)"
-   (if (or (string? obj)
-           (and (list? obj)
-                (every pair? obj)))
-       #t #f))
+; a stack implementation with methods push, pop and get
+(define-class <stack> ()
+  (name #:accessor name #:setter set-name! #:init-value "stack")
+  (store #:accessor store #:setter set-store! #:init-value '())
+  )
 
-#(define-public (symbol-list-or-string? object)
-   "Returns true if obj is a symbol list or a string
-    (used for arguments passed to os-path functions)."
-   (if (or (symbol-list? object)
-           (string? object))
-       #t #f))
+; push value on the stack
+(define-method (push (stack <stack>) val)
+  (set! (store stack) (cons val (store stack))))
 
+; get topmost value from stack without removing it
+(define-method (get (stack <stack>))
+  (let ((st (store stack)))
+    (if (> (length st) 0)
+        (car st)
+        #f)))
+
+; return and remove topmost value
+(define-method (pop (stack <stack>))
+  (let ((st (store stack)))
+    (if (> (length st) 0)
+        (let ((ret (car st)))
+          (set! (store stack) (cdr st))
+          ret)
+        #f)))
+
+; display stack
+(define-method (display (stack <stack>) port)
+  (for-each (lambda (e)
+              (format #t "~A> " (name stack))(display e)(newline)) (store stack)))
+
+; create stack object
+(define-public (stack-create)(make <stack>))
+
+; export methods
+(export push)
+(export get)
+(export pop)
+(export store)
+(export name)
