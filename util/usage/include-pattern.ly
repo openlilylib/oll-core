@@ -1,7 +1,7 @@
 \version "2.19.22"
 
 \include "oll-core/package.ily"
-\loadModule oll-core.include-pattern
+\loadModule oll-core.util.include-pattern
 
 % show all includes
 \setLogLevel #'log
