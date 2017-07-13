@@ -38,6 +38,22 @@
  (lily)
  (srfi srfi-1))
 
+(define (deprecate func-name)
+  (ly:input-warning (*location*) "
+
+openLilyLib. DEPRECATION:
+Using '~a' from oll-core is deprecated.
+openLilyLib explicitly does not suppport LilyPond 2.18 anymore,
+so users are expected to use the development version 2.19 or a
+later stable release.
+Since LilyPond 2.19.18 the version predicate 'ly:version?' is
+included in LilyPond, and all uses of '~a'
+should properly be replaced with that.
+
+Reference:
+http://lilypond.org/doc/v2.19/Documentation/usage/writing-code-to-support-multiple-versions
+" func-name func-name))
+
 (define (calculate-version ref-version)
   "Return an integer representation of the LilyPond version,
    can be compared with the operators."
@@ -56,30 +72,35 @@
 (define-public (lilypond-greater-than? ref-version)
   "Return #t if the executed LilyPond version
    is greater than the given reference version"
+  (deprecate "lilypond-greater-than?")
   (> (calculate-version (ly:version))
      (calculate-version ref-version)))
 
 (define-public (lilypond-greater-than-or-equal? ref-version)
   "Return #t if the executed LilyPond version
    is greater than or equal to the given reference version"
+  (deprecate "lilypond-greater-than-or-equal?")
   (>= (calculate-version (ly:version))
       (calculate-version ref-version)))
 
 (define-public (lilypond-less-than? ref-version)
   "Return #t if the executed LilyPond version
    is less than the given reference version"
+  (deprecate "lilypond-less-than?")
   (< (calculate-version (ly:version))
      (calculate-version ref-version)))
 
 (define-public (lilypond-less-than-or-equal? ref-version)
   "Return #t if the executed LilyPond version
    is less than or equal to the given reference version"
+  (deprecate "lilypond-less-than-or-equal?")
   (<= (calculate-version (ly:version))
       (calculate-version ref-version)))
 
 (define-public (lilypond-equals? ref-version)
   "Return #t if the executed LilyPond version
    is equal to the given reference version"
+  (deprecate "lilypond-equals?")
   (= (calculate-version (ly:version))
      (calculate-version ref-version)))
 
