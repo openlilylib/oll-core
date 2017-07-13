@@ -115,6 +115,7 @@
     `((lilypond-min-version . ,oll-version-string?)
       (lilypond-max-version . ,oll-version-string?)
       (dependencies . ,list?)
+      (contributors . ,oll-maintainers?)
       (modules . ,oll-module-list?)
       )))
 
