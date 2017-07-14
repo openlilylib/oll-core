@@ -46,7 +46,7 @@ Using '~a' from oll-core is deprecated.
 openLilyLib explicitly does not suppport LilyPond 2.18 anymore,
 so users are expected to use the development version 2.19 or a
 later stable release.
-Since LilyPond 2.19.18 the version predicate 'ly:version?' is
+Since LilyPond 2.19.57 the version predicate 'ly:version?' is
 included in LilyPond, and all uses of '~a'
 should properly be replaced with that.
 
