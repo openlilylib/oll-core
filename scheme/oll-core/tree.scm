@@ -336,7 +336,7 @@ Path: ~a" path)))))
          (port (ly:assoc-get 'port opt (current-output-port)))) ; output-port
     (tree-walk-branch tree path
       (lambda (path k val)
-        (format #t "[~A] ~A" (key tree) (string-join (map pformat path) pathsep 'infix) port)
+        (format port "[~A] ~A" (key tree) (string-join (map pformat path) pathsep 'infix))
         (if dval
             (begin
              (display ": " port)
@@ -356,7 +356,7 @@ Path: ~a" path)))))
 ; display tree
 (define-method (display (tree <tree>) port)
   (let ((tkey (key tree)))
-    (tree-display tree)))
+    (tree-display tree `(port . ,port))))
 
 ; tree predicate
 (define-public (tree? tree)(is-a? tree <tree>))
