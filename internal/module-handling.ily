@@ -167,7 +167,7 @@ loadPackage =
          ;; load the package because it's new
          (let*
           ((package-root (append openlilylib-root (list name)))
-           (package-file (os-path-join-unix (append package-root '("package.ily"))))
+           (package-file (os-path-join (append package-root '("package.ily"))))
            (exists (file-exists? package-file))
            (loaded (immediate-include package-file)))
           (if (not loaded)
@@ -181,7 +181,7 @@ loadPackage =
               ;; loading of the package file has completed successfully
               ;; read metadata and register package
               (let*
-               ((meta-file (os-path-join-unix (append package-root '("package.cnf"))))
+               ((meta-file (os-path-join (append package-root '("package.cnf"))))
                 (meta-lines (read-lines-from-file meta-file))
                 (meta (if meta-lines (parse-meta meta-lines) #f))
                 (registered (if meta (register-package name package-root meta) #f)))
@@ -262,7 +262,7 @@ loadModule =
          ;; else load module and register
          (let*
           ((module-base
-            (os-path-join-unix
+            (os-path-join
              (append
               openlilylib-root
               module-path)))

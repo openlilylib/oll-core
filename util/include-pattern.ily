@@ -51,7 +51,7 @@ includePattern =
    (string? string?)
    (let* ((base-dir (os-path-split in-dir))
           (parent
-           (os-path-join-unix
+           (os-path-join
             (if (os-path-absolute? base-dir)
                 in-dir
                 (append (this-dir) base-dir))))
