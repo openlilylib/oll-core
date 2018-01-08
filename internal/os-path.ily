@@ -58,21 +58,37 @@
 % force an arbitrary path to be a list of strings.
 % From there we can reconstruct paths in arbitrary ways.
 
-#(define-public (os-path-split path)
+#(define (do-os-path-split path sep)
    "Returns a string list with path elements.
-    Takes either a path string or a list.
-    If 'path' is a string it is split
-    respecting the OS dependent path separator,
-    if it is a list then the list is returned,
-    while elements are converted from symbol to string if necessary."
+    Takes either a path string or a list, and a separator char.
+    Elements of a given list are converted from symbol to string
+    if necessary."
    (if (string? path)
-       (string-split path os-path-separator-char)
+       (string-split path sep)
        (map
         (lambda (element)
           (if (string? element)
               element
               (symbol->string element)))
         path)))
+
+#(define-public (os-path-split path)
+   "Returns a string list with path elements.
+    Takes either a path string or a list.
+    If 'path' is a string it is split using the forward slash as
+    path separator (as this is the default case in LilyPond),
+    if it is a list then the list is returned,
+    with elements converted from symbol to string if necessary."
+   (do-os-path-split path #\/))
+
+#(define-public (os-path-split-os path)
+   "Returns a string list with path elements.
+    Takes either a path string or a list.
+    If 'path' is a string it is split
+    respecting the OS dependent path separator,
+    if it is a list then the list is returned,
+    with elements converted from symbol to string if necessary."
+   (do-os-path-split path os-path-separator-char))
 
 % Output paths in different forms
 % First force the input to be a list, then convert it to the desired format
