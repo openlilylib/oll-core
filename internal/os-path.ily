@@ -78,7 +78,7 @@
 % First force the input to be a list, then convert it to the desired format
 % All the functions take a 'path' argument as processed by os-path-split.
 
-#(define-public (os-path-join path)
+#(define-public (os-path-join-os path)
    "Converts a given path to a path corresponding to the OS convention"
    (string-join (os-path-split path) os-path-separator-string))
 

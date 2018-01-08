@@ -70,7 +70,7 @@ setLogLevel =
    (format oll-logfile
      (string-append
       "\n"
-      (os-path-join (location->normalized-path (*location*)))
+      (os-path-join-os (location->normalized-path (*location*)))
       "\nLine: "
       (number->string (cadr (ly:input-file-line-char-column (*location*))))
 
