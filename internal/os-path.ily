@@ -222,3 +222,33 @@ thisFileCompiled =
      (ly:message outname)
      (regexp-match? (string-match (format "^(.*/)?~A\\.i?ly$" outname) locname))))
 
+
+%%%%%%%%%%%%%%%%%%%%%%
+% Directory operations
+%%%%%%%%%%%%%%%%%%%%%%
+
+% Return all files from the given dir
+% as a string list
+#(define (scandir dir)
+   (let ((input-dir (opendir dir))
+         (result '())
+         ;; exclude hidden files and directory links
+         (pattern (make-regexp "^[^.]")))
+     (do ((entry (readdir input-dir) (readdir input-dir))) ((eof-object? entry))
+       (if (regexp-exec pattern entry)
+           (set! result (append result (list entry)))))
+     (closedir input-dir)
+     result))
+
+% Return all subdirectories from the given dir
+% as a string list
+#(define (get-subdirectories dir)
+   (let ((all-files (scandir dir)))
+     (map string->symbol
+       (filter
+        (lambda (file)
+          (if (eq? 'directory
+                   (stat:type (stat (string-append dir "/" file))))
+              #t #f))
+        all-files))))
+
