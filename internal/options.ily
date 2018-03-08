@@ -101,13 +101,58 @@
 
 
 % Convenience function, retrieves a property alist from a context-mod object.
+% Properties can optionally be mandatory and type-checked
+
+% First the necessary predicates
+#(define (prop-rule? obj)
+   "Check if obj is a property rule. Property rules must
+    - be a pair
+    - have a car which is a symbol? (the key)
+    - have a cdr which is 
+      - an empty list ('just' the key)
+      - a list of pairs whose every car is 'type or 'default
+"
+   (and (pair? obj)
+        (symbol? (car obj))
+        (let
+         ((entries (cdr obj)))
+         (or (null? entries)
+             (and (pair? entries)
+                  (every (lambda (e)
+                           (and (pair? e)
+                                (if (member (car e) '(type default))
+                                    #t #f)))
+                    entries))))
+        ))
+
+#(define (prop-rules? obj)
+   "Check if given object is a property rules structure.
+    This is true when obj is a list of 'prop-rule? entries
+    optionally prepended with a symbol 'strict."
+   (if (list? obj)
+       (let
+        ((struct
+          (cond
+           ((alist? obj) obj)
+           ((eq? (first obj) 'strict) (cdr obj))
+           (else '()))))
+        (every prop-rule? struct))
+       #f))
+
 % mod has to satisfy the ly:context-mod? predicate,
 % returns an alist with all key-value pairs set.
-#(define-public (context-mod->props mod)
-   (map
-    (lambda (prop)
-      (cons (cadr prop) (caddr prop)))
-    (ly:get-context-mods mod)))
+% if 'rules' is given it is used to
+% - type-check
+% - make mandatory
+% - reject unknown
+% - supply with default values
+% any given properties
+#(define-public context-mod->props
+   (define-scheme-function (rules mod)((prop-rules? #f) ly:context-mod?)
+     (map
+      (lambda (prop)
+        (cons (cadr prop) (caddr prop)))
+      (ly:get-context-mods mod))))
 
 
 % check a property alist (or a ly:context-mod?) for adherence to
