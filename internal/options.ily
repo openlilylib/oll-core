@@ -132,12 +132,12 @@
       (map (lambda (rule)
              (let*
               ((optional (and (> (length rule) 1) (eq? (last rule) 'opt)))
-               (pred 
+               (pred
                 (if (or (= (length rule) 1)
                         (and (= (length rule) 2) optional))
                     scheme?
                     (second rule)))
-               (default 
+               (default
                 (if (or (and (= (length rule) 3)
                              (not optional))
                         (> (length rule) 3))
@@ -206,6 +206,10 @@
           (validate-props strict rules props)
           props))))
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DEPRECATED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Please use validate-props instead %%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % check a property alist (or a ly:context-mod?) for adherence to
 % a given set of rules/templates
@@ -219,6 +223,9 @@
 #(define check-props
    (define-scheme-function (force-mand mand accepted props)
      ((boolean?) oll-mand-props? oll-accepted-props? al-or-props?)
+     (ly:input-warning (*location*) "
+function 'check-props' is deprecated (March 2018) and may eventually
+be removed. Please use 'validate-props' instead.")
      (let*
       ((props (if (ly:context-mod? props) (context-mod->props props) props))
 
