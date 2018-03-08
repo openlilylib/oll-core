@@ -135,29 +135,6 @@
                                 (third rule) '())))
                (list (first rule) pred default)))
         rules))
-     (props
-      (delete '()
-        (map (lambda (p)
-               (let*
-                ((k (car p)) (v (cdr p)) (rule (assoc-ref rules k)))
-                (cond
-                 ;; unknown option
-                 ((not rule)
-                  (if strict
-                      (begin
-                       (ly:input-warning (*location*)
-                         "Unknown property \n  \"~a\" => ~a" k v)
-                       '())
-                      p))
-                 ;; type check successful
-                 (((car rule) v) p)
-                 (else
-                  (begin
-                   (ly:input-warning (*location*)
-                     "Type check failed for property \"~a\". Expected: ~a, given: ~a"
-                     k (car rule) v)
-                   '())))))
-          props)))
      (missing
       (delete '()
         (map (lambda (r)
@@ -171,10 +148,34 @@
                      (if (null? default)
                          (begin
                           (ly:input-warning (*location*)
-                            "Missing mandatory property \"~a\". Set to empty list." k)
+                            "Missing mandatory property \"~a\"." k)
                           '())
                          (cons k default))))))
-          rules))))
+          rules)))
+     (props
+      (delete '()
+        (map (lambda (p)
+               (let*
+                ((k (car p)) (v (cdr p)) (rule (assoc-ref rules k)))
+                (cond
+                 ;; unknown option
+                 ((not rule)
+                  (if strict
+                      (begin
+                       (ly:input-warning (*location*)
+                         "Unknown property \"~a\"." k)
+                       '())
+                      p))
+                 ;; type check successful
+                 (((car rule) v) p)
+                 (else
+                  (begin
+                   (ly:input-warning (*location*)
+                     "Type check failed for property \"~a\".\nExpected: ~a, given: ~a"
+                     k (car rule) v)
+                   '())))))
+          props)))
+     )
     (append props missing)))
 
 % Convert a ly:context-mod? argument to a properties alist
