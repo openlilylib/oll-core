@@ -113,6 +113,7 @@
    (and (list? obj)
         (symbol? (first obj))
         (or (= (length obj) 1)
+            (eq? 'opt (last obj))
             (procedure? (second obj)))))
 
 #(define (prop-rules? obj)
@@ -129,11 +130,20 @@
    (let*
     ((rules
       (map (lambda (rule)
-             (let ((pred (if (= (length rule) 1)
-                             scheme? (second rule)))
-                   (default (if (> (length rule) 2)
-                                (third rule) '())))
-               (list (first rule) pred default)))
+             (let*
+              ((optional (and (> (length rule) 1) (eq? (last rule) 'opt)))
+               (pred 
+                (if (or (= (length rule) 1)
+                        (and (= (length rule) 2) optional))
+                    scheme?
+                    (second rule)))
+               (default 
+                (if (or (and (= (length rule) 3)
+                             (not optional))
+                        (> (length rule) 3))
+                    (third rule)
+                    '())))
+              (list (first rule) pred default optional)))
         rules))
      (missing
       (delete '()
@@ -141,8 +151,9 @@
                (let*
                 ((k (car r))
                  (default (third r))
+                 (optional (fourth r))
                  (prop (assoc-get k props)))
-                (if prop
+                (if (or prop optional)
                     '()
                     (begin
                      (if (null? default)
