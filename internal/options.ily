@@ -105,54 +105,94 @@
 
 % First the necessary predicates
 #(define (prop-rule? obj)
-   "Check if obj is a property rule. Property rules must
-    - be a pair
-    - have a car which is a symbol? (the key)
-    - have a cdr which is 
-      - an empty list ('just' the key)
-      - a list of pairs whose every car is 'type or 'default
-"
-   (and (pair? obj)
-        (symbol? (car obj))
-        (let
-         ((entries (cdr obj)))
-         (or (null? entries)
-             (and (pair? entries)
-                  (every (lambda (e)
-                           (and (pair? e)
-                                (if (member (car e) '(type default))
-                                    #t #f)))
-                    entries))))
-        ))
+   "Check if obj is a property rule. Property rules must satisfy:
+    - be a list
+    - first element is a symbol? (the key)
+    - second element - if present -  must be a procedure? (a predicate)
+   (- third element would be the default, but isn't checked in this predicate)"
+   (and (list? obj)
+        (symbol? (first obj))
+        (or (= (length obj) 1)
+            (procedure? (second obj)))))
 
 #(define (prop-rules? obj)
    "Check if given object is a property rules structure.
-    This is true when obj is a list of 'prop-rule? entries
-    optionally prepended with a symbol 'strict."
-   (if (list? obj)
-       (let
-        ((struct
-          (cond
-           ((alist? obj) obj)
-           ((eq? (first obj) 'strict) (cdr obj))
-           (else '()))))
-        (every prop-rule? struct))
-       #f))
+    This is true when obj is a list of 'prop-rule? entries"
+   (and (list? obj)
+        (every prop-rule? obj)))
 
-% mod has to satisfy the ly:context-mod? predicate,
-% returns an alist with all key-value pairs set.
-% if 'rules' is given it is used to
-% - type-check
-% - make mandatory
-% - reject unknown
-% - supply with default values
-% any given properties
+#(define (validate-props strict rules props)
+   "Check a list of properties and return a possibly updated list.
+    - Handle unknown options (remove or not depending on 'strict')
+    - type check
+    - Handle missing properties. If a default is avaible use that."
+   (let*
+    ((rules
+      (map (lambda (rule)
+             (let ((pred (if (= (length rule) 1)
+                             scheme? (second rule)))
+                   (default (if (> (length rule) 2)
+                                (third rule) '())))
+               (list (first rule) pred default)))
+        rules))
+     (props
+      (delete '()
+        (map (lambda (p)
+               (let*
+                ((k (car p)) (v (cdr p)) (rule (assoc-ref rules k)))
+                (cond
+                 ;; unknown option
+                 ((not rule)
+                  (if strict
+                      (begin
+                       (ly:input-warning (*location*)
+                         "Unknown property \n  \"~a\" => ~a" k v)
+                       '())
+                      p))
+                 ;; type check successful
+                 (((car rule) v) p)
+                 (else
+                  (begin
+                   (ly:input-warning (*location*)
+                     "Type check failed for property \"~a\". Expected: ~a, given: ~a"
+                     k (car rule) v)
+                   '())))))
+          props)))
+     (missing
+      (delete '()
+        (map (lambda (r)
+               (let*
+                ((k (car r))
+                 (default (third r))
+                 (prop (assoc-get k props)))
+                (if prop
+                    '()
+                    (begin
+                     (if (null? default)
+                         (begin
+                          (ly:input-warning (*location*)
+                            "Missing mandatory property \"~a\". Set to empty list." k)
+                          '())
+                         (cons k default))))))
+          rules))))
+    (append props missing)))
+
+% Convert a ly:context-mod? argument to a properties alist
+% Arguments:
+% - rules (optional): a prop-rules? property definition list
+% - strict (option): a boolean indicating that unknown options are rejected
+% - mod: the context-mod
 #(define-public context-mod->props
-   (define-scheme-function (rules mod)((prop-rules? #f) ly:context-mod?)
-     (map
-      (lambda (prop)
-        (cons (cadr prop) (caddr prop)))
-      (ly:get-context-mods mod))))
+   (define-scheme-function (rules strict mod)((prop-rules?) (boolean?) ly:context-mod?)
+     (let
+      ((props
+        (map
+         (lambda (prop)
+           (cons (cadr prop) (caddr prop)))
+         (ly:get-context-mods mod))))
+      (if rules
+          (validate-props strict rules props)
+          props))))
 
 
 % check a property alist (or a ly:context-mod?) for adherence to
