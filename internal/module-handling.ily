@@ -88,37 +88,24 @@
                              (symbol-list? entry))) obj)))
        #t #f))
 
-
-% Alist with mandatory options for library declarations
-% Each entry is a list with
-% - option name
-% - type predicate
-% - Default value
-#(define oll-mandatory-props
-   (make-mandatory-props
-    `((name ,string? "No package name specified")
-      (display-name ,string? "No package display name specified")
-      (short-description ,string? "No short description available")
-      (description ,string? "No description available")
-      (maintainers ,oll-maintainers? "No <maintainer.s@available>")
-      (version ,oll-version-string? "0.0.0")
-      (oll-core ,oll-version-string? "0.0.0")
-      (license ,string? "No license specified")
-      (website ,repo-url? "http://no.website.specified/")
-      (repository ,repo-url? "http://no.repository.specified/")
-      )))
-
-% Alist with recognized options for library declarations
-% If an option is in this list it is type-checked against the given predicate.
-#(define oll-accepted-props
-   (make-accepted-props
-    `((lilypond-min-version . ,oll-version-string?)
-      (lilypond-max-version . ,oll-version-string?)
-      (dependencies . ,list?)
-      (contributors . ,oll-maintainers?)
-      (modules . ,oll-module-list?)
-      )))
-
+% Define mandatory and optional properties accepted in package declarations
+#(define oll-package-props
+   `((name                 ,string? "No package name specified")
+     (display-name         ,string? "No package display name specified")
+     (short-description    ,string? "No short description available")
+     (description          ,string? "No description available")
+     (maintainers          ,oll-maintainers? "No <maintainer.s@available>")
+     (version              ,oll-version-string? "0.0.0")
+     (oll-core             ,oll-version-string? "0.0.0")
+     (license              ,string? "No license specified")
+     (website              ,repo-url? "http://no.website.specified/")
+     (repository           ,repo-url? "http://no.repository.specified/")
+  ;; accepted/optional properties
+     (lilypond-min-version ,oll-version-string? opt)
+     (lilypond-max-version ,oll-version-string? opt)
+     (dependencies         ,list? opt)
+     (contributors         ,oll-maintainers? opt)
+     (modules              ,oll-module-list? opt)))
 
 #(define (parse-meta lines)
    "Parse the VBCL string list and perform type checking and defaulting.
@@ -127,7 +114,7 @@
    (let*
     ((orig-meta (parse-vbcl-config lines))
      (meta (if orig-meta
-               (check-props #t oll-mandatory-props oll-accepted-props orig-meta)
+               (validate-props #t oll-package-props orig-meta)
                #f)))
     meta))
 
@@ -245,8 +232,8 @@ loadModule =
    ((ly:context-mod?) symbol-list?)
    (let*
     (;(module-path (map symbol-downcase module-path))
-     (package (car module-path))
-     (module (cdr module-path)))
+      (package (car module-path))
+      (module (cdr module-path)))
 
     ;; implicitly load package when not already loaded
     (if (not (member package (getOption '(loaded-packages))))

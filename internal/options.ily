@@ -101,14 +101,115 @@
 
 
 % Convenience function, retrieves a property alist from a context-mod object.
-% mod has to satisfy the ly:context-mod? predicate,
-% returns an alist with all key-value pairs set.
-#(define-public (context-mod->props mod)
-   (map
-    (lambda (prop)
-      (cons (cadr prop) (caddr prop)))
-    (ly:get-context-mods mod)))
+% Properties can optionally be mandatory and type-checked
 
+% First the necessary predicates
+#(define (prop-rule? obj)
+   "Check if obj is a property rule. Property rules must satisfy:
+    - be a list
+    - first element is a symbol? (the key)
+    - second element - if present -  must be a procedure? (a predicate)
+   (- third element would be the default, but isn't checked in this predicate)"
+   (and (list? obj)
+        (symbol? (first obj))
+        (or (= (length obj) 1)
+            (eq? 'opt (last obj))
+            (procedure? (second obj)))))
+
+#(define (prop-rules? obj)
+   "Check if given object is a property rules structure.
+    This is true when obj is a list of 'prop-rule? entries"
+   (and (list? obj)
+        (every prop-rule? obj)))
+
+#(define (validate-props strict rules props)
+   "Check a list of properties and return a possibly updated list.
+    - Handle unknown options (remove or not depending on 'strict')
+    - type check
+    - Handle missing properties. If a default is avaible use that."
+   (let*
+    ((rules
+      (map (lambda (rule)
+             (let*
+              ((optional (and (> (length rule) 1) (eq? (last rule) 'opt)))
+               (pred
+                (if (or (= (length rule) 1)
+                        (and (= (length rule) 2) optional))
+                    scheme?
+                    (second rule)))
+               (default
+                (if (or (and (= (length rule) 3)
+                             (not optional))
+                        (> (length rule) 3))
+                    (third rule)
+                    '())))
+              (list (first rule) pred default optional)))
+        rules))
+     (missing
+      (delete '()
+        (map (lambda (r)
+               (let*
+                ((k (car r))
+                 (default (third r))
+                 (optional (fourth r))
+                 (prop (assoc-get k props)))
+                (if (or prop optional)
+                    '()
+                    (begin
+                     (if (null? default)
+                         (begin
+                          (ly:input-warning (*location*)
+                            "Missing mandatory property \"~a\"." k)
+                          '())
+                         (cons k default))))))
+          rules)))
+     (props
+      (delete '()
+        (map (lambda (p)
+               (let*
+                ((k (car p)) (v (cdr p)) (rule (assoc-ref rules k)))
+                (cond
+                 ;; unknown option
+                 ((not rule)
+                  (if strict
+                      (begin
+                       (ly:input-warning (*location*)
+                         "Unknown property \"~a\"." k)
+                       '())
+                      p))
+                 ;; type check successful
+                 (((car rule) v) p)
+                 (else
+                  (begin
+                   (ly:input-warning (*location*)
+                     "Type check failed for property \"~a\".\nExpected: ~a, given: ~a"
+                     k (car rule) v)
+                   '())))))
+          props)))
+     )
+    (append props missing)))
+
+% Convert a ly:context-mod? argument to a properties alist
+% Arguments:
+% - rules (optional): a prop-rules? property definition list
+% - strict (option): a boolean indicating that unknown options are rejected
+% - mod: the context-mod
+#(define-public context-mod->props
+   (define-scheme-function (rules strict mod)((prop-rules?) (boolean?) ly:context-mod?)
+     (let
+      ((props
+        (map
+         (lambda (prop)
+           (cons (cadr prop) (caddr prop)))
+         (ly:get-context-mods mod))))
+      (if rules
+          (validate-props strict rules props)
+          props))))
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DEPRECATED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Please use validate-props instead %%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % check a property alist (or a ly:context-mod?) for adherence to
 % a given set of rules/templates
@@ -122,6 +223,9 @@
 #(define check-props
    (define-scheme-function (force-mand mand accepted props)
      ((boolean?) oll-mand-props? oll-accepted-props? al-or-props?)
+     (ly:input-warning (*location*) "
+function 'check-props' is deprecated (March 2018) and may eventually
+be removed. Please use 'validate-props' instead.")
      (let*
       ((props (if (ly:context-mod? props) (context-mod->props props) props))
 
