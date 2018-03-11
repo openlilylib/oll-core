@@ -227,6 +227,22 @@
           (validate-props rules props)
           props))))
 
+% Macro to facilitate definition of functions with options.
+% Begin the function definition with 'with-options and give the ruleset
+% before the body of the function. 
+% Example:
+% (with-options define-void-function () ()
+%   `(strict
+%      (msg ,string?)
+%      (? author ,string? "Anonymous"))
+%   (pretty-print props))
+% Warning: The body of the function can't be empty.
+#(define-macro (with-options func-def-proc vars preds rulings . body)
+   `(,func-def-proc ,(append '(opts) vars) ,(append '(ly:context-mod?) preds)
+      (let* ((rules ,rulings)
+             (props (context-mod->props rules opts)))
+        . ,body)))
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DEPRECATED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Please use validate-props instead %%%%%%%%%%%%%%%%%%%%%%%
