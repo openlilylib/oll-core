@@ -116,19 +116,26 @@
             (eq? 'opt (last obj))
             (procedure? (second obj)))))
 
+#(define (enforcement-symbol? obj)
+  (or (eq? 'strict obj)
+      (eq? 'flexible obj)))
+
 #(define (prop-rules? obj)
    "Check if given object is a property rules structure.
-    This is true when obj is a list of 'prop-rule? entries"
+    This is true when obj is a list, its first element is an 'enforcement-symbol? and subsequent elements are 'prop-rule? entries"
    (and (list? obj)
-        (every prop-rule? obj)))
+        (enforcement-symbol? (first obj))
+        (every prop-rule? (cdr obj))))
 
-#(define (validate-props strict rules props)
+#(define (validate-props rules props)
    "Check a list of properties and return a possibly updated list.
-    - Handle unknown options (remove or not depending on 'strict')
+    - Handle unknown options (remove or not depending on 'strict' or 'flexible' ruleset)
     - type check
-    - Handle missing properties. If a default is avaible use that."
+    - Handle missing properties. If a default is available use that."
    (let*
-    ((rules
+    ((strict (eq? (car rules) 'strict))
+     (rules (cdr rules))
+     (rules
       (map (lambda (rule)
              (let*
               ((optional (and (> (length rule) 1) (eq? (last rule) 'opt)))
@@ -192,10 +199,9 @@
 % Convert a ly:context-mod? argument to a properties alist
 % Arguments:
 % - rules (optional): a prop-rules? property definition list
-% - strict (option): a boolean indicating that unknown options are rejected
 % - mod: the context-mod
 #(define-public context-mod->props
-   (define-scheme-function (rules strict mod)((prop-rules?) (boolean?) ly:context-mod?)
+   (define-scheme-function (rules mod)((prop-rules?) ly:context-mod?)
      (let
       ((props
         (map
@@ -203,7 +209,7 @@
            (cons (cadr prop) (caddr prop)))
          (ly:get-context-mods mod))))
       (if rules
-          (validate-props strict rules props)
+          (validate-props rules props)
           props))))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
