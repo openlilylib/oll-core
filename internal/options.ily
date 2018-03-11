@@ -105,16 +105,28 @@
 
 % First the necessary predicates
 #(define (prop-rule? obj)
-   "Check if obj is a property rule. Property rules must satisfy:
-    - be a list
-    - first element is a symbol? (the key)
-    - second element - if present -  must be a procedure? (a predicate)
-   (- third element would be the default, but isn't checked in this predicate)"
-   (and (list? obj)
-        (symbol? (first obj))
-        (or (= (length obj) 1)
-            (eq? 'opt (last obj))
-            (procedure? (second obj)))))
+   "Check if obj is a property rule. A property rule can have 5 forms:
+    - arg-name                    (a symbol, stating that this argument is required)
+    - (arg-name)                  (a list with a symbol, same as above)
+    - (arg-name ,type?)           (same as above with a type check)
+    - (? arg-name)                (optional argument, for strict rulesets)
+    - (? arg-name ,type?)         (same as above with a type-check)
+    - (? arg-name ,type? def-v)   (same as above with a default value)
+    Default values aren't checked in this predicate"
+   (or (symbol? obj)
+       (and (list? obj)
+            (let ((l (length obj))
+                  (f (first obj)))
+              (and (symbol? f)
+                   (or (= l 1)
+                       (and (= l 2)
+                            (if (eq? '? f)
+                                (symbol? (second obj))
+                                (procedure? (second obj))))
+                       (and (> l 2)
+                            (< l 5)
+                            (symbol? (second obj))
+                            (procedure? (third obj)))))))))
 
 #(define (enforcement-symbol? obj)
   (or (eq? 'strict obj)
@@ -137,20 +149,22 @@
      (rules (cdr rules))
      (rules
       (map (lambda (rule)
+             (if (symbol? rule) (set! rule (list rule)))
              (let*
-              ((optional (and (> (length rule) 1) (eq? (last rule) 'opt)))
+              ((optional (eq? (first rule) '?))
+               (k (if optional (second rule) (first rule)))
                (pred
                 (if (or (= (length rule) 1)
                         (and (= (length rule) 2) optional))
                     scheme?
-                    (second rule)))
+                    (if optional
+                        (third rule)
+                        (second rule))))
                (default
-                (if (or (and (= (length rule) 3)
-                             (not optional))
-                        (> (length rule) 3))
-                    (third rule)
+                (if (= 4 (length rule))
+                    (fourth rule)
                     '())))
-              (list (first rule) pred default optional)))
+              (list k pred default optional)))
         rules))
      (missing
       (delete '()
@@ -160,7 +174,8 @@
                  (default (third r))
                  (optional (fourth r))
                  (prop (assoc-get k props)))
-                (if (or prop optional)
+                (if (or prop 
+                        (and optional (null? default)))
                     '()
                     (begin
                      (if (null? default)
