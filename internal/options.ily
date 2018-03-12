@@ -245,10 +245,12 @@
                             (equal? rulings qq-empty)
                             (equal? rulings nq-empty)))
           (new-vars (append '(opts) vars))
-          (new-preds (append '(ly:context-mod?) preds)))
+          (new-preds (append '(ly:context-mod?) preds))
+          (rules-v (if empty-rules? '(quote ()) rulings))
+          (props-v (append '(context-mod->props) (if empty-rules? '() '(rules)) '(opts))))
      `(,func-def-proc ,new-vars ,new-preds
-        (let* ((rules (,if ,empty-rules? '() ,rulings))
-               (props ,(append '(context-mod->props) (if empty-rules? '() '(rules)) '(opts))))
+        (let* ((rules ,rules-v)
+               (props ,props-v))
           . ,body))))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
