@@ -238,10 +238,18 @@
 %   (pretty-print props))
 % Warning: The body of the function can't be empty.
 #(define-macro (with-options func-def-proc vars preds rulings . body)
-   `(,func-def-proc ,(append '(opts) vars) ,(append '(ly:context-mod?) preds)
-      (let* ((rules ,rulings)
-             (props (context-mod->props rules opts)))
-        . ,body)))
+   (let* ((q-empty '(quote ()))
+          (qq-empty '(quasiquote ()))
+          (nq-empty '())
+          (empty-rules? (or (equal? rulings q-empty)
+                            (equal? rulings qq-empty)
+                            (equal? rulings nq-empty)))
+          (new-vars (append '(opts) vars))
+          (new-preds (append '(ly:context-mod?) preds)))
+     `(,func-def-proc ,new-vars ,new-preds
+        (let* ((rules (,if ,empty-rules? '() ,rulings))
+               (props ,(append '(context-mod->props) (if empty-rules? '() '(rules)) '(opts))))
+          . ,body))))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DEPRECATED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
