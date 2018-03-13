@@ -134,7 +134,10 @@
 
 #(define (prop-rules? obj)
    "Check if given object is a property rules structure.
-    This is true when obj is a list, its first element is an 'enforcement-symbol? and subsequent elements are 'prop-rule? entries"
+    This is true when obj:
+    - is a list
+    - its first element is an 'enforcement-symbol?
+    - subsequent elements are 'prop-rule? entries"
    (and (list? obj)
         (enforcement-symbol? (first obj))
         (every prop-rule? (cdr obj))))
@@ -149,9 +152,9 @@
      (rules (cdr rules))
      (rules
       (map (lambda (rule)
-             (if (symbol? rule) (set! rule (list rule)))
              (let*
-              ((optional (eq? (first rule) '?))
+              ((rule (if (symbol? rule) (list rule) rule))
+               (optional (eq? (first rule) '?))
                (k (if optional (second rule) (first rule)))
                (pred
                 (if (or (= (length rule) 1)
