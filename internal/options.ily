@@ -114,21 +114,21 @@
     - (? arg-name ,type? def-v)   (same as above with a default value)
     Default values aren't checked in this predicate"
    (let ((obj (if (symbol? obj) (list obj) obj)))
-   	 (and (list? obj)
-   	 	  (let* ((l (length obj))
-   	 	  	     (f (first obj))
-   	 	  	     (opt (eq? '? f)))
-   	 	    (and (symbol? f))
-   	 	         (or (and (= l 1) (not opt))
-   	 	         	 (let ((s (second obj)))
-   	 	         	   (or (and (= l 2)
-   	 	         	   	        (if opt
-   	 	         	   	        	(symbol? s)
-   	 	         	   	        	(procedure? s)))
-   	 	         	   	   (and (> l 2)
-   	 	         	   	   	    (< l 5)
-   	 	         	   	   	    opt
-   	 	         	   	   	    (procedure? (third obj))))))))))
+     (and (list? obj)
+          (not (null? obj))
+          (let ((l (length obj))
+                (f (first obj)))
+            (if (eq? '? f)
+                (case l
+                  ((2) (symbol? (second obj)))
+                  ((3 4) (and (symbol? (second obj)) 
+                              (procedure? (third obj))))
+                  (else #f))
+                (case l
+                  ((1) (symbol? f))
+                  ((2) (and (symbol? f)
+                            (procedure? (second obj))))
+                  (else #f)))))))
 
 #(define (enforcement-symbol? obj)
   (or (eq? 'strict obj)
