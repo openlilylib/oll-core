@@ -90,22 +90,23 @@
 
 % Define mandatory and optional properties accepted in package declarations
 #(define oll-package-props
-   `((name                 ,string? "No package name specified")
-     (display-name         ,string? "No package display name specified")
-     (short-description    ,string? "No short description available")
-     (description          ,string? "No description available")
-     (maintainers          ,oll-maintainers? "No <maintainer.s@available>")
-     (version              ,oll-version-string? "0.0.0")
-     (oll-core             ,oll-version-string? "0.0.0")
-     (license              ,string? "No license specified")
-     (website              ,repo-url? "http://no.website.specified/")
-     (repository           ,repo-url? "http://no.repository.specified/")
+   `(strict
+     (? name                 ,string? "No package name specified")
+     (? display-name         ,string? "No package display name specified")
+     (? short-description    ,string? "No short description available")
+     (? description          ,string? "No description available")
+     (? maintainers          ,oll-maintainers? "No <maintainer.s@available>")
+     (? version              ,oll-version-string? "0.0.0")
+     (? oll-core             ,oll-version-string? "0.0.0")
+     (? license              ,string? "No license specified")
+     (? website              ,repo-url? "http://no.website.specified/")
+     (? repository           ,repo-url? "http://no.repository.specified/")
   ;; accepted/optional properties
-     (lilypond-min-version ,oll-version-string? opt)
-     (lilypond-max-version ,oll-version-string? opt)
-     (dependencies         ,list? opt)
-     (contributors         ,oll-maintainers? opt)
-     (modules              ,oll-module-list? opt)))
+     (? lilypond-min-version ,oll-version-string?)
+     (? lilypond-max-version ,oll-version-string?)
+     (? dependencies         ,list?)
+     (? contributors         ,oll-maintainers?)
+     (? modules              ,oll-module-list?)))
 
 #(define (parse-meta lines)
    "Parse the VBCL string list and perform type checking and defaulting.
@@ -114,7 +115,7 @@
    (let*
     ((orig-meta (parse-vbcl-config lines))
      (meta (if orig-meta
-               (validate-props #t oll-package-props orig-meta)
+               (validate-props oll-package-props orig-meta)
                #f)))
     meta))
 
