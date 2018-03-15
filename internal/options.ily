@@ -143,7 +143,9 @@
    "Check a list of properties and return a possibly updated list.
     - Handle unknown options (remove or not depending on 'strict' or 'flexible' ruleset)
     - type check
-    - Handle missing properties. If a default is available use that."
+    - Handle missing properties. If a default is available use that.
+    It is *assumed* without checking that rules satisfies the prop-rules? predicate,
+    which can be justified because the function should not be called from documents."
    (let*
     ((strict (eq? (car rules) 'strict))
      (rules (cdr rules))
