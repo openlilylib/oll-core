@@ -179,13 +179,12 @@
                 (if (or prop
                         (and optional (null? default)))
                     '()
-                    (begin
-                     (if (null? default)
-                         (begin
-                          (ly:input-warning (*location*)
-                            "Missing mandatory property \"~a\"." k)
-                          '())
-                         (cons k default))))))
+                    (if (null? default)
+                        (begin
+                         (ly:input-warning (*location*)
+                           "Missing mandatory property \"~a\"." k)
+                         '())
+                        (cons k default)))))
           rules)))
      (props
       (delete '()
