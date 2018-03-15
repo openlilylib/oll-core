@@ -116,19 +116,14 @@
    (let ((obj (if (symbol? obj) (list obj) obj)))
      (and (list? obj)
           (not (null? obj))
-          (let ((l (length obj))
-                (f (first obj)))
-            (if (eq? '? f)
-                (case l
-                  ((2) (symbol? (second obj)))
-                  ((3 4) (and (symbol? (second obj)) 
-                              (procedure? (third obj))))
-                  (else #f))
-                (case l
-                  ((1) (symbol? f))
-                  ((2) (and (symbol? f)
-                            (procedure? (second obj))))
-                  (else #f)))))))
+          (let*
+           ((obj (if (eq? '? (first obj)) (cdr obj) obj))
+            (l (length obj)))
+           (case l
+             ((1) (symbol? (first obj)))
+             ((2) (and (symbol? (first obj))
+                       (procedure? (second obj))))
+             (else #f))))))
 
 #(define (enforcement-symbol? obj)
   (or (eq? 'strict obj)
@@ -179,7 +174,7 @@
                  (default (third r))
                  (optional (fourth r))
                  (prop (assoc-get k props)))
-                (if (or prop 
+                (if (or prop
                         (and optional (null? default)))
                     '()
                     (begin
@@ -234,7 +229,7 @@
 
 % Macro to facilitate definition of functions with options.
 % Begin the function definition with 'with-options and give the ruleset
-% before the body of the function. 
+% before the body of the function.
 % Example:
 % (with-options define-void-function () ()
 %   `(strict
