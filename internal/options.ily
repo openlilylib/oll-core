@@ -117,11 +117,15 @@
      (and (list? obj)
           (not (null? obj))
           (let*
-           ((obj (if (eq? '? (first obj)) (cdr obj) obj))
+           ((opt (if (eq? '? (first obj)) #t #f))
+            (obj (if opt (cdr obj) obj))
             (l (length obj)))
            (case l
              ((1) (symbol? (first obj)))
              ((2) (and (symbol? (first obj))
+                       (procedure? (second obj))))
+             ((3) (and opt
+                       (symbol? (first obj))
                        (procedure? (second obj))))
              (else #f))))))
 
