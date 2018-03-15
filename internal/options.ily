@@ -154,17 +154,15 @@
              (let*
               ((rule (if (symbol? rule) (list rule) rule))
                (optional (eq? (first rule) '?))
-               (k (if optional (second rule) (first rule)))
+               (rule (if optional (cdr rule) rule))
+               (k (first rule))
                (pred
-                (if (or (= (length rule) 1)
-                        (and (= (length rule) 2) optional))
+                (if (= (length rule) 1)
                     scheme?
-                    (if optional
-                        (third rule)
-                        (second rule))))
+                    (second rule)))
                (default
-                (if (= 4 (length rule))
-                    (fourth rule)
+                (if (= 3 (length rule))
+                    (third rule)
                     '())))
               (list k pred default optional)))
         rules))
