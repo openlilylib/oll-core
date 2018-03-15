@@ -174,8 +174,7 @@
                  (default (third r))
                  (optional (fourth r))
                  (prop (assoc-get k props)))
-                (if (or prop
-                        (and optional (null? default)))
+                (if (or prop optional)
                     '()
                     (if (null? default)
                         (begin
