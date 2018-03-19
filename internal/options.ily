@@ -105,45 +105,70 @@
 
 % First the necessary predicates
 #(define (prop-rule? obj)
-   "Check if obj is a property rule. Property rules must satisfy:
-    - be a list
-    - first element is a symbol? (the key)
-    - second element - if present -  must be a procedure? (a predicate)
-   (- third element would be the default, but isn't checked in this predicate)"
-   (and (list? obj)
-        (symbol? (first obj))
-        (or (= (length obj) 1)
-            (eq? 'opt (last obj))
-            (procedure? (second obj)))))
+   "Check if obj is a property rule. A property rule can have 5 forms:
+    - arg-name                    (a symbol, stating that this argument is required)
+    - (arg-name)                  (a list with a symbol, same as above)
+    - (arg-name ,type?)           (same as above with a type check)
+    - (? arg-name)                (optional argument, for strict rulesets)
+    - (? arg-name ,type?)         (same as above with a type-check)
+    - (? arg-name ,type? def-v)   (same as above with a default value)
+    Default values aren't checked in this predicate"
+   (let ((obj (if (symbol? obj) (list obj) obj)))
+     (and (list? obj)
+          (not (null? obj))
+          (let*
+           ((opt (if (eq? '? (first obj)) #t #f))
+            (obj (if opt (cdr obj) obj))
+            (l (length obj)))
+           (case l
+             ((1) (symbol? (first obj)))
+             ((2) (and (symbol? (first obj))
+                       (procedure? (second obj))))
+             ((3) (and opt
+                       (symbol? (first obj))
+                       (procedure? (second obj))))
+             (else #f))))))
+
+#(define (enforcement-symbol? obj)
+  (or (eq? 'strict obj)
+      (eq? 'flexible obj)))
 
 #(define (prop-rules? obj)
    "Check if given object is a property rules structure.
-    This is true when obj is a list of 'prop-rule? entries"
+    This is true when obj:
+    - is a list
+    - its first element is an 'enforcement-symbol?
+    - subsequent elements are 'prop-rule? entries"
    (and (list? obj)
-        (every prop-rule? obj)))
+        (enforcement-symbol? (first obj))
+        (every prop-rule? (cdr obj))))
 
-#(define (validate-props strict rules props)
+#(define (validate-props rules props)
    "Check a list of properties and return a possibly updated list.
-    - Handle unknown options (remove or not depending on 'strict')
+    - Handle unknown options (remove or not depending on 'strict' or 'flexible' ruleset)
     - type check
-    - Handle missing properties. If a default is avaible use that."
+    - Handle missing properties. If a default is available use that.
+    It is *assumed* without checking that rules satisfies the prop-rules? predicate,
+    which can be justified because the function should not be called from documents."
    (let*
-    ((rules
+    ((strict (eq? (car rules) 'strict))
+     (rules (cdr rules))
+     (rules
       (map (lambda (rule)
              (let*
-              ((optional (and (> (length rule) 1) (eq? (last rule) 'opt)))
+              ((rule (if (symbol? rule) (list rule) rule))
+               (optional (eq? (first rule) '?))
+               (rule (if optional (cdr rule) rule))
+               (k (first rule))
                (pred
-                (if (or (= (length rule) 1)
-                        (and (= (length rule) 2) optional))
+                (if (= (length rule) 1)
                     scheme?
                     (second rule)))
                (default
-                (if (or (and (= (length rule) 3)
-                             (not optional))
-                        (> (length rule) 3))
+                (if (= 3 (length rule))
                     (third rule)
                     '())))
-              (list (first rule) pred default optional)))
+              (list k pred default optional)))
         rules))
      (missing
       (delete '()
@@ -155,13 +180,12 @@
                  (prop (assoc-get k props)))
                 (if (or prop optional)
                     '()
-                    (begin
-                     (if (null? default)
-                         (begin
-                          (ly:input-warning (*location*)
-                            "Missing mandatory property \"~a\"." k)
-                          '())
-                         (cons k default))))))
+                    (if (null? default)
+                        (begin
+                         (ly:input-warning (*location*)
+                           "Missing mandatory property \"~a\"." k)
+                         '())
+                        (cons k default)))))
           rules)))
      (props
       (delete '()
@@ -192,10 +216,9 @@
 % Convert a ly:context-mod? argument to a properties alist
 % Arguments:
 % - rules (optional): a prop-rules? property definition list
-% - strict (option): a boolean indicating that unknown options are rejected
 % - mod: the context-mod
 #(define-public context-mod->props
-   (define-scheme-function (rules strict mod)((prop-rules?) (boolean?) ly:context-mod?)
+   (define-scheme-function (rules mod)((prop-rules?) ly:context-mod?)
      (let
       ((props
         (map
@@ -203,8 +226,34 @@
            (cons (cadr prop) (caddr prop)))
          (ly:get-context-mods mod))))
       (if rules
-          (validate-props strict rules props)
+          (validate-props rules props)
           props))))
+
+% Macro to facilitate definition of functions with options.
+% Begin the function definition with 'with-options and give the ruleset
+% before the body of the function.
+% Example:
+% (with-options define-void-function () ()
+%   `(strict
+%      (msg ,string?)
+%      (? author ,string? "Anonymous"))
+%   (pretty-print props))
+% Warning: The body of the function can't be empty.
+#(define-macro (with-options func-def-proc vars preds rulings . body)
+   (let* ((q-empty '(quote ()))
+          (qq-empty '(quasiquote ()))
+          (nq-empty '())
+          (empty-rules? (or (equal? rulings q-empty)
+                            (equal? rulings qq-empty)
+                            (equal? rulings nq-empty)))
+          (new-vars (append '(opts) vars))
+          (new-preds (append '(ly:context-mod?) preds))
+          (rules-v (if empty-rules? '(quote ()) rulings))
+          (props-v (append '(context-mod->props) (if empty-rules? '() '(rules)) '(opts))))
+     `(,func-def-proc ,new-vars ,new-preds
+        (let* ((rules ,rules-v)
+               (props ,props-v))
+          . ,body))))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DEPRECATED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
