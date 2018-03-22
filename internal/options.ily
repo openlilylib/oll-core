@@ -130,8 +130,8 @@
              (else #f))))))
 
 #(define (enforcement-symbol? obj)
-  (or (eq? 'strict obj)
-      (eq? 'flexible obj)))
+   (or (eq? 'strict obj)
+       (eq? 'flexible obj)))
 
 #(define (prop-rules? obj)
    "Check if given object is a property rules structure.
@@ -178,14 +178,15 @@
                  (default (third r))
                  (optional (fourth r))
                  (prop (assoc-get k props)))
-                (if (or prop optional)
-                    '()
-                    (if (null? default)
-                        (begin
-                         (ly:input-warning (*location*)
-                           "Missing mandatory property \"~a\"." k)
-                         '())
-                        (cons k default)))))
+                (cond
+                 (prop '())
+                 ((not (null? default)) (cons k default))
+                 (optional '())
+                 (else
+                  (begin
+                   (ly:input-warning (*location*)
+                     "Missing mandatory property \"~a\"." k)
+                   '())))))
           rules)))
      (props
       (delete '()
