@@ -259,6 +259,9 @@
                    (props ,props-v))
               . ,body)))))
 
+#(define-macro (with-opts . rest)
+   `(with-options . ,rest))
+
 #(define-macro (with-required-options func-def-proc vars preds rulings . body)
    (let* ((q-empty '(quote ()))
           (qq-empty '(quasiquote ()))
@@ -274,6 +277,9 @@
         (let* ((rules ,rules-v)
                (props ,props-v))
           . ,body))))
+
+#(define-macro (with-req-opts . rest)
+   `(with-required-options . ,rest))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DEPRECATED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
