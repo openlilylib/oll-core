@@ -250,13 +250,12 @@
           (empty-vars? (empty-parens? vars))
           (new-vars (append '(opts) vars))
           (new-preds (append '((ly:context-mod? (ly:make-context-mod))) preds))
-          (rules-v (if empty-rules? '(quote ()) rulings))
-          (props-v (append '(context-mod->props) (if empty-rules? '() '(rules)) '(opts))))
+          (rules-v (if empty-rules? (quote '(flexible)) rulings)))
      (if empty-vars?
          (ly:warning "a with-options function needs to have at least one mandatory argument.")
          `(,func-def-proc ,new-vars ,new-preds
             (let* ((rules ,rules-v)
-                   (props ,props-v))
+                   (props (context-mod->props rules opts)))
               . ,body)))))
 
 #(define-macro (with-opts . rest)
@@ -266,11 +265,10 @@
    (let* ((empty-rules? (empty-parens? rulings))
           (new-vars (append '(opts) vars))
           (new-preds (append '(ly:context-mod?) preds))
-          (rules-v (if empty-rules? '(quote ()) rulings))
-          (props-v (append '(context-mod->props) (if empty-rules? '() '(rules)) '(opts))))
+          (rules-v (if empty-rules? (quote '(flexible)) rulings)))
      `(,func-def-proc ,new-vars ,new-preds
         (let* ((rules ,rules-v)
-               (props ,props-v))
+               (props (context-mod->props rules opts)))
           . ,body))))
 
 #(define-macro (with-req-opts . rest)
