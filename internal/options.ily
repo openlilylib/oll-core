@@ -245,6 +245,15 @@
        (equal? (quote '()) obj)
        (equal? (quote `()) obj)))
 
+#(define (make-opts-function-declaration proc vars preds rules body)
+   "Return the declaration of a function with the given arguments.
+    For internal use with the macros 'with-options' and 'with-required-options',
+    to separate the parsing of the arguments from the function declaration."
+   `(,proc ,vars ,preds
+      (let* ((rules ,rules)
+             (props (context-mod->props rules opts)))
+        . ,body)))
+
 #(define-macro (with-options func-def-proc vars preds rulings . body)
    (let* ((empty-rules? (empty-parens? rulings))
           (empty-vars? (empty-parens? vars))
@@ -253,10 +262,7 @@
           (rules-v (if empty-rules? (quote '(flexible)) rulings)))
      (if empty-vars?
          (ly:warning "a with-options function needs to have at least one mandatory argument.")
-         `(,func-def-proc ,new-vars ,new-preds
-            (let* ((rules ,rules-v)
-                   (props (context-mod->props rules opts)))
-              . ,body)))))
+         (make-opts-function-declaration func-def-proc new-vars new-preds rules-v body))))
 
 #(define-macro (with-opts . rest)
    `(with-options . ,rest))
@@ -266,10 +272,7 @@
           (new-vars (append '(opts) vars))
           (new-preds (append '(ly:context-mod?) preds))
           (rules-v (if empty-rules? (quote '(flexible)) rulings)))
-     `(,func-def-proc ,new-vars ,new-preds
-        (let* ((rules ,rules-v)
-               (props (context-mod->props rules opts)))
-          . ,body))))
+     (make-opts-function-declaration func-def-proc new-vars new-preds rules-v body)))
 
 #(define-macro (with-req-opts . rest)
    `(with-required-options . ,rest))
