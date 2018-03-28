@@ -249,10 +249,15 @@
    "Return the declaration of a function with the given arguments."
    (let* ((vars (append '(opts) vars))
           (preds
-           (begin
-            (if (and optional (or (empty-parens? preds) (every list? preds)))
-                (ly:warning "a with-options function needs to have at least one mandatory argument."))
-            (append '((ly:context-mod? (ly:make-context-mod))) preds)))
+           (if optional
+               (begin
+                (cond
+                 ((every list? preds)
+                  (ly:warning "defining a with-options function without mandatory arguments."))
+                 ((list? (first preds))
+                  (ly:warning "defining a with-options function where the first argument is optional.")))
+                (append '((ly:context-mod? (ly:make-context-mod))) preds))
+               (append '(ly:context-mod?) preds)))
           (rules
            (if (empty-parens? rules)
                (quote '(flexible))
