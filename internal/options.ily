@@ -245,40 +245,33 @@
        (equal? (quote '()) obj)
        (equal? (quote `()) obj)))
 
-#(define (make-opts-function-declaration proc vars preds rules body)
-   "Return the declaration of a function with the given arguments.
-    For internal use with the macros 'with-options' and 'with-required-options',
-    to separate the parsing of the arguments from the function declaration."
-   `(,proc ,vars ,preds
-      (let* ((rules ,rules)
-             (props (context-mod->props rules opts)))
-        . ,body)))
-
-#(define-macro (with-options proc vars preds rules . body)
+#(define (make-opts-function-declaration proc vars preds rules optional body)
+   "Return the declaration of a function with the given arguments."
    (let* ((vars (append '(opts) vars))
           (preds
            (begin
-            (if (or (empty-parens? preds)
-                    (every list? preds))
+            (if (and optional (or (empty-parens? preds) (every list? preds)))
                 (ly:warning "a with-options function needs to have at least one mandatory argument."))
             (append '((ly:context-mod? (ly:make-context-mod))) preds)))
           (rules
            (if (empty-parens? rules)
                (quote '(flexible))
                rules)))
-     (make-opts-function-declaration proc vars preds rules body)))
+     `(,proc ,vars ,preds
+        (let* ((rules ,rules)
+               (props (context-mod->props rules opts)))
+          . ,body))))
+
+#(define-macro (with-options proc vars preds rules . body)
+   (let ((optional #t))
+     (make-opts-function-declaration proc vars preds rules optional body)))
 
 #(define-macro (with-opts . rest)
    `(with-options . ,rest))
 
 #(define-macro (with-required-options proc vars preds rules . body)
-   (let* ((vars (append '(opts) vars))
-          (preds (append '(ly:context-mod?) preds))
-          (rules
-           (if (empty-parens? rules)
-               (quote '(flexible))
-               rules)))
-     (make-opts-function-declaration proc vars preds rules body)))
+   (let ((optional #f))
+     (make-opts-function-declaration proc vars preds rules optional body)))
 
 #(define-macro (with-req-opts . rest)
    `(with-required-options . ,rest))
