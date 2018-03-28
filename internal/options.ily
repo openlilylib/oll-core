@@ -254,25 +254,31 @@
              (props (context-mod->props rules opts)))
         . ,body)))
 
-#(define-macro (with-options func-def-proc vars preds rulings . body)
-   (let* ((empty-rules? (empty-parens? rulings))
-          (empty-vars? (empty-parens? vars))
-          (new-vars (append '(opts) vars))
-          (new-preds (append '((ly:context-mod? (ly:make-context-mod))) preds))
-          (rules-v (if empty-rules? (quote '(flexible)) rulings)))
-     (if empty-vars?
-         (ly:warning "a with-options function needs to have at least one mandatory argument.")
-         (make-opts-function-declaration func-def-proc new-vars new-preds rules-v body))))
+#(define-macro (with-options proc vars preds rules . body)
+   (let* ((vars (append '(opts) vars))
+          (preds
+           (begin
+            (if (or (empty-parens? preds)
+                    (every list? preds))
+                (ly:warning "a with-options function needs to have at least one mandatory argument."))
+            (append '((ly:context-mod? (ly:make-context-mod))) preds)))
+          (rules
+           (if (empty-parens? rules)
+               (quote '(flexible))
+               rules)))
+     (make-opts-function-declaration proc vars preds rules body)))
 
 #(define-macro (with-opts . rest)
    `(with-options . ,rest))
 
-#(define-macro (with-required-options func-def-proc vars preds rulings . body)
-   (let* ((empty-rules? (empty-parens? rulings))
-          (new-vars (append '(opts) vars))
-          (new-preds (append '(ly:context-mod?) preds))
-          (rules-v (if empty-rules? (quote '(flexible)) rulings)))
-     (make-opts-function-declaration func-def-proc new-vars new-preds rules-v body)))
+#(define-macro (with-required-options proc vars preds rules . body)
+   (let* ((vars (append '(opts) vars))
+          (preds (append '(ly:context-mod?) preds))
+          (rules
+           (if (empty-parens? rules)
+               (quote '(flexible))
+               rules)))
+     (make-opts-function-declaration proc vars preds rules body)))
 
 #(define-macro (with-req-opts . rest)
    `(with-required-options . ,rest))
