@@ -245,7 +245,7 @@
        (equal? (quote '()) obj)
        (equal? (quote `()) obj)))
 
-#(define (make-opts-function-declaration proc vars preds rules optional body)
+#(define (make-opts-function-declaration proc vars preds rules optional . body)
    "Return the declaration of a function with the given arguments."
    (let* ((vars (append '(opts) vars))
           (preds
@@ -269,14 +269,14 @@
 
 #(define-macro (with-options proc vars preds rules . body)
    (let ((optional #t))
-     (make-opts-function-declaration proc vars preds rules optional body)))
+     (apply make-opts-function-declaration `(,proc ,vars ,preds ,rules ,optional . ,body))))
 
 #(define-macro (with-opts . rest)
    `(with-options . ,rest))
 
 #(define-macro (with-required-options proc vars preds rules . body)
    (let ((optional #f))
-     (make-opts-function-declaration proc vars preds rules optional body)))
+     (apply make-opts-function-declaration `(,proc ,vars ,preds ,rules ,optional . ,body))))
 
 #(define-macro (with-req-opts . rest)
    `(with-required-options . ,rest))
