@@ -219,16 +219,28 @@
 % - rules (optional): a prop-rules? property definition list
 % - mod: the context-mod
 #(define-public context-mod->props
-   (define-scheme-function (rules mod)((prop-rules?) ly:context-mod?)
-     (let
-      ((props
-        (map
-         (lambda (prop)
-           (cons (cadr prop) (caddr prop)))
-         (ly:get-context-mods mod))))
-      (if rules
-          (validate-props rules props)
-          props))))
+   (lambda (req . rest)
+     ;unpack mod and rules from the arguments
+     (let ((mod 
+            (cond
+              ((ly:context-mod? req) req)
+              ((and (= 1 (length rest)) (ly:context-mod? (first rest))) (first rest))
+              (else
+                (begin
+                  (ly:error "context-mod->props didn't receive a context-mod")
+                  (ly:make-context-mod)))))
+           (rules (if (prop-rules? req)
+                      req
+                      '(flexible))))
+       (let
+        ((props
+          (map
+           (lambda (prop)
+             (cons (cadr prop) (caddr prop)))
+           (ly:get-context-mods mod))))
+        (if rules
+            (validate-props rules props)
+            props)))))
 
 % Macro to facilitate definition of functions with options.
 % Begin the function definition with 'with-options and give the ruleset
