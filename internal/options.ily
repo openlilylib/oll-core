@@ -408,6 +408,36 @@ setChildOption =
           "Trying to add child to non-existent option: ~a"
           (os-path-join-dots parent-path)))))
 
+% Append a value to a list option
+% #1: Optional boolean <create>
+%     If set this will implicitly create an empty list to append to
+% #2: <path>
+%     A path within the option tree.
+%     If <create> is not #t and <path> doesn't exist a warning is issued
+% #3: <val>
+%     Any Scheme value to be appended to the list option
+appendToOption =
+#(define-void-function (create path val)
+   ((boolean?) symbol-list? scheme?)
+   (let
+    ((opt
+      ;; Handle non-existing option, either by creating an empty list
+      ;; or by triggering the warning
+      (if create
+          (getOptionWithFallback path '())
+          (getOptionWithFallback path #f))))
+    (cond
+     ((not opt)
+      (oll:warn
+       "Trying to append to non-existent option: ~a"
+       (os-path-join-dots path)))
+     ((not (list? opt))
+      (oll:warn
+       "Trying to append to non-list option: ~a"
+       (os-path-join-dots path)))
+     (else
+      (setOption path (append opt (list val)))))))
+
 % Retrieve an option
 % Provide a tree path in dotted or list notation
 % Retrieving a non-existing option path issues a warning and returns #f
