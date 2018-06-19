@@ -52,12 +52,14 @@ colorGrobs =
 % generated once upon loading and then cached in the closure.
 colorMusic =
 #(let ((grob-names (map car all-grob-descriptions)))
-   (define-music-function (my-color music)
-     (color? ly:music?)
-     (make-sequential-music
-      (list
-       (colorGrobs grob-names my-color #t)
-       music
-       (colorGrobs grob-names my-color #f)))))
+   (define-music-function (grobs my-color music)
+     ((symbol-list?) color? ly:music?)
+     (let ((grob-list 
+            (if (and grobs (not (null? grobs))) grobs grob-names)))
+       (make-sequential-music
+        (list
+         (colorGrobs grob-list my-color #t)
+         music
+         (colorGrobs grob-list my-color #f))))))
 
 
