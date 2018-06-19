@@ -408,6 +408,31 @@ setChildOption =
           "Trying to add child to non-existent option: ~a"
           (os-path-join-dots parent-path)))))
 
+% Set multiple child options below a given option path.
+% #1: Optional boolean <force-set>
+%     If set this will implicitly create a missing 'parent' node
+% #2: <parent-path>
+%     A path within the a-tree. Child options will be set/created below
+% #3: <children>
+%     an alist with the children
+setChildOptions =
+#(define-void-function (force-set parent-path children)
+   ((boolean?) symbol-list? alist?)
+   (let ((is-set (option-registered? parent-path)))
+     (if (and (not is-set) force-set)
+         ;; register missing parent option
+         (begin
+          (registerOption parent-path '())
+          (set! is-set #t)))
+     (if is-set
+         (for-each
+          (lambda (opt)
+            (setChildOption parent-path (car opt) (cdr opt)))
+          children)
+         (oll:warn
+          "Trying to add children to non-existent option: ~a"
+          (os-path-join-dots parent-path)))))
+
 % Append a value to a list option
 % #1: Optional boolean <create>
 %     If set this will implicitly create an empty list to append to
