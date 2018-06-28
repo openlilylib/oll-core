@@ -245,8 +245,9 @@ loadModule =
      ;; check if module (and package) has already been loaded and warn appropriately
      ;; (as this may indicate erroneous input files)
      (if loaded
-         (oll:warn "Trying to reload module \"~a\". Skipping. Options will be set anyway."
-           (os-path-join-dots (append (list package) module)))
+         (if options
+             (oll:warn "Trying to reload module \"~a\". Skipping. Options will be set anyway."
+               (os-path-join-dots (append (list package) module))))
          ;; else load module and register
          (let*
           ((module-base
