@@ -37,7 +37,7 @@
 % - on: a boolean, if ##f switch coloring *off* again
 %   note that col has to be supplied even for *un*coloring.
 colorGrobs =
-#(define-music-function (grob-names col on)(symbol-list? color? boolean?)
+#(define-music-function (grob-names col on)(list? color? boolean?)
    (make-sequential-music
     (map
      (lambda (gn)
@@ -46,6 +46,12 @@ colorGrobs =
            #{ \revert #gn #'color #}))
      grob-names)))
 
+% Predicate checking for a list that is *not* a color.
+% Required to distinguish the optional argument in colorMusic
+#(define (list-no-color? obj)
+   (and (list? obj)
+        (not (every number? obj))))
+
 % Color all grobs in the given music expression
 % This is not the most efficient function since it creates overrides
 % for *all* registered grob types. But the list of grob names is only
@@ -53,8 +59,8 @@ colorGrobs =
 colorMusic =
 #(let ((grob-names (map car all-grob-descriptions)))
    (define-music-function (grobs my-color music)
-     ((symbol-list?) color? ly:music?)
-     (let ((grob-list 
+     ((list-no-color?) color? ly:music?)
+     (let ((grob-list
             (if (and grobs (not (null? grobs))) grobs grob-names)))
        (make-sequential-music
         (list
