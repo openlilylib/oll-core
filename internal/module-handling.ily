@@ -135,6 +135,19 @@
     (registerOption `(,name meta) meta)
     #t))
 
+% Test if a given package is already loaded
+ollPackageLoaded =
+#(define-scheme-function (package)(symbol?)
+   (if (memq package (getOption '(loaded-packages))) #t #f))
+
+% Test if a given module in a package is already loaded
+ollModuleLoaded =
+#(define-scheme-function (package module)(symbol? symbol-list-or-symbol?)
+   (let ((module (if (symbol? module) (list module) module)))
+     (if
+      (and (ollPackageLoaded package)
+           (member module (getOptionWithFallback (list 'loaded-modules package) '())))
+      #t #f)))
 
 %{
   Load an openLilyLib package.
@@ -151,7 +164,7 @@ loadPackage =
    ((ly:context-mod?) symbol?)
    "Load an openLilyLib package"
    (let ((name (symbol-downcase name)))
-     (if (not (member name (getOption '(loaded-packages))))
+     (if (not (ollPackageLoaded name))
          ;; load the package because it's new
          (let*
           ((package-root (append openlilylib-root (list name)))
@@ -237,11 +250,11 @@ loadModule =
       (module (cdr module-path)))
 
     ;; implicitly load package when not already loaded
-    (if (not (member package (getOption '(loaded-packages))))
+    (if (not (ollPackageLoaded package))
         (loadPackage package))
 
     (let
-     ((loaded (member module (getOptionWithFallback (list 'loaded-modules package) '()))))
+     ((loaded (ollModuleLoaded package module)))
      ;; check if module (and package) has already been loaded and warn appropriately
      ;; (as this may indicate erroneous input files)
      (if loaded
