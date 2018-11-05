@@ -17,8 +17,10 @@ list_items_end = re.compile(r"^\s*\]")
 defaults = {
     'name': 'NN',
     'display-name': 'NN',
-    'short-description': 'No short description available',
-    'description': 'No description available',
+    'short-description': None,
+    'description': None,
+    'website': None,
+    'repository': None,
     'dependencies': [],
     'oll-core': '0.0.0',
     'maintainers': [],
