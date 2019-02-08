@@ -219,16 +219,28 @@
 % - rules (optional): a prop-rules? property definition list
 % - mod: the context-mod
 #(define-public context-mod->props
-   (define-scheme-function (rules mod)((prop-rules?) ly:context-mod?)
-     (let
-      ((props
-        (map
-         (lambda (prop)
-           (cons (cadr prop) (caddr prop)))
-         (ly:get-context-mods mod))))
-      (if rules
-          (validate-props rules props)
-          props))))
+   (lambda (req . rest)
+     ;unpack mod and rules from the arguments
+     (let ((mod 
+            (cond
+              ((ly:context-mod? req) req)
+              ((and (= 1 (length rest)) (ly:context-mod? (first rest))) (first rest))
+              (else
+                (begin
+                  (ly:error "context-mod->props didn't receive a context-mod")
+                  (ly:make-context-mod)))))
+           (rules (if (prop-rules? req)
+                      req
+                      '(flexible))))
+       (let
+        ((props
+          (map
+           (lambda (prop)
+             (cons (cadr prop) (caddr prop)))
+           (ly:get-context-mods mod))))
+        (if rules
+            (validate-props rules props)
+            props)))))
 
 % Macro to facilitate definition of functions with options.
 % Begin the function definition with 'with-options and give the ruleset
@@ -240,21 +252,46 @@
 %      (? author ,string? "Anonymous"))
 %   (pretty-print props))
 % Warning: The body of the function can't be empty.
-#(define-macro (with-options func-def-proc vars preds rulings . body)
-   (let* ((q-empty '(quote ()))
-          (qq-empty '(quasiquote ()))
-          (nq-empty '())
-          (empty-rules? (or (equal? rulings q-empty)
-                            (equal? rulings qq-empty)
-                            (equal? rulings nq-empty)))
-          (new-vars (append '(opts) vars))
-          (new-preds (append '(ly:context-mod?) preds))
-          (rules-v (if empty-rules? '(quote ()) rulings))
-          (props-v (append '(context-mod->props) (if empty-rules? '() '(rules)) '(opts))))
-     `(,func-def-proc ,new-vars ,new-preds
-        (let* ((rules ,rules-v)
-               (props ,props-v))
+#(define (empty-parens? obj)
+   (or (equal? (quote ()) obj)
+       (equal? (quote '()) obj)
+       (equal? (quote `()) obj)))
+
+#(define (make-opts-function-declaration proc vars preds rules optional . body)
+   "Return the declaration of a function with the given arguments."
+   (let* ((vars (append '(opts) vars))
+          (preds
+           (if optional
+               (begin
+                (cond
+                 ((every list? preds)
+                  (ly:warning "defining a with-options function without mandatory arguments."))
+                 ((list? (first preds))
+                  (ly:warning "defining a with-options function where the first argument is optional.")))
+                (append '((ly:context-mod? (ly:make-context-mod))) preds))
+               (append '(ly:context-mod?) preds)))
+          (rules
+           (if (empty-parens? rules)
+               (quote '(flexible))
+               rules)))
+     `(,proc ,vars ,preds
+        (let* ((rules ,rules)
+               (props (context-mod->props rules opts)))
           . ,body))))
+
+#(define-macro (with-options proc vars preds rules . body)
+   (let ((optional #t))
+     (apply make-opts-function-declaration `(,proc ,vars ,preds ,rules ,optional . ,body))))
+
+#(define-macro (with-opts . rest)
+   `(with-options . ,rest))
+
+#(define-macro (with-required-options proc vars preds rules . body)
+   (let ((optional #f))
+     (apply make-opts-function-declaration `(,proc ,vars ,preds ,rules ,optional . ,body))))
+
+#(define-macro (with-req-opts . rest)
+   `(with-required-options . ,rest))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DEPRECATED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
