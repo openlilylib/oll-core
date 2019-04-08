@@ -209,19 +209,10 @@
    (let ((file (this-file)))
      (list-head file (- (length file) 2))))
 
-%%%
-% TODO:
-% This doesn't work correctly so far:
-% How to determine the currently compiled file (name)?
-thisFileCompiled =
-#(define-scheme-function ()()
-   "Return #t if the file where this function is called
-    is the one that is currently compiled by LilyPond."
-   (let ((outname (ly:parser-output-name (*parser*)))
-         (locname (os-path-join (location->normalized-path (*location*)))))
-     (ly:message outname)
-     (regexp-match? (string-match (format "^(.*/)?~A\\.i?ly$" outname) locname))))
-
+% Return #t if the function is called from the main input file,
+% #f otherwise
+#(define (this-file-compiled?)
+   (equal? (this-file) (os-path-input-file)))
 
 %%%%%%%%%%%%%%%%%%%%%%
 % Directory operations
