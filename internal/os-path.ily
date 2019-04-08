@@ -252,3 +252,31 @@ thisFileCompiled =
               #t #f))
         all-files))))
 
+%%%%%%%%%%%%%%%%%%%%%%%
+% Input file operations
+%
+% Retrieve information and produce variants of the input file name
+%%%%%%%%%%%%%%%%%%%%%%
+
+% Returns a list with the absolute path to the compiled input file
+#(define (os-path-input-file)
+   (let ((input-file (last (command-line))))
+     (os-path-absolute input-file)))
+
+% Returns a string with the absolute path to the compiled input file
+#(define (os-path-input-filename)
+   (os-path-join (os-path-input-file)))
+
+% Returns a list with the absolute path of the directory containing the input file
+#(define (os-path-input-dir)
+   (os-path-dirname (os-path-input-file)))
+
+% Returns a string with the absolute path of the directory containing the input file
+#(define (os-path-input-dirname)
+   (os-path-join (os-path-input-dir)))
+
+% Returns a string wtih the absolute path to the input file, without file extension
+#(define (os-path-input-basename)
+   (format "~a/~a"
+     (os-path-input-dirname)
+     (ly:parser-output-name (*parser*))))

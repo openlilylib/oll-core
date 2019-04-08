@@ -24,58 +24,22 @@
 %                                                                             %
 % openLilyLib is maintained by Urs Liska, ul@openlilylib.org                  %
 % and others.                                                                 %
-%       Copyright Urs Liska, 2016                                             %
+%       Copyright Urs Liska, 2019                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Initializes oll-core and loads secondary internal functionality
+%{
+  This files contains utility routines to load include files relative to the input file
+%}
 
-\version "2.19.22"
-
-% Add openLilyLib root directory to Guile's module load path
-% After this Scheme modules can be addressed starting from openLilyLib's
-% root directory (the parent of oll-core)
-\include "add-guile-path.ily"
-\addGuilePath #(os-path-join openlilylib-root)
-\addGuilePath #(os-path-join (append openlilylib-root '(oll-core scheme)))
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%% Common functionality
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% A collection of general-purpose predicates
-#(use-modules (oll-core internal tools))
-#(use-modules (oll-core internal grob-tools))
-#(use-modules (oll-core internal control))
-
-% Version predicates to execute code for specific LilyPond versions
-#(use-modules (oll-core internal lilypond-version-predicates))
-
-% Helpers for handling Scheme association lists
-#(use-modules (oll-core internal alist-access))
-
-% Logging capabilities with different log levels
-\include "logging.ily"
-
-% Option handling,
-% for oll-core, other openLilyLib packages or arbitrary end-user code
-\include "options.ily"
-% Initialize option branch for oll-core
-\registerOption oll-core.root #(this-parent)
-
-% Create these nodes as oll-core is not loaded through \loadPackage
-\registerOption loaded-packages #'(oll-core)
-\registerOption loaded-modules.oll-core #'()
-
-% Functionality to load and manage modules
-\include "module-handling.ily"
-
-% Functionality to load additional files
-% (submodules load.tools and load.templates have to be loaded explicitly)
-\loadModule oll-core.load
-
-% Welcome message.
-% First set log level to 'log so it will be displayed,
-% then set the default log level to 'warning.
-#(oll:log "oll-core: library infrastructure successfully loaded.")
-\setLogLevel #'warning
+% Include a file relative to the compiled input file if present
+% The format-string argument is a format string with one ~a parameter,
+% which will be replaced with the absolute path to the compiled input file
+% without the file extension.
+% Can be used to include files without explicit markup when placed in a library.
+%
+% Example:
+% \loadInclude "~a-include.ily"
+loadInclude =
+#(define-void-function (format-string)(string?)
+   (immediate-include (format format-string (os-path-input-basename))))
