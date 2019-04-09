@@ -62,9 +62,9 @@ loadTemplate =
           (let*
            (;TODO: replace dots with slashes (to load tools from subdirectories)
              (template-path #f)
-            (template-file (format "~a/~a.ily" directory template-name))
-            (exists (file-exists? template-file))
-            (loaded (immediate-include template-file)))
+             (template-file (format "~a/~a.ily" directory template-name))
+             (exists (file-exists? template-file))
+             (loaded (immediate-include template-file)))
            (if (not loaded)
                (if (file-exists? template-file)
                    (oll:warn "Error loading Template ~a" template-name)
@@ -82,11 +82,27 @@ templateOption =
    (let ((option (assq option (ly:parser-lookup 'template-options))))
      (if option (cdr option) default)))
 
+% Precidate for music-name argument
+#(define (variable-pair? obj)
+   (and (pair? obj)
+        (symbol? (car obj))))
+
 % Retrieve the music from a given variable if that is defined,
 % otherwise return an empty music expression.
 % This can be used in templates that expect one or more music variables,
 % e.g. to support one or more voices in a staff.
+% Variable names can be either symbols or symbol-anything pairs,
+% e.g. \musicOrEmpty one.3 (presumably the third voice in the first staff
+% or the third segment in the first part)
 musicOrEmpty =
-#(define-music-function (music-name)(symbol?)
-   (let ((music (ly:parser-lookup music-name)))
-     (if (ly:music? music) music #{ #})))
+#(define-music-function (music-name)(variable-pair?)
+   (let*
+    ((name (car music-name))
+     (variable (ly:parser-lookup name))
+     (content
+      (if (= 1 (length music-name))
+          variable
+          (assq-ref variable (cadr music-name)))))
+    (if (ly:music? content)
+        content
+        #{ #})))
