@@ -47,11 +47,12 @@
             (every pair? obj))
     #t #f))
 
-%% Amir 23.01.2020:
-%% pair? returns #t also for non-dotted-lists:
-%% (pair? '(a b c))                ===>  #t
-%% From the source I conclude that dotted-lists are intended for the alist?
-%% In that case an alternative definition for alist? type-checker using more specific ((srfi srfi-1):dotted-list?) predicate could be (though not sure if this is the intended behaviour!):
+%% Amir 23.01.2020: pair? returns #t also for non-dotted-lists: (pair?
+%% '(a b c)) ===> #t From the source I conclude that dotted-lists are
+%% intended for the alist? In that case an alternative definition for
+%% alist? type-checker using more specific ((srfi
+%% srfi-1):dotted-list?) predicate could be (though not sure if this
+%% is the intended behaviour!):
 
 (define (alist-2? obj)
   "Returns #t if all elements of OBJ are dotted-lists."
