@@ -54,7 +54,7 @@
 %% srfi-1):dotted-list?) predicate could be (though not sure if this
 %% is the intended behaviour!):
 
-#(define (alist-2? obj)
+#(define (alist? obj)
   "Returns #t if all elements of OBJ are dotted-lists."
   (every dotted-list? obj))
 
