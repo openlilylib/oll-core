@@ -221,7 +221,7 @@
 #(define-public context-mod->props
    (lambda (req . rest)
      ;unpack mod and rules from the arguments
-     (let ((mod 
+     (let ((mod
             (cond
               ((ly:context-mod? req) req)
               ((and (= 1 (length rest)) (ly:context-mod? (first rest))) (first rest))
@@ -276,7 +276,9 @@
                rules)))
      `(,proc ,vars ,preds
         (let* ((rules ,rules)
-               (props (context-mod->props rules opts)))
+               (props (context-mod->props rules opts))
+               (property (lambda (name) (assq-ref props name)))
+               )
           . ,body))))
 
 #(define-macro (with-options proc vars preds rules . body)
