@@ -549,10 +549,14 @@ getChildOptionWithFallback =
 %%%% Display all currently registered options
 
 displayOptions =
-#(define-void-function ()()
+#(define-void-function (root)((symbol-list? '()))
    (display "\n\nopenLilyLib: Currently registered options:\n=====\n")
-   (pretty-print
-    oll-options #:display? #t))
+   (let ((use-root (if (null? root)
+                       oll-options
+                       (getOption root))))
+     (pretty-print
+      ;oll-options
+      use-root #:display? #t)))
 
 % Display the metadata of a package
 describePackage =
