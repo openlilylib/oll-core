@@ -60,6 +60,14 @@
 % Option handling,
 % for oll-core, other openLilyLib packages or arbitrary end-user code
 \include "options.ily"
+
+% Property handling,
+% like option handling
+% (which it may or may not replace on the long run)
+% but with type checking
+\include "properties.ily"
+
+
 % Initialize option branch for oll-core
 \registerOption oll-core.root #(this-parent)
 
