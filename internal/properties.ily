@@ -77,14 +77,18 @@
     ((second obj) (third obj))
     ))
 
+#(define (prop-list? obj)
+   "List of property definitions, used in the propset definition."
+   (and
+    (list? obj)
+    (every property-definition? obj)))
+
 % Define a property set as a sequence of properties
 % with names (symbol?), types (procedure), and default value.
 % These are given as assignments in a \with {} block, as
 %   <name> = #(list <predicate> <default>)
 definePropset =
-#(with-required-options define-void-function (path)(symbol-list?)
-   ;; The with-options mechanism does *not* impose any restrictions here
-   '(flexible)
+#(define-void-function (path prop-list)(symbol-list? prop-list?)
    (let* ((root (append '(_propsets) path))
           (prop-path (append root '(props))))
      ;; create structure
@@ -96,19 +100,13 @@ definePropset =
      (for-each
       (lambda (prop)
         ;; Add properties to the set.
-        ;; The predicate both checks the structure of the argument
-        ;; *and* type-checks of the default value.
-        (if (property-definition? prop)
-            (setChildOption
-             prop-path
-             (first prop)
-             (cons (second prop) (third prop)))
-            (oll:error
-             (format "Error in \\definePropset. Property definition
-  <name> = #(list <predicate> <default>)
-expected, got\n\n~a" (cdr prop)))))
-      props)
-     (setChildOption root 'prop-names (map car props))
+        (setChildOption
+         prop-path
+         (first prop)
+         (cons (second prop) (third prop))))
+      prop-list)
+
+     (setChildOption root 'prop-names (map car prop-list))
      ))
 
 #(define (property-entry propset-path name)
