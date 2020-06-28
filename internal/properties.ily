@@ -37,6 +37,25 @@
 % Storage for all property sets
 \registerOption #'(_propsets) #'()
 
+#(define (get-propset-path propset-path)
+   "Translate a propset path to its real storage"
+   (append '(_propsets) propset-path))
+
+#(define (get-propset propset-path)
+   "Retrieve a propset entry.
+    Returns #f if no propset with the given path exists."
+   (let* ((propset-path (get-propset-path propset-path))
+          (branch (getAtree #t 'oll-options propset-path)))
+     (if (pair? branch) (cdr branch) #f)))
+
+#(define (get-propset-props propset-path)
+   "Retrieve the actual properties alist from a propset.
+    Returns #f if the propset doesn't exist."
+   (let ((propset (get-propset propset-path)))
+     (if propset
+         (assq-ref propset 'props)
+         #f)))
+
 #(define (property-definition? obj)
    "A property definition is a three-element list with
     - a key (symbol?)
@@ -62,9 +81,9 @@ definePropset =
           (prop-path (append root '(props))))
      ;; create structure
      (registerOption prop-path '())
+     (setChildOption root 'presets '())
      (setChildOptions root
-       `((presets ())
-         (use-only-presets #f)
+       `((use-only-presets #f)
          (ignore-presets ())))
      (for-each
       (lambda (prop)
@@ -94,21 +113,18 @@ expected, got\n\n~a" (cdr prop)))))
     If any of these doesn't exist it and the following entry/ies
     will be #f."
    (let*
-    ((propset-path (append '(_propsets) propset-path))
-     ;; locate the property set
-     (propset
-      (let ((branch (getAtree #t 'oll-options propset-path)))
-        (if (pair? branch) (cdr branch) #f)))
-     ;; locate the actual property list
-     (props
-      (if propset
-          (assq-ref propset 'props)
-          #f))
-     ;; locate the property entry
-     (property
-      (if props
-          (assq-ref props name)
-          #f)))
+    (;; locate the property set
+      (propset (get-propset propset-path))
+      ;; locate the actual property list
+      (props
+       (if propset
+           (assq-ref propset 'props)
+           #f))
+      ;; locate the property entry
+      (property
+       (if props
+           (assq-ref props name)
+           #f)))
     (list propset props property)))
 
 % Retrieve a property from a property set.
@@ -166,3 +182,68 @@ Trying to set non-existent property
   ~a
 Skipping assignment."
           prop-path))))
+
+
+% Define a preset to be applied later.
+% Pass a \with {} block with any options to be specified
+% and a name.
+% The property set must exist,
+% each specified property must exist,
+% and values must match the properties' predicates
+definePreset =
+#(with-required-options define-void-function
+   (propset-path preset-name)(symbol-list? symbol?)
+   '(flexible)
+   (let ((propset (get-propset-props propset-path)))
+     (if propset
+         (let ((preset '())
+               (preset-path (append (get-propset-path propset-path) '(presets))))
+           (for-each
+            (lambda (prop)
+              ;; add property if it is valid
+              ;; (exists in propset and matches predicate)
+              (let*
+               ((prop-name (car prop))
+                (value (cdr prop))
+                (entry (assq prop-name propset))
+                (dummy (ly:message "Test: ~a" entry))
+                )
+               (if entry
+                   ;; typecheck property
+                   (if ((cadr entry) value)
+                       ;; add to preset
+                       (set! preset
+                             (assoc-set! preset prop-name value))
+                       ;; typecheck failed
+                       (oll:warn "
+Typecheck error while defining preset
+  ~a
+for property set
+  ~a
+Property '~a': expected ~a, got ~a.
+Skipping"
+                         preset-name
+                         (os-path-join-dots propset-path)
+                         prop-name
+                         (cadr entry)
+                         value
+                         ))
+                   ;; property set exists but doesn't contain property
+                   (oll:warn "
+Trying to define preset for non-existent property
+  ~a"
+                     (append propset-path (list prop-name))))
+               ))
+            ;; (props variable created by with-options)
+            props)
+           ;; assign the new preset
+           (setChildOption
+            (append (get-propset-path propset-path) '(presets))
+            preset-name
+            preset))
+         ;; no propset found
+         (oll:warn "
+Trying to define preset for non-existent propset
+  ~a
+Skipping definition."
+           (os-path-join-dots propset-path)))))
