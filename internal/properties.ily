@@ -56,6 +56,14 @@
          (assq-ref propset 'props)
          #f)))
 
+#(define (get-propset-presets propset-path)
+   "Retrieve the actual presets alist from a propset.
+    Returns #f if the propset doesn't exist."
+   (let ((propset (get-propset propset-path)))
+     (if propset
+         (assq-ref propset 'presets)
+         #f)))
+
 #(define (property-definition? obj)
    "A property definition is a three-element list with
     - a key (symbol?)
@@ -205,9 +213,7 @@ definePreset =
               (let*
                ((prop-name (car prop))
                 (value (cdr prop))
-                (entry (assq prop-name propset))
-                (dummy (ly:message "Test: ~a" entry))
-                )
+                (entry (assq prop-name propset)))
                (if entry
                    ;; typecheck property
                    (if ((cadr entry) value)
@@ -247,3 +253,82 @@ Trying to define preset for non-existent propset
   ~a
 Skipping definition."
            (os-path-join-dots propset-path)))))
+
+#(define (merge-props propset-path props opts)
+   "Update function properties:
+    - If a preset is requested (and exists)
+      override properties with its values
+    - If instance properties are given 
+      they override both defaults and presets."
+   (let*
+    ((given-props (context-mod->props opts))
+     (preset-name (assq-ref given-props 'preset))
+     (preset
+      (if preset-name
+          ;; store preset's alist or an empty list
+          ;; issue a warning if preset doesn't exist
+          (let* ((presets (get-propset-presets propset-path)))
+            (or (assq-ref presets
+                  (string->symbol preset-name))
+                (begin
+                 (oll:warn "
+Requesting non-existing preset
+  ~a
+for property set
+  ~a.
+Skipping"
+                   preset-name
+                   propset-path)
+                 '())))
+          '()))
+     )
+    ;; override props with preset and instance properties
+    (for-each
+     (lambda (prop)
+       (set! props (assoc-set! props (car prop) (cdr prop))))
+     (append preset given-props))
+    props))
+
+#(define-macro (with-propset proc vars preds propset-path . body)
+   "Create a music/scheme/void-function attached to a propset.
+    The first mandatory item after the predicate list is a quasi-quoted
+    symbol-list? with the propset-path to the property set governing the function.
+    The resulting function will implicitly have an optional context-mod?
+    as first argument. This results in the limitation that at least one mandatory
+    argument must be defined. If that is not necessary one can alternatively
+    accept a scheme? or ly:music? argument and return that unmodified.`
+    "
+   (let*
+    ((vars (append `(opts) vars))
+     (preds
+      (begin
+       (cond
+        ((every list? preds)
+         (oll:error "with-propset functions must have at least one mandatory argument.
+(You may use a dummy scheme? or ly:music? argument and simply return that unchanged.)"))
+        ((list? (first preds))
+         (oll:error "with-propset functions must not have an optional argument in first position.")))
+       (append '((ly:context-mod? (ly:make-context-mod)) ) preds)
+       ))
+     (propset `(get-propset-props ,propset-path))
+     (props
+      `(if ,propset
+           ;; store a flat alist with the current property set values
+           (map (lambda (prop)
+                  (cons (car prop) (cddr prop)))
+             ,propset)
+           ;; function specified propset that isn't available
+           (oll:error "
+Specifying a with-propset function with
+non-existent property set '~a'" (os-path-join-dots propset-path))))
+
+     )
+    ;; let macro return function
+    `(,proc ,vars ,preds
+       (let*
+        ((propset-path ,propset-path)
+         (props (merge-props propset-path ,props opts))
+         ;; retrieve value of a given property
+         (property (lambda (prop) (assq-ref ,props prop)))
+         )
+        . ,body))))
