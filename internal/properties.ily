@@ -327,6 +327,6 @@ non-existent property set '~a'" (os-path-join-dots propset-path))))
         ((propset-path ,propset-path)
          (props (merge-props propset-path ,props opts))
          ;; retrieve value of a given property
-         (property (lambda (prop) (assq-ref ,props prop)))
+         (property (lambda (prop) (assq-ref props prop)))
          )
         . ,body))))
