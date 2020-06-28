@@ -223,12 +223,12 @@
      ;unpack mod and rules from the arguments
      (let ((mod
             (cond
-              ((ly:context-mod? req) req)
-              ((and (= 1 (length rest)) (ly:context-mod? (first rest))) (first rest))
-              (else
-                (begin
-                  (ly:error "context-mod->props didn't receive a context-mod")
-                  (ly:make-context-mod)))))
+             ((ly:context-mod? req) req)
+             ((and (= 1 (length rest)) (ly:context-mod? (first rest))) (first rest))
+             (else
+              (begin
+               (ly:error "context-mod->props didn't receive a context-mod")
+               (ly:make-context-mod)))))
            (rules (if (prop-rules? req)
                       req
                       '(flexible))))
