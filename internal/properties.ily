@@ -252,6 +252,41 @@ Trying to define preset for non-existent propset
 Skipping definition."
            (os-path-join-dots propset-path)))))
 
+#(define (symbol-list-or-boolean? obj)
+   (or (symbol-list? obj)
+       (boolean? obj)))
+
+\definePropset OLL.presets
+#`((use-presets ,symbol-list-or-boolean? #f)
+   (ignore-presets ,symbol-list? ()))
+
+#(define (use-by-preset props)
+   "Property available inside a with-propset generated function.
+    Determines whether the preset (given or not) allows the application
+    of the function regarding the OLL.presets use-presets/ignore-presets 
+    properties.
+    NOTE: This is always available as a check that returns #t or #f,
+    but it is the responsibility of the function to act upon the information."
+   (let*
+    ((use-presets-prop (getProperty '(OLL presets) 'use-presets))
+     (ignore-presets-prop (getProperty '(OLL presets) 'ignore-presets))
+     (preset (assq-ref props 'preset))
+     (dont-require-preset (eq? use-presets-prop #f))
+     (require-any-preset (eq? use-presets-prop #t))
+     (by-use
+      (or
+       dont-require-preset
+       (and preset
+            (or require-any-preset
+                (member (string->symbol preset) use-presets-prop)))))
+     (by-ignore
+      (or (null? ignore-presets-prop)
+          (not preset)
+          (not (member (string->symbol preset) ignore-presets-prop))))
+     )
+    (and by-use by-ignore)
+    ))
+
 #(define (merge-props propset-path props opts)
    "Update function properties:
     - If a preset is requested (and exists)
@@ -260,6 +295,41 @@ Skipping definition."
       they override both defaults and presets."
    (let*
     ((given-props (context-mod->props opts))
+     (checked-props
+      (let*
+       ((propset (get-propset-props propset-path)))
+       (filter
+        (lambda (elt) (if elt #t #f))
+        (map
+         (lambda (prop)
+           (let*
+            ((name (car prop))
+             (value (cdr prop))
+             (property (assq-ref propset name))
+             (pred (if property (car property) #f))
+             )
+            (cond
+             ((not property)
+              (if (not (eq? name 'preset))
+              (oll:warn "
+Skipping property ~a = ~a
+not present in property set ~a"
+              name value (os-path-join-dots propset-path)))
+              #f)
+             ((pred value)
+              (cons name value))
+             ((and (eq? pred symbol?) (string? value))
+              (set! value (string->symbol value))
+              (cons name value))
+             (else
+              (oll:warn "
+Typecheck error for property '~a':
+Expected ~a,
+found ~a"
+                name pred value)
+              (cons name value)))))
+         given-props))))
+
      (preset-name (assq-ref given-props 'preset))
      (preset
       (if preset-name
@@ -328,5 +398,7 @@ non-existent property set '~a'" (os-path-join-dots propset-path))))
          (props (merge-props propset-path ,props opts))
          ;; retrieve value of a given property
          (property (lambda (prop) (assq-ref props prop)))
+         ;; determine applicability by preset settings
+         (use-preset (lambda () (use-by-preset props)))
          )
         . ,body))))
