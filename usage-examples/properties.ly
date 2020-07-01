@@ -7,7 +7,7 @@
 % Properties hold a name, a type predicate and a default value.
 % The default value (as well as later assignments) are type-checked
 % against the predicate
-\definePropset demo.props
+\definePropertySet demo.props
 #`((text ,string? "bar")
    (color ,color? ,red)
    (index ,integer? 4)

@@ -87,7 +87,7 @@
 % with names (symbol?), types (procedure), and default value.
 % These are given as assignments in a \with {} block, as
 %   <name> = #(list <predicate> <default>)
-definePropset =
+definePropertySet =
 #(define-void-function (path prop-list)(symbol-list? prop-list?)
    (let* ((root (get-propset-path path))
           (prop-path (append root '(props))))
@@ -272,7 +272,7 @@ Skipping definition."
    (or (symbol-list? obj)
        (boolean? obj)))
 
-\definePropset OLL.presets
+\definePropertySet OLL.presets
 #`((use-presets ,symbol-list-or-boolean? #f)
    (ignore-presets ,symbol-list? ()))
 
