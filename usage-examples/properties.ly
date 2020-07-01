@@ -11,8 +11,11 @@
 #`((text ,string? "bar")
    (color ,color? ,red)
    (index ,integer? 4)
+   (label ,symbol? foo-symbol)
    ;(use-case ,symbol? "fail") ; fails on typecheck
    )
+
+%\setProperty OLL.presets use-presets ##t
 
 % Retrieve the property
 \markup \getProperty demo.props text
@@ -46,21 +49,34 @@
 testFunc =
 #(with-propset define-scheme-function (dummy)(boolean?)
    `(demo props)
-    (markup #:with-color
-      (property 'color)
-      (format "~a. ~a" (property 'index) (property 'text))))
+   (let*
+    ((do-use (use-preset))
+     (text (property 'text))
+     (content
+          (if do-use
+              (format "~a. ~a" (property 'index) text)
+              (format "~a" text))))
+    (if do-use
+        (markup #:with-color (property 'color) content)
+        (markup content)
+      )))
 
 % Invoke function with currently active properties
 \testFunc ##t
 
 % Invoke function with a preset
 \testFunc \with {
-  preset = my-preset
+  preset = #'my-preset
 } ##t
 
 % Invoke function with a preset plus individual override
 \testFunc \with {
-  preset = my-preset
-  index = 5
+  preset = #'my-preset
+  %index = ##t %fails due to type check
   color = #magenta
+  label = "heyho-symbol" % (implicitly converted to symbol)
 } ##t
+
+
+
+\testFunc ##t
