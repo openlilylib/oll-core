@@ -38,7 +38,7 @@
 \registerOption #'(_propsets) #'()
 
 #(define (get-propset-path propset-path)
-   "Translate a propset path to its real storage"
+   "Translate a propset path to its real storage location"
    (append '(_propsets) propset-path))
 
 #(define (get-propset propset-path)
@@ -89,11 +89,11 @@
 %   <name> = #(list <predicate> <default>)
 definePropset =
 #(define-void-function (path prop-list)(symbol-list? prop-list?)
-   (let* ((root (append '(_propsets) path))
+   (let* ((root (get-propset-path path))
           (prop-path (append root '(props))))
      ;; create structure
      (registerOption prop-path '())
-     (setChildOption root 'presets '())
+     (setChildOption root 'presets '()) ; doesn't seem to work in setChildOptions
      (setChildOptions root
        `((use-only-presets #f)
          (ignore-presets ())))
@@ -104,9 +104,9 @@ definePropset =
          prop-path
          (first prop)
          (cons (second prop) (third prop))))
-      prop-list)
-
-     (setChildOption root 'prop-names (map car prop-list))
+      (append
+       `((parent ,symbol? default))
+       prop-list))
      ))
 
 #(define (property-entry propset-path name)
@@ -133,7 +133,7 @@ definePropset =
            #f)))
     (list propset props property)))
 
-% Retrieve a property from a property set.
+% Retrieve a property value from a property set.
 % If the property set doesn't exist or doesn't include the requestes property
 % a warning is issued and #f returned
 getProperty =
@@ -161,6 +161,14 @@ Returns #f, please expect follow-up errors.
 " name (os-path-join-dots propset-path))
          #f))))
 
+#(define (string->symbol-property pred val)
+   "Optionally convert a string to a symbol.
+    This is used to allow 'simple' entry of symbol? properties, since the
+    LilyPond parser is unable to do that interpretation in a \\with block."
+   (if (and (string? val) (eq? pred symbol?))
+       (string->symbol val)
+       val))
+
 % Set a property.
 % If the property doesn't exist or the value doesn't match the predicate
 % a warning is issued and the assignment skipped (old value kept).
@@ -170,9 +178,12 @@ setProperty =
     ((property (third (property-entry propset-path name)))
      (prop-path (os-path-join-dots (append propset-path (list name)))))
     (if property
-        (if ((car property) value)
-            (set-cdr! property value)
-            (oll:warn "
+        (let*
+         ((pred (car property))
+          (value (string->symbol-property pred value)))
+         (if (pred value)
+             (set-cdr! property value)
+             (oll:warn "
 Trying to set property
   ~a
 to value 
@@ -180,9 +191,9 @@ to value
 that doesn't match the predicate
   ~a
 Skipping assignment."
-              prop-path
-              value
-              (car property)))
+               prop-path
+               value
+               (car property))))
         (oll:warn "
 Trying to set non-existent property
   ~a
@@ -213,25 +224,30 @@ definePreset =
                 (value (cdr prop))
                 (entry (assq prop-name propset)))
                (if entry
-                   ;; typecheck property
-                   (if ((cadr entry) value)
-                       ;; add to preset
-                       (set! preset
-                             (assoc-set! preset prop-name value))
-                       ;; typecheck failed
-                       (oll:warn "
+                   (let*
+                    ((pred (cadr entry))
+                     (value (if (and (string? value) (eq? symbol? pred))
+                                (string->symbol value)
+                                value)))
+                    ;; typecheck property
+                    (if (pred value)
+                        ;; add to preset
+                        (set! preset
+                              (assoc-set! preset prop-name value))
+                        ;; typecheck failed
+                        (oll:warn "
 Typecheck error while defining preset
   ~a
 for property set
   ~a
 Property '~a': expected ~a, got ~a.
 Skipping"
-                         preset-name
-                         (os-path-join-dots propset-path)
-                         prop-name
-                         (cadr entry)
-                         value
-                         ))
+                          preset-name
+                          (os-path-join-dots propset-path)
+                          prop-name
+                          (cadr entry)
+                          value
+                          )))
                    ;; property set exists but doesn't contain property
                    (oll:warn "
 Trying to define preset for non-existent property
@@ -287,6 +303,40 @@ Skipping definition."
     (and by-use by-ignore)
     ))
 
+#(define (get-preset propset-path preset-name)
+   "Retrieve a list of properties specified in a preset.
+    If a preset has a 'parent' property
+    recursively fetch parents' properties too, in a way
+    that children override values from parents."
+   (if preset-name
+       ;; store preset's alist or an empty list
+       ;; issue a warning if preset doesn't exist
+       (let* ((presets (get-propset-presets propset-path))
+              (props (assq-ref presets preset-name))
+              )
+         (if props
+             (let* ((parent (assq-ref props 'parent))
+                    (parent-props
+                     (if parent
+                         (get-preset propset-path parent)
+                         '()))
+                    )
+               (append parent-props props))
+             (begin
+              (oll:warn "
+Requesting non-existing preset
+  ~a
+for property set
+  ~a.
+Skipping"
+                preset-name
+                propset-path)
+              '())
+             ))
+       '()))
+
+
+
 #(define (merge-props propset-path props opts)
    "Update function properties:
     - If a preset is requested (and exists)
@@ -305,50 +355,35 @@ Skipping definition."
            (let*
             ((name (car prop))
              (value (cdr prop))
-             (property (assq-ref propset name))
-             (pred (if property (car property) #f))
+             (property
+              (if (eq? name 'preset)
+                  (cons symbol? value)
+                  (assq-ref propset name)))
              )
-            (cond
-             ((not property)
-              (if (not (eq? name 'preset))
-              (oll:warn "
-Skipping property ~a = ~a
-not present in property set ~a"
-              name value (os-path-join-dots propset-path)))
-              #f)
-             ((pred value)
-              (cons name value))
-             ((and (eq? pred symbol?) (string? value))
-              (set! value (string->symbol value))
-              (cons name value))
-             (else
-              (oll:warn "
+            (if property
+                (let*
+                 ((pred (car property))
+                  (value (string->symbol-property pred value)))
+                 (if (pred value)
+                     (cons name value)
+                     (begin
+                      (oll:warn "
 Typecheck error for property '~a':
 Expected ~a,
 found ~a"
-                name pred value)
-              (cons name value)))))
-         given-props))))
-
-     (preset-name (assq-ref given-props 'preset))
-     (preset
-      (if preset-name
-          ;; store preset's alist or an empty list
-          ;; issue a warning if preset doesn't exist
-          (let* ((presets (get-propset-presets propset-path)))
-            (or (assq-ref presets
-                  (string->symbol preset-name))
+                        name pred value)
+                      #f)))
                 (begin
                  (oll:warn "
-Requesting non-existing preset
-  ~a
-for property set
-  ~a.
-Skipping"
-                   preset-name
-                   propset-path)
-                 '())))
-          '()))
+Skipping property ~a = ~a
+not present in property set ~a"
+                   name value (os-path-join-dots propset-path))
+                 #f))))
+         given-props))))
+
+     (preset-name (assq-ref checked-props 'preset))
+     (preset (get-preset propset-path preset-name))
+
      )
     ;; override props with preset and instance properties
     (for-each
