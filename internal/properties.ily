@@ -64,6 +64,14 @@
          (assq-ref propset 'presets)
          #f)))
 
+#(define (get-propset-preset-settings propset-path)
+   "Retrieve the preset-settings alist from a propset.
+    Returns #f if the propset doesn't exist."
+   (let ((propset (get-propset propset-path)))
+     (if propset
+         (assq-ref propset 'preset-settings)
+         #f)))
+
 #(define (property-definition? obj)
    "A property definition is a three-element list with
     - a key (symbol?)
@@ -83,6 +91,44 @@
     (list? obj)
     (every property-definition? obj)))
 
+#(define (preset-setting? obj)
+   "Preset settings may either be symbol lists or booleans."
+   (or (symbol-list? obj)
+       (boolean? obj)))
+
+%
+setPresetSettings =
+#(define-void-function (path type value)(symbol-list? symbol? preset-setting?)
+   (let*
+    ((propset (get-propset path))
+     (settings-path
+      (if propset
+          (append '(_propsets) path '(preset-settings))
+          (begin
+           (oll:warn "
+Trying to set preset settings for non-existent property set
+~a"
+             (os-path-join-dots path))
+           #f)))
+     )
+    (if (and settings-path
+             (member type '(use-only-presets require-preset ignore-presets)))
+        (setChildOption settings-path type value)
+        (if settings-path
+            (oll:warn "
+Trying to set illegal preset setting '~a'
+for property set ~a.
+Skipping."
+              type
+              (os-path-join-dots path)
+              )))
+    ))
+
+
+setGlobalPresetSettings =
+#(define-void-function (type value)(symbol? preset-setting?)
+   (setPresetSettings '(OLL presets) type value))
+
 % Define a property set as a sequence of properties
 % with names (symbol?), types (procedure), and default value.
 % These are given as assignments in a \with {} block, as
@@ -93,10 +139,11 @@ definePropertySet =
           (prop-path (append root '(props))))
      ;; create structure
      (registerOption prop-path '())
-     (setChildOption root 'presets '()) ; doesn't seem to work in setChildOptions
-     (setChildOptions root
-       `((use-only-presets #f)
-         (ignore-presets ())))
+     (setChildOption root 'presets '())
+     (setChildOption root 'preset-settings
+       `((require-preset . #f)
+         (use-only-presets . ())
+         (ignore-presets . ())))
      (for-each
       (lambda (prop)
         ;; Add properties to the set.
@@ -272,11 +319,41 @@ Skipping definition."
    (or (symbol-list? obj)
        (boolean? obj)))
 
-\definePropertySet OLL.presets
-#`((use-presets ,symbol-list-or-boolean? #f)
-   (ignore-presets ,symbol-list? ()))
+\definePropertySet OLL.presets #'()
 
-#(define (use-by-preset props)
+#(define (merge-preset-settings global by-propset)
+   (let*
+    ((merge-func
+      (lambda (g p)
+        (let
+         ((result
+           (cond
+            ((null? g) p)
+            ((null? p) g)
+            (else (lset-intersection eq? g p)))))
+         (if (and (null? result)
+                  (or (not (null? g)) (not (null? p))))
+             ;; merging of two non-empty lists has resulte
+             ;; in an empty list. This does not mean "no filter"
+             ;; but rather "filter *everything*"
+             ;; (NOTE: preset = #'___nothing___ would produce unexpected (?) results)
+             '(___nothing___)
+             result)
+         )))
+     (require-preset (or (assq-ref global 'require-preset)
+                         (assq-ref by-propset 'require-preset)))
+     (use-only (merge-func
+                (assq-ref global 'use-only-presets)
+                (assq-ref by-propset 'use-only-presets)))
+     (ignore (lset-union eq?
+               (assq-ref global 'ignore-presets)
+               (assq-ref by-propset 'ignore-presets)))
+     )
+    `((require-preset . ,require-preset)
+      (use-only-presets . ,use-only)
+      (ignore-presets . ,ignore))))
+
+#(define (use-by-preset propset-path props)
    "Property available inside a with-propset generated function.
     Determines whether the preset (given or not) allows the application
     of the function regarding the OLL.presets use-presets/ignore-presets 
@@ -284,21 +361,22 @@ Skipping definition."
     NOTE: This is always available as a check that returns #t or #f,
     but it is the responsibility of the function to act upon the information."
    (let*
-    ((use-presets-prop (getProperty '(OLL presets) 'use-presets))
-     (ignore-presets-prop (getProperty '(OLL presets) 'ignore-presets))
-     (preset (assq-ref props 'preset))
-     (dont-require-preset (eq? use-presets-prop #f))
-     (require-any-preset (eq? use-presets-prop #t))
+    ((preset (assq-ref props 'preset))
+     (_global (get-propset-preset-settings '(OLL presets)))
+     (_by-propset (get-propset-preset-settings propset-path))
+     (_preset-settings (merge-preset-settings _global _by-propset))
+     (use-presets-prop (assq-ref _preset-settings 'use-only-presets))
+     (ignore-presets-prop (assq-ref _preset-settings 'ignore-presets))
+     (require-preset (assq-ref _preset-settings 'require-preset))
      (by-use
-      (or
-       dont-require-preset
-       (and preset
-            (or require-any-preset
-                (member (string->symbol preset) use-presets-prop)))))
+      (and
+       (if require-preset preset #t)
+       (or
+        (null? use-presets-prop)
+        (not preset)
+        (member preset use-presets-prop))))
      (by-ignore
-      (or (null? ignore-presets-prop)
-          (not preset)
-          (not (member (string->symbol preset) ignore-presets-prop))))
+      (not (member preset ignore-presets-prop)))
      )
     (and by-use by-ignore)
     ))
@@ -389,7 +467,7 @@ not present in property set ~a"
     (for-each
      (lambda (prop)
        (set! props (assoc-set! props (car prop) (cdr prop))))
-     (append preset given-props))
+     (append preset checked-props))
     props))
 
 #(define-macro (with-propset proc vars preds propset-path . body)
@@ -432,8 +510,8 @@ non-existent property set '~a'" (os-path-join-dots propset-path))))
         ((propset-path ,propset-path)
          (props (merge-props propset-path ,props opts))
          ;; retrieve value of a given property
-         (property (lambda (prop) (assq-ref props prop)))
+         (property (lambda (name) (assq-ref props name)))
          ;; determine applicability by preset settings
-         (use-preset (lambda () (use-by-preset props)))
+         (use-preset (lambda () (use-by-preset propset-path props)))
          )
         . ,body))))
