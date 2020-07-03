@@ -97,7 +97,7 @@
        (boolean? obj)))
 
 %
-setPresetSettings =
+setPresetFilters =
 #(define-void-function (path type value)(symbol-list? symbol? preset-setting?)
    (let*
     ((propset (get-propset path))
@@ -127,7 +127,7 @@ Skipping."
 
 setGlobalPresetSettings =
 #(define-void-function (type value)(symbol? preset-setting?)
-   (setPresetSettings '(OLL presets) type value))
+   (setPresetFilters '(OLL presets) type value))
 
 % Define a property set as a sequence of properties
 % with names (symbol?), types (procedure), and default value.
