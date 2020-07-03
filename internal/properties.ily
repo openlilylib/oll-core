@@ -354,7 +354,7 @@ Skipping definition."
       (ignore-presets . ,ignore))))
 
 #(define (use-by-preset propset-path props)
-   "Property available inside a with-propset generated function.
+   "Property available inside a with-property-set generated function.
     Determines whether the preset (given or not) allows the application
     of the function regarding the OLL.presets use-presets/ignore-presets 
     properties.
@@ -470,7 +470,7 @@ not present in property set ~a"
      (append preset checked-props))
     props))
 
-#(define-macro (with-propset proc vars preds propset-path . body)
+#(define-macro (with-property-set proc vars preds propset-path . body)
    "Create a music/scheme/void-function attached to a propset.
     The first mandatory item after the predicate list is a quasi-quoted
     symbol-list? with the propset-path to the property set governing the function.
@@ -485,10 +485,10 @@ not present in property set ~a"
       (begin
        (cond
         ((every list? preds)
-         (oll:error "with-propset functions must have at least one mandatory argument.
+         (oll:error "with-property-set functions must have at least one mandatory argument.
 (You may use a dummy scheme? or ly:music? argument and simply return that unchanged.)"))
         ((list? (first preds))
-         (oll:error "with-propset functions must not have an optional argument in first position.")))
+         (oll:error "with-property-set functions must not have an optional argument in first position.")))
        (append '((ly:context-mod? (ly:make-context-mod)) ) preds)
        ))
      (propset `(get-propset-props ,propset-path))
@@ -500,7 +500,7 @@ not present in property set ~a"
              ,propset)
            ;; function specified propset that isn't available
            (oll:error "
-Specifying a with-propset function with
+Specifying a with-property-set function with
 non-existent property set '~a'" (os-path-join-dots propset-path))))
 
      )
