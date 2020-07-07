@@ -91,16 +91,16 @@ testColor =
 
 
 % Test different filter settings
-% \setGlobalPresetSettings affects *all* functions with the named preset
-% \setPresetSettings affects only the specified property set.
+% \setGlobalPresetFilters affects *all* functions with the named preset
+% \setPresetFilters affects only the specified property set.
 
 
 % require-preset
 % if ##t only functions with a given preset are used
 
-%\setGlobalPresetSettings require-preset ##t
-%\setPresetSettings test.presets require-preset ##t
-%\setPresetSettings test.colors require-preset ##t
+%\setGlobalPresetFilters require-preset ##t
+%\setPresetFilters test.presets require-preset ##t
+%\setPresetFilters test.colors require-preset ##t
 
 
 % use-only-presets
@@ -110,9 +110,9 @@ testColor =
 % If require-preset = ##t this amounts to "only use functions
 % where this preset has been set".
 
-%\setGlobalPresetSettings use-only-presets one.two
-%\setPresetSettings test.presets use-only-presets three.four
-%\setPresetSettings test.colors use-only-presets two.five
+%\setGlobalPresetFilters use-only-presets one.two
+%\setPresetFilters test.presets use-only-presets three.four
+%\setPresetFilters test.colors use-only-presets two.five
 
 
 % ignore-presets
@@ -120,9 +120,9 @@ testColor =
 % are *not* affected by this.
 % Global and local lists add up.
 
-%\setGlobalPresetSettings ignore-presets one.two
-%\setPresetSettings test.presets ignore-presets three.four
-%\setPresetSettings test.colors ignore-presets two.five
+%\setGlobalPresetFilters ignore-presets one.two
+%\setPresetFilters test.presets ignore-presets three.four
+%\setPresetFilters test.colors ignore-presets two.five
 
 
 content = {
