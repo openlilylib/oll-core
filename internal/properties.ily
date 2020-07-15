@@ -56,7 +56,7 @@
          (assq-ref propset 'props)
          #f)))
 
-#(define (get-propset-presets propset-path)
+#(define (get-propset-configurations propset-path)
    "Retrieve the actual presets alist from a propset.
     Returns #f if the propset doesn't exist."
    (let ((propset (get-propset propset-path)))
@@ -392,22 +392,22 @@ Skipping definition."
     (and by-use by-ignore)
     ))
 
-#(define (get-preset propset-path preset-name)
+#(define (get-configuration propset-path configuration-name)
    "Retrieve a list of properties specified in a preset.
     If a preset has a 'parent' property
     recursively fetch parents' properties too, in a way
     that children override values from parents."
-   (if preset-name
+   (if configuration-name
        ;; store preset's alist or an empty list
        ;; issue a warning if preset doesn't exist
-       (let* ((presets (get-propset-presets propset-path))
-              (props (assq-ref presets preset-name))
+       (let* ((configuration (get-propset-configurations propset-path))
+              (props (assq-ref configuration configuration-name))
               )
          (if props
              (let* ((parent (assq-ref props 'parent))
                     (parent-props
                      (if parent
-                         (get-preset propset-path parent)
+                         (get-configuration propset-path parent)
                          '()))
                     )
                (append parent-props props))
@@ -418,7 +418,7 @@ Requesting non-existing preset
 for property set
   ~a.
 Skipping"
-                preset-name
+                configuration-name
                 propset-path)
               '())
              ))
@@ -426,14 +426,20 @@ Skipping"
 
 
 
-#(define (merge-props propset-path props opts)
+#(define (merge-props propset-path props configuration-or-opts)
    "Update function properties:
     - If a preset is requested (and exists)
       override properties with its values
     - If instance properties are given 
       they override both defaults and presets."
    (let*
-    ((given-props (context-mod->props opts))
+    ((opts (if (ly:context-mod? configuration-or-opts)
+               configuration-or-opts
+               #{ \with { 
+                 preset = #configuration-or-opts 
+               } #}
+               ))
+     (given-props (context-mod->props opts))
      (checked-props
       (let*
        ((propset (get-propset-props propset-path)))
@@ -471,7 +477,7 @@ not present in property set ~a"
          given-props))))
 
      (preset-name (assq-ref checked-props 'preset))
-     (preset (get-preset propset-path preset-name))
+     (preset (get-configuration propset-path preset-name))
 
      )
     ;; override props with preset and instance properties
@@ -480,6 +486,10 @@ not present in property set ~a"
        (set! props (assoc-set! props (car prop) (cdr prop))))
      (append preset checked-props))
     props))
+
+#(define (symbol-or-context-mod? obj)
+   (or (symbol? obj)
+       (ly:context-mod? obj)))
 
 #(define-macro (with-property-set proc vars preds propset-path . body)
    "Create a music/scheme/void-function attached to a propset.
@@ -491,7 +501,7 @@ not present in property set ~a"
     accept a scheme? or ly:music? argument and return that unmodified.`
     "
    (let*
-    ((vars (append `(opts) vars))
+    ((vars (append `(configuration-or-opts) vars))
      (preds
       (begin
        (cond
@@ -500,7 +510,7 @@ not present in property set ~a"
 (You may use a dummy scheme? or ly:music? argument and simply return that unchanged.)"))
         ((list? (first preds))
          (oll:error "with-property-set functions must not have an optional argument in first position.")))
-       (append '((ly:context-mod? (ly:make-context-mod)) ) preds)
+       (append '((symbol-or-context-mod? 'default)) preds)
        ))
      (propset `(get-propset-props ,propset-path))
      (props
@@ -519,7 +529,7 @@ non-existent property set '~a'" (os-path-join-dots propset-path))))
     `(,proc ,vars ,preds
        (let*
         ((propset-path ,propset-path)
-         (props (merge-props propset-path ,props opts))
+         (props (merge-props propset-path ,props configuration-or-opts))
          ;; retrieve value of a given property
          (property (lambda (name) (assq-ref props name)))
          ;; determine applicability by preset settings
