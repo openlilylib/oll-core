@@ -247,6 +247,17 @@ Trying to set non-existent property
 Skipping assignment."
           prop-path))))
 
+% Set multiple properties (e.g. for defining global stylesheets).
+% Each assignment is validated individually, and failing assignments
+% don't affect the overall outcome.
+setProperties =
+#(define-void-function (propset-path properties)(symbol-list? list?)
+   (for-each
+    (lambda (prop)
+      (setProperty propset-path (car prop) (cdr prop)))
+    properties))
+
+
 
 % Define a preset to be applied later.
 % Pass a \with {} block with any options to be specified
