@@ -1,20 +1,20 @@
 \version "2.20.0"
 
-% Test file for preset settings
+% Test file for configuration filters
 
 \include "oll-core/package.ily"
 
-\definePropertySet test.presets
+\definePropertySet test.configurations
 #`((color ,color? ,red)
    (direction ,ly:dir? ,UP))
 
 test =
 #(with-property-set define-music-function (mus)(ly:music?)
-   `(test presets)
+   `(test configurations)
    (let*
-    ((text (or (property 'preset) 'none))
-     ;; use (use-preset) to determine the "active" state of the function
-     (color (if (use-preset) (property 'color) black))
+    ((text (or (property 'configuration) 'none))
+     ;; use (use-configuration) to determine the "active" state of the function
+     (color (if (use-configuration) (property 'color) black))
      (direction (property 'direction)))
    #{
      \once \override Stem.direction = #direction
@@ -32,7 +32,7 @@ testColor =
 #(with-property-set define-music-function (mus)(ly:music?)
    `(test colors)
    (let*
-    ((use (use-preset))
+    ((use (use-configuration))
      (color (if use (property 'color) black)))
     #{
       \temporary \override NoteHead.color = #color
@@ -42,96 +42,87 @@ testColor =
 
 % Presets for the text function
 
-\definePreset \with {
+\definePropertyConfiguration \with {
   color = #green
   direction = #DOWN
-} test.presets one
+} test.configurations one
 
-\definePreset \with {
+\definePropertyConfiguration \with {
   color = #blue
   direction = #UP
-} test.presets two
+} test.configurations two
 
-\definePreset \with {
+\definePropertyConfiguration \with {
   color = #magenta
   direction = #DOWN
-} test.presets three
+} test.configurations three
 
-\definePreset \with {
+\definePropertyConfiguration \with {
   color = #yellow
   direction = #UP
-} test.presets four
+} test.configurations four
 
-\definePreset \with {
+\definePropertyConfiguration \with {
   color = #darkgreen
   direction = #DOWN
-} test.presets five
+} test.configurations five
 
 % Presets for the inner coloring function
 
-\definePreset \with {
+\definePropertyConfiguration \with {
   color = #green
 } test.colors one
 
-\definePreset \with {
+\definePropertyConfiguration \with {
   color = #blue
 } test.colors two
 
-\definePreset \with {
+\definePropertyConfiguration \with {
   color = #magenta
 } test.colors three
 
-\definePreset \with {
+\definePropertyConfiguration \with {
   color = #yellow
 } test.colors four
 
-\definePreset \with {
+\definePropertyConfiguration \with {
   color = #darkgreen
 } test.colors five
 
 
 % Test different filter settings
-% \setGlobalPresetFilters affects *all* functions with the named preset
+% \setGlobalPresetFilters affects *all* functions with the named configuration
 % \setPresetFilters affects only the specified property set.
 
 
-% require-preset
-% if ##t only functions with a given preset are used
+% require-configuration
+% if ##t only functions with a given configuration are used
 
-%\setGlobalPresetFilters require-preset ##t
-%\setPresetFilters test.presets require-preset ##t
-%\setPresetFilters test.colors require-preset ##t
+%\setGlobalPresetFilters require-configuration ##t
+%\setPresetFilters test.configurations require-configuration ##t
+%\setPresetFilters test.colors require-configuration ##t
 
 
-% use-only-presets
-% only presets given in the lists are used.
+% use-only-configurations
+% only configurations given in the lists are used.
 % global and local filters add up the restrictions, possibly resulting in
-% *no* presets being used.
-% If require-preset = ##t this amounts to "only use functions
-% where this preset has been set".
+% *no* configurations being used.
+% If require-configuration = ##t this amounts to "only use functions
+% where this configuration has been set".
 
-%\setGlobalPresetFilters use-only-presets one.two
-%\setPresetFilters test.presets use-only-presets three.four
-%\setPresetFilters test.colors use-only-presets two.five
-
-
-% ignore-presets
-% Don't use presets within the list. Functions without preset
+% ignore-configurations
+% Don't use configurations within the list. Functions without configuration
 % are *not* affected by this.
 % Global and local lists add up.
-
-%\setGlobalPresetFilters ignore-presets one.two
-%\setPresetFilters test.presets ignore-presets three.four
-%\setPresetFilters test.colors ignore-presets two.five
 
 
 content = {
   \test \testColor b2
-  \test \with { preset = one   } \testColor \with { preset = one   } c'2
-  \test \with { preset = two   } \testColor \with { preset = two   } d'
-  \test \with { preset = three } \testColor \with { preset = three } e'
-  \test \with { preset = four  } \testColor \with { preset = four  } f'
-  \test \with { preset = five  } \testColor \with { preset = five  } g'
+  \test \with { configuration = one   } \testColor \with { configuration = one   } c'2
+  \test \with { configuration = two   } \testColor \with { configuration = two   } d'
+  \test \with { configuration = three } \testColor \with { configuration = three } e'
+  \test \with { configuration = four  } \testColor \with { configuration = four  } f'
+  \test \with { configuration = five  } \testColor \with { configuration = five  } g'
 }
 
 \new Staff \content

@@ -321,9 +321,6 @@ Trying to define configuration for non-existent propset
 Skipping definition."
            (os-path-join-dots propset-path)))))
 
-#(define (symbol-list-or-boolean? obj)
-   (or (symbol-list? obj)
-       (boolean? obj)))
 
 \definePropertySet OLL.configurations #'()
 
@@ -420,6 +417,27 @@ Skipping"
        '()))
 
 
+#(define (configuration-name? obj)
+   "Predicate for the choice of a configuration name.
+    It is eventually handled as a symbol, but may also be #f
+    to indicate 'no configuration'. A string is allowed as a convenience
+    for entry in a \\with block (the automatic string->symbol-property handler
+    works only for actual symbol? predicates."
+   (or (symbol? obj)
+       (string? obj)
+       (eq? obj #f)))
+
+#(define (sanitize-configuration-name obj)
+   "Ensure that a configuration name is either a symbol or #f.
+    When given in a \\with block the name is typically parsed as a string,
+    which must converted, while a #f value should be kept as-is."
+   (cond
+    ((or (symbol? obj) (eq? obj #f)) obj)
+    ((string? obj) (string->symbol obj))
+    (else
+     (oll:warn "
+Wrong property type: expecting string or symbol, got ~a" obj)
+     obj)))
 
 #(define (merge-props propset-path props configuration-or-opts)
    "Update function properties:
@@ -447,13 +465,14 @@ Skipping"
              (value (cdr prop))
              (property
               (if (eq? name 'configuration)
-                  (cons boolean-or-symbol? value)
+                  ;; ensure that a configuration name is either a symbol or #f
+                  (cons configuration-name? (sanitize-configuration-name value))
                   (assq-ref propset name)))
              )
             (if property
                 (let*
                  ((pred (car property))
-                  (value (string->symbol-property pred value)))
+                  (value (string->symbol-property pred (cdr property))))
                  (if (pred value)
                      (cons name value)
                      (begin
