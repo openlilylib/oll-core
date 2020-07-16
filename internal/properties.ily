@@ -322,7 +322,7 @@ Skipping definition."
            (os-path-join-dots propset-path)))))
 
 
-\definePropertySet OLL.configurations #'()
+\definePropertySet OLL.global #'()
 
 #(define (merge-configuration-filters global by-propset)
    (let*
@@ -359,13 +359,13 @@ Skipping definition."
 #(define (use-by-configuration propset-path props)
    "Property available inside a with-property-set generated function.
     Determines whether the configuration (given or not) allows the application
-    of the function regarding the OLL.configurations use-configurations/ignore-configurations 
+    of the function regarding the OLL.global use-configurations/ignore-configurations 
     properties.
     NOTE: This is always available as a check that returns #t or #f,
     but it is the responsibility of the function to act upon the information."
    (let*
     ((configuration (assq-ref props 'configuration))
-     (_global (get-propset-configuration-filters '(OLL configurations)))
+     (_global (get-propset-configuration-filters '(OLL global)))
      (_by-propset (get-propset-configuration-filters propset-path))
      (_configuration-filters (merge-configuration-filters _global _by-propset))
      (use-configurations-prop (assq-ref _configuration-filters 'use-only-configurations))
