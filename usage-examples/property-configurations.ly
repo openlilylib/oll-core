@@ -91,16 +91,15 @@ testColor =
 
 
 % Test different filter settings
-% \setGlobalPresetFilters affects *all* functions with the named configuration
-% \setPresetFilters affects only the specified property set.
-
+% \setPropertyConfFilters <property set> <filter> <setting> affects an arbitrary property set,
+% \setPropertyConfFilters OLL.global <filter> <setting> all property sets
 
 % require-configuration
 % if ##t only functions with a given configuration are used
 
-%\setGlobalPresetFilters require-configuration ##t
-%\setPresetFilters test.configurations require-configuration ##t
-%\setPresetFilters test.colors require-configuration ##t
+%\setPropertyConfFilters OLL.global require-configuration ##t
+%\setPropertyConfFilters test.configurations require-configuration ##t
+%\setPropertyConfFilters test.colors require-configuration ##t
 
 
 % use-only-configurations
@@ -110,11 +109,19 @@ testColor =
 % If require-configuration = ##t this amounts to "only use functions
 % where this configuration has been set".
 
+%\setPropertyConfFilters OLL.global use-only-configurations one.two.three
+%\setPropertyConfFilters test.configurations use-only-configurations one.two.three
+%\setPropertyConfFilters test.colors use-only-configurations one.two.three
+
+
 % ignore-configurations
 % Don't use configurations within the list. Functions without configuration
 % are *not* affected by this.
 % Global and local lists add up.
 
+%\setPropertyConfFilters OLL.global ignore-configurations one.two.three
+%\setPropertyConfFilters test.configurations ignore-configurations one.two.three
+%\setPropertyConfFilters test.colors ignore-configurations one.two.three
 
 content = {
   \test \testColor b2
