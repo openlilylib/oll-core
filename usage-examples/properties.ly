@@ -32,7 +32,7 @@
 % When used the included overrides will take precedence
 % over the current property values.
 % (type checking is active too
-\definePreset \with {
+\definePropertyConfiguration \with {
   text = boo
   color = #blue
 %  index = invalid % fails type-check
@@ -47,10 +47,10 @@
 %   (after merging) can be accessed through the
 %   props variable
 testFunc =
-#(with-propset define-scheme-function (dummy)(boolean?)
+#(with-property-set define-scheme-function (dummy)(boolean?)
    `(demo props)
    (let*
-    ((do-use (use-preset))
+    ((do-use (use-configuration))
      (text (property 'text))
      (content
           (if do-use
@@ -62,16 +62,16 @@ testFunc =
       )))
 
 % Invoke function with currently active properties
-\testFunc ##t
+%\testFunc ##t
 
 % Invoke function with a preset
 \testFunc \with {
-  preset = #'my-preset
+  configuration = #'my-preset
 } ##t
 
 % Invoke function with a preset plus individual override
 \testFunc \with {
-  preset = #'my-preset
+  configuration = #'my-preset
   %index = ##t %fails due to type check
   color = #magenta
   label = "heyho-symbol" % (implicitly converted to symbol)

@@ -57,19 +57,19 @@
          #f)))
 
 #(define (get-propset-configurations propset-path)
-   "Retrieve the actual presets alist from a propset.
+   "Retrieve the actual configurations alist from a propset.
     Returns #f if the propset doesn't exist."
    (let ((propset (get-propset propset-path)))
      (if propset
-         (assq-ref propset 'presets)
+         (assq-ref propset 'configurations)
          #f)))
 
-#(define (get-propset-preset-settings propset-path)
-   "Retrieve the preset-settings alist from a propset.
+#(define (get-propset-configuration-filters propset-path)
+   "Retrieve the configuration-filters alist from a propset.
     Returns #f if the propset doesn't exist."
    (let ((propset (get-propset propset-path)))
      (if propset
-         (assq-ref propset 'preset-settings)
+         (assq-ref propset 'configuration-filters)
          #f)))
 
 #(define (property-definition? obj)
@@ -91,43 +91,38 @@
     (list? obj)
     (every property-definition? obj)))
 
-#(define (preset-setting? obj)
-   "Preset settings may either be symbol lists or booleans."
+#(define (configuration-filter? obj)
+   "Configuration filters may either be symbol lists or booleans."
    (or (symbol-list? obj)
        (boolean? obj)))
 
 %
-setPresetFilters =
-#(define-void-function (path type value)(symbol-list? symbol? preset-setting?)
+setPropertyConfFilters =
+#(define-void-function (path type value)(symbol-list? symbol? configuration-filter?)
    (let*
     ((propset (get-propset path))
      (settings-path
       (if propset
-          (append '(_propsets) path '(preset-settings))
+          (append '(_propsets) path '(configuration-filters))
           (begin
            (oll:warn "
-Trying to set preset settings for non-existent property set
+Trying to set property configuration filters for non-existent property set
 ~a"
              (os-path-join-dots path))
            #f)))
      )
     (if (and settings-path
-             (member type '(use-only-presets require-preset ignore-presets)))
+             (member type '(use-only-configurations require-configuration ignore-configurations)))
         (setChildOption settings-path type value)
         (if settings-path
             (oll:warn "
-Trying to set illegal preset setting '~a'
+Trying to set illegal property configuration filter '~a'
 for property set ~a.
 Skipping."
               type
               (os-path-join-dots path)
               )))
     ))
-
-
-setGlobalPresetSettings =
-#(define-void-function (type value)(symbol? preset-setting?)
-   (setPresetFilters '(OLL presets) type value))
 
 % Define a property set as a sequence of properties
 % with names (symbol?), types (procedure), and default value.
@@ -139,11 +134,11 @@ definePropertySet =
           (prop-path (append root '(props))))
      ;; create structure
      (registerOption prop-path '())
-     (setChildOption root 'presets '())
-     (setChildOption root 'preset-settings
-       `((require-preset . #f)
-         (use-only-presets . ())
-         (ignore-presets . ())))
+     (setChildOption root 'configurations '())
+     (setChildOption root 'configuration-filters
+       `((require-configuration . #f)
+         (use-only-configurations . ())
+         (ignore-configurations . ())))
      (for-each
       (lambda (prop)
         ;; Add properties to the set.
@@ -259,20 +254,20 @@ setProperties =
 
 
 
-% Define a preset to be applied later.
+% Define a property configuration to be applied later.
 % Pass a \with {} block with any options to be specified
 % and a name.
 % The property set must exist,
 % each specified property must exist,
 % and values must match the properties' predicates
-definePreset =
+definePropertyConfiguration =
 #(with-required-options define-void-function
-   (propset-path preset-name)(symbol-list? symbol?)
+   (propset-path configuration-name)(symbol-list? symbol?)
    '(flexible)
    (let ((propset (get-propset-props propset-path)))
      (if propset
-         (let ((preset '())
-               (preset-path (append (get-propset-path propset-path) '(presets))))
+         (let ((configuration '())
+               (configuration-path (append (get-propset-path propset-path) '(configurations))))
            (for-each
             (lambda (prop)
               ;; add property if it is valid
@@ -289,18 +284,18 @@ definePreset =
                                 value)))
                     ;; typecheck property
                     (if (pred value)
-                        ;; add to preset
-                        (set! preset
-                              (assoc-set! preset prop-name value))
+                        ;; add to configuration
+                        (set! configuration
+                              (assoc-set! configuration prop-name value))
                         ;; typecheck failed
                         (oll:warn "
-Typecheck error while defining preset
+Typecheck error while defining configuration
   ~a
 for property set
   ~a
 Property '~a': expected ~a, got ~a.
 Skipping"
-                          preset-name
+                          configuration-name
                           (os-path-join-dots propset-path)
                           prop-name
                           (cadr entry)
@@ -308,20 +303,20 @@ Skipping"
                           )))
                    ;; property set exists but doesn't contain property
                    (oll:warn "
-Trying to define preset for non-existent property
+Trying to define configuration for non-existent property
   ~a"
                      (append propset-path (list prop-name))))
                ))
             ;; (props variable created by with-options)
             props)
-           ;; assign the new preset
+           ;; assign the new configuration
            (setChildOption
-            (append (get-propset-path propset-path) '(presets))
-            preset-name
-            preset))
+            (append (get-propset-path propset-path) '(configurations))
+            configuration-name
+            configuration))
          ;; no propset found
          (oll:warn "
-Trying to define preset for non-existent propset
+Trying to define configuration for non-existent propset
   ~a
 Skipping definition."
            (os-path-join-dots propset-path)))))
@@ -330,9 +325,9 @@ Skipping definition."
    (or (symbol-list? obj)
        (boolean? obj)))
 
-\definePropertySet OLL.presets #'()
+\definePropertySet OLL.configurations #'()
 
-#(define (merge-preset-settings global by-propset)
+#(define (merge-configuration-filters global by-propset)
    (let*
     ((merge-func
       (lambda (g p)
@@ -347,59 +342,59 @@ Skipping definition."
              ;; merging of two non-empty lists has resulte
              ;; in an empty list. This does not mean "no filter"
              ;; but rather "filter *everything*"
-             ;; (NOTE: preset = #'___nothing___ would produce unexpected (?) results)
+             ;; (NOTE: configuration = #'___nothing___ would produce unexpected (?) results)
              '(___nothing___)
              result)
          )))
-     (require-preset (or (assq-ref global 'require-preset)
-                         (assq-ref by-propset 'require-preset)))
+     (require-configuration (or (assq-ref global 'require-configuration)
+                         (assq-ref by-propset 'require-configuration)))
      (use-only (merge-func
-                (assq-ref global 'use-only-presets)
-                (assq-ref by-propset 'use-only-presets)))
+                (assq-ref global 'use-only-configurations)
+                (assq-ref by-propset 'use-only-configurations)))
      (ignore (lset-union eq?
-               (assq-ref global 'ignore-presets)
-               (assq-ref by-propset 'ignore-presets)))
+               (assq-ref global 'ignore-configurations)
+               (assq-ref by-propset 'ignore-configurations)))
      )
-    `((require-preset . ,require-preset)
-      (use-only-presets . ,use-only)
-      (ignore-presets . ,ignore))))
+    `((require-configuration . ,require-configuration)
+      (use-only-configurations . ,use-only)
+      (ignore-configurations . ,ignore))))
 
-#(define (use-by-preset propset-path props)
+#(define (use-by-configuration propset-path props)
    "Property available inside a with-property-set generated function.
-    Determines whether the preset (given or not) allows the application
-    of the function regarding the OLL.presets use-presets/ignore-presets 
+    Determines whether the configuration (given or not) allows the application
+    of the function regarding the OLL.configurations use-configurations/ignore-configurations 
     properties.
     NOTE: This is always available as a check that returns #t or #f,
     but it is the responsibility of the function to act upon the information."
    (let*
-    ((preset (assq-ref props 'preset))
-     (_global (get-propset-preset-settings '(OLL presets)))
-     (_by-propset (get-propset-preset-settings propset-path))
-     (_preset-settings (merge-preset-settings _global _by-propset))
-     (use-presets-prop (assq-ref _preset-settings 'use-only-presets))
-     (ignore-presets-prop (assq-ref _preset-settings 'ignore-presets))
-     (require-preset (assq-ref _preset-settings 'require-preset))
+    ((configuration (assq-ref props 'configuration))
+     (_global (get-propset-configuration-filters '(OLL configurations)))
+     (_by-propset (get-propset-configuration-filters propset-path))
+     (_configuration-filters (merge-configuration-filters _global _by-propset))
+     (use-configurations-prop (assq-ref _configuration-filters 'use-only-configurations))
+     (ignore-configurations-prop (assq-ref _configuration-filters 'ignore-configurations))
+     (require-configuration (assq-ref _configuration-filters 'require-configuration))
      (by-use
       (and
-       (if require-preset preset #t)
+       (if require-configuration configuration #t)
        (or
-        (null? use-presets-prop)
-        (not preset)
-        (member preset use-presets-prop))))
+        (null? use-configurations-prop)
+        (not configuration)
+        (member configuration use-configurations-prop))))
      (by-ignore
-      (not (member preset ignore-presets-prop)))
+      (not (member configuration ignore-configurations-prop)))
      )
     (and by-use by-ignore)
     ))
 
 #(define (get-configuration propset-path configuration-name)
-   "Retrieve a list of properties specified in a preset.
-    If a preset has a 'parent' property
+   "Retrieve a list of properties specified in a configuration.
+    If a configuration has a 'parent' property
     recursively fetch parents' properties too, in a way
     that children override values from parents."
    (if configuration-name
-       ;; store preset's alist or an empty list
-       ;; issue a warning if preset doesn't exist
+       ;; store configuration's alist or an empty list
+       ;; issue a warning if configuration doesn't exist
        (let* ((configuration (get-propset-configurations propset-path))
               (props (assq-ref configuration configuration-name))
               )
@@ -413,7 +408,7 @@ Skipping definition."
                (append parent-props props))
              (begin
               (oll:warn "
-Requesting non-existing preset
+Requesting non-existing configuration
   ~a
 for property set
   ~a.
@@ -428,15 +423,15 @@ Skipping"
 
 #(define (merge-props propset-path props configuration-or-opts)
    "Update function properties:
-    - If a preset is requested (and exists)
+    - If a configuration is requested (and exists)
       override properties with its values
     - If instance properties are given 
-      they override both defaults and presets."
+      they override both defaults and configurations."
    (let*
     ((opts (if (ly:context-mod? configuration-or-opts)
                configuration-or-opts
                #{ \with { 
-                 preset = #configuration-or-opts 
+                 configuration = #configuration-or-opts 
                } #}
                ))
      (given-props (context-mod->props opts))
@@ -451,8 +446,8 @@ Skipping"
             ((name (car prop))
              (value (cdr prop))
              (property
-              (if (eq? name 'preset)
-                  (cons symbol? value)
+              (if (eq? name 'configuration)
+                  (cons boolean-or-symbol? value)
                   (assq-ref propset name)))
              )
             (if property
@@ -476,15 +471,15 @@ not present in property set ~a"
                  #f))))
          given-props))))
 
-     (preset-name (assq-ref checked-props 'preset))
-     (preset (get-configuration propset-path preset-name))
+     (configuration-name (assq-ref checked-props 'configuration))
+     (configuration (get-configuration propset-path configuration-name))
 
      )
-    ;; override props with preset and instance properties
+    ;; override props with configuration and instance properties
     (for-each
      (lambda (prop)
        (set! props (assoc-set! props (car prop) (cdr prop))))
-     (append preset checked-props))
+     (append configuration checked-props))
     props))
 
 #(define (symbol-or-context-mod? obj)
@@ -510,7 +505,7 @@ not present in property set ~a"
 (You may use a dummy scheme? or ly:music? argument and simply return that unchanged.)"))
         ((list? (first preds))
          (oll:error "with-property-set functions must not have an optional argument in first position.")))
-       (append '((symbol-or-context-mod? 'default)) preds)
+       (append '((symbol-or-context-mod? #f)) preds)
        ))
      (propset `(get-propset-props ,propset-path))
      (props
@@ -532,7 +527,7 @@ non-existent property set '~a'" (os-path-join-dots propset-path))))
          (props (merge-props propset-path ,props configuration-or-opts))
          ;; retrieve value of a given property
          (property (lambda (name) (assq-ref props name)))
-         ;; determine applicability by preset settings
-         (use-preset (lambda () (use-by-preset propset-path props)))
+         ;; determine applicability by configuration filters
+         (use-configuration (lambda () (use-by-configuration propset-path props)))
          )
         . ,body))))
