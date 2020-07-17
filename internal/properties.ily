@@ -149,6 +149,8 @@ definePropertySet =
       (append
        `((parent ,symbol? default))
        prop-list))
+     ;; create an empty 'default property configuration, as defult parent
+     (definePropertyConfiguration (ly:make-context-mod) path 'default)
      ))
 
 #(define (property-entry propset-path name)
@@ -373,10 +375,10 @@ Skipping definition."
      (require-configuration (assq-ref _configuration-filters 'require-configuration))
      (by-use
       (and
-       (if require-configuration configuration #t)
+       (if require-configuration (not (eq? configuration 'default)) #t)
        (or
         (null? use-configurations-prop)
-        (not configuration)
+        (eq? configuration 'default)
         (member configuration use-configurations-prop))))
      (by-ignore
       (not (member configuration ignore-configurations-prop)))
@@ -448,8 +450,8 @@ Wrong property type: expecting string or symbol, got ~a" obj)
    (let*
     ((opts (if (ly:context-mod? configuration-or-opts)
                configuration-or-opts
-               #{ \with { 
-                 configuration = #configuration-or-opts 
+               #{ \with {
+                 configuration = #configuration-or-opts
                } #}
                ))
      (given-props (context-mod->props opts))
@@ -524,7 +526,7 @@ not present in property set ~a"
 (You may use a dummy scheme? or ly:music? argument and simply return that unchanged.)"))
         ((list? (first preds))
          (oll:error "with-property-set functions must not have an optional argument in first position.")))
-       (append '((symbol-or-context-mod? #f)) preds)
+       (append '((symbol-or-context-mod? 'default)) preds)
        ))
      (propset `(get-propset-props ,propset-path))
      (props
