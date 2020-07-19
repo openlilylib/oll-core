@@ -158,8 +158,8 @@ definePropertySet =
       (append
        `((parent ,symbol? default))
        prop-list))
-     ;; create an empty 'default property configuration, as defult parent
-     (definePropertyConfiguration (ly:make-context-mod) path 'default)
+      ;; create an empty 'default property configuration, as defult parent
+     (definePropertyConfiguration (ly:make-context-mod) (append path '(default)))
      ))
 
 #(define (property-entry propset-path name)
@@ -273,9 +273,12 @@ setProperties =
 % and values must match the properties' predicates
 definePropertyConfiguration =
 #(with-required-options define-void-function
-   (propset-path configuration-name)(symbol-list? symbol?)
+   (configuration-path)(symbol-list?)
    '(flexible)
-   (let ((propset (get-propset-props propset-path)))
+   (let*
+    ((propset-path (list-head configuration-path (- (length configuration-path) 1)))
+     (configuration-name (last configuration-path))
+     (propset (get-propset-props propset-path)))
      (if propset
          (let ((configuration '())
                (configuration-path (append (get-propset-path propset-path) '(configurations))))
@@ -481,7 +484,14 @@ Wrong property type: expecting string or symbol, got ~a" obj)
     ((opts
       (cond
        ((ly:context-mod? configuration-or-opts)
-        configuration-or-opts)
+        ;; if a \with block is given but without a configuration
+        ;; the current default configuration is retrieved
+        (if (member 'configuration (map cadr (ly:get-context-mods configuration-or-opts)))
+            configuration-or-opts
+            (begin
+             (ly:add-context-mod configuration-or-opts
+               `(assign configuration ,(get-default-configuration propset-path)))
+             configuration-or-opts)))
        ((eq? configuration-or-opts #f)
         (let*
          ((root (get-propset propset-path))

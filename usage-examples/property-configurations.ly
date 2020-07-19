@@ -12,7 +12,7 @@ test =
 #(with-property-set define-music-function (mus)(ly:music?)
    `(test configurations)
    (let*
-    ((text (or (property 'configuration) 'none))
+    ((text (property 'configuration))
      ;; use (use-configuration) to determine the "active" state of the function
      (color (if (use-configuration) (property 'color) black))
      (direction (property 'direction)))
@@ -45,49 +45,49 @@ testColor =
 \definePropertyConfiguration \with {
   color = #green
   direction = #DOWN
-} test.configurations one
+} test.configurations.one
 
 \definePropertyConfiguration \with {
   color = #blue
   direction = #UP
-} test.configurations two
+} test.configurations.two
 
 \definePropertyConfiguration \with {
   color = #magenta
   direction = #DOWN
-} test.configurations three
+} test.configurations.three
 
 \definePropertyConfiguration \with {
   color = #yellow
   direction = #UP
-} test.configurations four
+} test.configurations.four
 
 \definePropertyConfiguration \with {
   color = #darkgreen
   direction = #DOWN
-} test.configurations five
+} test.configurations.five
 
 % Presets for the inner coloring function
 
 \definePropertyConfiguration \with {
   color = #green
-} test.colors one
+} test.colors.one
 
 \definePropertyConfiguration \with {
   color = #blue
-} test.colors two
+} test.colors.two
 
 \definePropertyConfiguration \with {
   color = #magenta
-} test.colors three
+} test.colors.three
 
 \definePropertyConfiguration \with {
   color = #yellow
-} test.colors four
+} test.colors.four
 
 \definePropertyConfiguration \with {
   color = #darkgreen
-} test.colors five
+} test.colors.five
 
 
 % Test different filter settings
@@ -123,15 +123,20 @@ testColor =
 %\setPropertyConfFilters test.configurations ignore-configurations one.two.three
 %\setPropertyConfFilters test.colors ignore-configurations one.two.three
 
-\usePropertyConfiguration test.colors five
+%\usePropertyConfiguration test.colors three
+%\usePropertyConfiguration test.configurations five
 
 content = {
   \test \testColor b2
   \test \with { configuration = one   } \testColor \with { configuration = one   } c'2
   \test \with { configuration = two   } \testColor \with { configuration = two   } d'
-  \test \with { configuration = three } \testColor \with { configuration = three } e'
-  \test \with { configuration = four  } \testColor \with { configuration = four  } f'
-  \test \with { configuration = five  } \testColor \with { configuration = five  } g'
+  \test \with { 
+    %  configuration = three  
+  } \testColor \with { 
+    %configuration = three 
+  } e'
+%  \test \with { configuration = four  } \testColor \with { configuration = four  } f'
+%  \test \with { configuration = five  } \testColor \with { configuration = five  } g'
 }
 
 \new Staff \content
