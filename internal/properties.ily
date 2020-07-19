@@ -56,6 +56,14 @@
          (assq-ref propset 'props)
          #f)))
 
+#(define (get-configuration propset-path)
+   "Retrieve the currently active default configuration
+    from the property set."
+   (let ((propset (get-propset propset-path)))
+     (if propset
+         (assq-ref propset 'default-configuration)
+         'default)))
+
 #(define (get-propset-configurations propset-path)
    "Retrieve the actual configurations alist from a propset.
     Returns #f if the propset doesn't exist."
@@ -134,6 +142,7 @@ definePropertySet =
           (prop-path (append root '(props))))
      ;; create structure
      (registerOption prop-path '())
+     (setChildOption root 'default-configuration 'default)
      (setChildOption root 'configurations '())
      (setChildOption root 'configuration-filters
        `((require-configuration . #f)
@@ -323,6 +332,27 @@ Trying to define configuration for non-existent propset
 Skipping definition."
            (os-path-join-dots propset-path)))))
 
+#(define (get-default-configuration propset-path)
+   "Retrieve the current name of the default configuraition
+    for the given property set."
+   (let ((propset (get-propset propset-path)))
+     (if propset
+         (assq-ref propset 'default-configuration)
+          'default)))
+
+% Set the property configuration that is used by default if none is given explicitly.
+% This is initialized with 'default but can be changed to anything.
+% Validity is checked only upon use.
+usePropertyConfiguration =
+#(define-void-function (propset-path configuration-name)(symbol-list? symbol?)
+   (let ((propset (get-propset propset-path)))
+     (if propset
+         (let ((root (get-propset-path propset-path)))
+           (setChildOption root 'default-configuration configuration-name))
+         (oll:warn "
+Trying to set '~a' as default configuration for non-existing
+property set ~a.
+Skipping." configuration-name (os-path-join-dots propset-path)))))
 
 \definePropertySet OLL.global #'()
 
@@ -346,7 +376,7 @@ Skipping definition."
              result)
          )))
      (require-configuration (or (assq-ref global 'require-configuration)
-                         (assq-ref by-propset 'require-configuration)))
+                                (assq-ref by-propset 'require-configuration)))
      (use-only (merge-func
                 (assq-ref global 'use-only-configurations)
                 (assq-ref by-propset 'use-only-configurations)))
@@ -448,12 +478,22 @@ Wrong property type: expecting string or symbol, got ~a" obj)
     - If instance properties are given 
       they override both defaults and configurations."
    (let*
-    ((opts (if (ly:context-mod? configuration-or-opts)
-               configuration-or-opts
-               #{ \with {
+    ((opts
+      (cond
+       ((ly:context-mod? configuration-or-opts)
+        configuration-or-opts)
+       ((eq? configuration-or-opts #f)
+        (let*
+         ((root (get-propset propset-path))
+          (current-configuration (assq-ref root 'default-configuration)))
+       #{ \with {
+                 configuration = #current-configuration
+       } #}))
+       (else
+        #{ \with {
                  configuration = #configuration-or-opts
-               } #}
-               ))
+       } #})))
+
      (given-props (context-mod->props opts))
      (checked-props
       (let*
@@ -526,7 +566,8 @@ not present in property set ~a"
 (You may use a dummy scheme? or ly:music? argument and simply return that unchanged.)"))
         ((list? (first preds))
          (oll:error "with-property-set functions must not have an optional argument in first position.")))
-       (append '((symbol-or-context-mod? 'default)) preds)
+       ;; if no configuration is requested the current default will be used.
+       (append `((symbol-or-context-mod? #f)) preds)
        ))
      (propset `(get-propset-props ,propset-path))
      (props

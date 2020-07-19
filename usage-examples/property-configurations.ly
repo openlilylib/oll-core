@@ -123,6 +123,8 @@ testColor =
 %\setPropertyConfFilters test.configurations ignore-configurations one.two.three
 %\setPropertyConfFilters test.colors ignore-configurations one.two.three
 
+\usePropertyConfiguration test.colors five
+
 content = {
   \test \testColor b2
   \test \with { configuration = one   } \testColor \with { configuration = one   } c'2
