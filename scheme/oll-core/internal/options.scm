@@ -3,6 +3,7 @@
 (use-modules
  (lily)
  (srfi srfi-1)
+ (oll-core internal logging)
  (oll-core internal predicates)
  (oll-core internal alist-access))
 
@@ -181,6 +182,84 @@
          ;(oll:warn "Not a valid option path: ~a" (os-path-join-dots path))
          ))))
 
+(define (set-child-option force-set parent-path option val)
+   (let ((is-set (option-registered? parent-path)))
+     (if (and (not is-set) force-set)
+         ;; register missing parent option
+         (begin
+          (register-option parent-path '())
+          (set! is-set #t)))
+     (if is-set
+         (set-option #t (append parent-path (list option)) val)
+         (oll-warn
+          "Trying to add child to non-existent option: ~a"
+          ;(os-path-join-dots
+           parent-path
+           ;)
+          ))))
+
+(define (set-child-options force-set parent-path children)
+   (let ((is-set (option-registered? parent-path)))
+     (if (and (not is-set) force-set)
+         ;; register missing parent option
+         (begin
+          (registerOption parent-path '())
+          (set! is-set #t)))
+     (if is-set
+         (for-each
+          (lambda (opt)
+            (set-child-option force-set parent-path (car opt) (cdr opt)))
+          children)
+         (oll:warn
+          "Trying to add children to non-existent option: ~a"
+          (os-path-join-dots parent-path)))))
+
+(define (get-oll-option path)
+   (let ((option (getAtree #t 'oll-options path)))
+     (if option
+         ;; getAtree has returned a pair => option is set
+         (cdr option)
+         ;; getAtree has returned #f
+         (begin
+          (oll-warn
+           "Trying to access non-existent option: ~a" (os-path-join-dots path))
+          #f))))
+
+(define (get-option-with-fallback path fallback)
+   (let ((option (getAtree #t 'oll-options path)))
+     (if option
+         (cdr option)
+         fallback)))
+
+(define (get-child-option path child)
+   (symbol-list? symbol?)
+   (get-oll-option (append path (list child))))
+
+(define (get-child-option-with-fallback path child fallback)
+   (get-option-with-fallback (append path (list child)) fallback))
+
+
+(define (append-to-option create path val)
+   (let
+    ((opt
+      ;; Handle non-existing option, either by creating an empty list
+      ;; or by triggering the warning
+      (if create
+          (get-option-with-fallback path '())
+          (get-option-with-fallback path #f))))
+    (cond
+     ((not opt)
+      (oll-warn
+       "Trying to append to non-existent option: ~a"
+       (os-path-join-dots path)))
+     ((not (list? opt))
+      (oll-warn
+       "Trying to append to non-list option: ~a"
+       (os-path-join-dots path)))
+     (else
+      (set-option #f path (append opt (list val)))))))
+
+
 
 (export make-mandatory-props)
 (export make-accepted-props)
@@ -189,4 +268,11 @@
 (export make-opts-function-declaration)
 (export register-option)
 (export set-option)
+(export set-child-option)
+(export set-child-options)
+(export get-oll-option)
+(export get-option-with-fallback)
+(export get-child-option-with-fallback)
+(export get-child-option)
+(export append-to-option)
 (export option-registered?) ; TODO: remove when obsolete
