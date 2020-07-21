@@ -37,9 +37,9 @@
 % Storage for all property sets
 \registerOption #'(_propsets) #'()
 
-#(define (get-propset-path propset-path)
-   "Translate a propset path to its real storage location"
-   (append '(_propsets) propset-path))
+#(use-modules
+  (oll-core internal predicates)
+  (oll-core internal properties))
 
 #(define (get-propset propset-path)
    "Retrieve a propset entry.

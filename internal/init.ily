@@ -54,12 +54,12 @@
 % Helpers for handling Scheme association lists
 #(use-modules (oll-core internal alist-access))
 
-% Logging capabilities with different log levels
-\include "logging.ily"
-
 % Option handling,
 % for oll-core, other openLilyLib packages or arbitrary end-user code
 \include "options.ily"
+
+% Logging capabilities with different log levels
+\include "logging.ily"
 
 % Property handling,
 % like option handling

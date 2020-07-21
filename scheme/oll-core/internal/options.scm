@@ -3,7 +3,10 @@
 (use-modules
  (lily)
  (srfi srfi-1)
- (oll-core internal predicates))
+ (oll-core internal predicates)
+ (oll-core internal alist-access))
+
+(newAtree 'oll-options)
 
 ; Convenience functions to add some type checking
 ; to the bundling of package option templates.
@@ -148,8 +151,42 @@
               )
          . ,body))))
 
+
+(define (register-option opt-path init)
+  (setAtree 'oll-options opt-path init))
+
+; Convenience function to determine if an option is set.
+; can be used to avoid warnings when trying to access unregistered options.
+; Returns #t or #f
+(define (option-registered? path)
+     (pair? (getAtree #t 'oll-options path)))
+
+(define set-option
+(define-void-function (force-set path val) ((boolean?) symbol-list? scheme?)
+   (let ((is-set (option-registered? path)))
+     (if (and (not is-set) force-set)
+         (begin
+          (register-option path '())
+          (set! is-set #t)))
+     (if is-set
+         (begin
+          (setAtree 'oll-options path val)
+          ; TODO: change to oll-log
+          ;(oll:log "Option set: ~a"
+          ;  (format "~a: ~a"
+          ;    (os-path-join-dots path) val))
+          )
+         ;; reject setting unknown options and report that
+         ; TODO: change to oll-warning
+         ;(oll:warn "Not a valid option path: ~a" (os-path-join-dots path))
+         ))))
+
+
 (export make-mandatory-props)
 (export make-accepted-props)
 (export validate-props)
 (export context-mod->props)
 (export make-opts-function-declaration)
+(export register-option)
+(export set-option)
+(export option-registered?) ; TODO: remove when obsolete

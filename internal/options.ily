@@ -74,6 +74,7 @@
 %   list of mandatory options with name, predicate and default
 % - accepted
 %   list of accepted/known options with name and predicate
+%{
 #(define check-props
    (define-scheme-function (force-mand mand accepted props)
      ((boolean?) oll-mand-props? oll-accepted-props? al-or-props?)
@@ -132,7 +133,7 @@ be removed. Please use 'validate-props' instead.")
          missing-props))
       )))
 
-
+%}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Interface to store and retrieve options from one global option alist.
@@ -151,14 +152,7 @@ be removed. Please use 'validate-props' instead.")
 %     If the user doesn't set the option explicitly this value is assumed
 registerOption =
 #(define-void-function (opt-path init)(symbol-list? scheme?)
-   (setAtree 'oll-options opt-path init ))
-
-% Convenience function to determine if an option is set.
-% can be used to avoid warnings when trying to access unregistered options.
-% Returns #t or #f
-#(define option-registered?
-   (define-scheme-function (path) (symbol-list?)
-     (pair? (getAtree #t 'oll-options path))))
+   (register-option opt-path init))
 
 
 % Set an option.
@@ -172,21 +166,7 @@ registerOption =
 % #3: Any Scheme value
 setOption =
 #(define-void-function (force-set path val) ((boolean?) symbol-list? scheme?)
-   (let ((is-set (option-registered? path)))
-     (if (and (not is-set) force-set)
-         (begin
-          (registerOption path '())
-          (set! is-set #t)))
-     (if is-set
-         (begin
-          (setAtree 'oll-options path val)
-          ; TODO: change to oll-log
-          (oll:log "Option set: ~a"
-            (format "~a: ~a"
-              (os-path-join-dots path) val)))
-         ;; reject setting unknown options and report that
-         ; TODO: change to oll-warning
-         (oll:warn "Not a valid option path: ~a" (os-path-join-dots path)))))
+   (set-option force-set path val))
 
 % Set a child option below a given option path.
 % #1: Optional boolean <force-set>
