@@ -5,7 +5,8 @@
  (srfi srfi-1)
  (oll-core internal logging)
  (oll-core internal predicates)
- (oll-core internal alist-access))
+ (oll-core internal alist-access)
+ (oll-core internal os-path))
 
 (newAtree 'oll-options)
 
@@ -162,8 +163,8 @@
 (define (option-registered? path)
      (pair? (getAtree #t 'oll-options path)))
 
-(define set-option
-(define-void-function (force-set path val) ((boolean?) symbol-list? scheme?)
+(define (set-option force-set path val)
+  (ly:message "set-option ~a, ~a" path val)
    (let ((is-set (option-registered? path)))
      (if (and (not is-set) force-set)
          (begin
@@ -172,15 +173,13 @@
      (if is-set
          (begin
           (setAtree 'oll-options path val)
-          ; TODO: change to oll-log
-          ;(oll:log "Option set: ~a"
-          ;  (format "~a: ~a"
-          ;    (os-path-join-dots path) val))
+          (oll-log "Option set: ~a"
+            (format "~a: ~a"
+              (os-path-join-dots path) val))
           )
          ;; reject setting unknown options and report that
-         ; TODO: change to oll-warning
-         ;(oll:warn "Not a valid option path: ~a" (os-path-join-dots path))
-         ))))
+         (oll-warn "Not a valid option path: ~a"  (os-path-join-dots path))
+         )))
 
 (define (set-child-option force-set parent-path option val)
    (let ((is-set (option-registered? parent-path)))
@@ -193,10 +192,7 @@
          (set-option #t (append parent-path (list option)) val)
          (oll-warn
           "Trying to add child to non-existent option: ~a"
-          ;(os-path-join-dots
-           parent-path
-           ;)
-          ))))
+          (os-path-join-dots parent-path)))))
 
 (define (set-child-options force-set parent-path children)
    (let ((is-set (option-registered? parent-path)))
