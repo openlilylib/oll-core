@@ -16,7 +16,7 @@
 ; We can't use oll-core's options for this because they are not loaded yet -
 ; and the option handline needs the logging code ...
 ; Initialize to 'log, will later be set to 'warning
-(define oll-loglevel 3)
+(define oll-loglevel 2)
 
 ; Check if a logging function should be executed
 ; by comparing the value passed in <loglevel> to the
@@ -28,7 +28,7 @@
   (let ((new-level (assq level oll-loglevels)))
     (if new-level
         (set! oll-loglevel (cdr new-level))
-        (oll:warn
+        (oll-warn
          (*location*) "Not a valid openLilyLib log level: ~a. Ignoring" level))))
 
 ; Generic function to consistently format the output for the logging functions
