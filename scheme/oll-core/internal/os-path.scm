@@ -49,7 +49,7 @@
 (define os-path-separator-char
    (if (eq? PLATFORM 'windows) #\\ #\/ ))
 
-(define-public os-path-separator-string (format "~a" os-path-separator-char))
+(define os-path-separator-string (format "~a" os-path-separator-char))
 
 ;%%%%%%%%%%%%%%%%
 ; Path operations
@@ -82,7 +82,7 @@
     with elements converted from symbol to string if necessary."
    (do-os-path-split path #\/))
 
-(define-public (os-path-split-os path)
+(define (os-path-split-os path)
    "Returns a string list with path elements.
     Takes either a path string or a list.
     If 'path' is a string it is split
@@ -273,4 +273,30 @@
      (os-path-input-dirname)
      (ly:parser-output-name (*parser*))))
 
-(export os-path-separator-char)
+(export
+ os-path-separator-char
+ os-path-separator-string
+ do-os-path-split
+ os-path-split-os
+ os-path-join-os
+ os-path-join
+ os-path-join-dots
+ os-path-absolute?
+ os-path-absolute
+ os-path-normalize
+ os-path-cwd-list
+ os-path-dirname
+ location->normalized-path
+ location-extract-path
+ this-file
+ this-dir
+ this-parent
+ this-file-compiled?
+ scandir
+ get-subdirectories
+ os-path-input-file
+ os-path-input-filename
+ os-path-input-dir
+ os-path-input-dirname
+ os-path-input-basename
+ )

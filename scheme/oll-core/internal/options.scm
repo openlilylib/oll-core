@@ -164,7 +164,6 @@
      (pair? (getAtree #t 'oll-options path)))
 
 (define (set-option force-set path val)
-  (ly:message "set-option ~a, ~a" path val)
    (let ((is-set (option-registered? path)))
      (if (and (not is-set) force-set)
          (begin

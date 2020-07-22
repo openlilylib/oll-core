@@ -38,17 +38,18 @@
 
 #(use-modules
   (lily)
-  (ice-9 regex))
+  (ice-9 regex)
+  (oll-core internal os-path)
+  )
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Helper functions handling the low-level differences between OSes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Define a global variable containing the OS-dependent path separator character
-#(define-public os-path-separator-char
-   (if (eq? PLATFORM 'windows) #\\ #\/ ))
+#(define os-path-separator-char os-path-separator-char)
 
-#(define-public os-path-separator-string (format "~a" os-path-separator-char))
+#(define os-path-separator-string os-path-separator-string)
 
 %%%%%%%%%%%%%%%%%
 % Path operations
@@ -58,53 +59,16 @@
 % force an arbitrary path to be a list of strings.
 % From there we can reconstruct paths in arbitrary ways.
 
-#(define (do-os-path-split path sep)
-   "Returns a string list with path elements.
-    Takes either a path string or a list, and a separator char.
-    Elements of a given list are converted from symbol to string
-    if necessary."
-   (if (string? path)
-       (string-split path sep)
-       (map
-        (lambda (element)
-          (if (string? element)
-              element
-              (symbol->string element)))
-        path)))
-
-#(define-public (os-path-split path)
-   "Returns a string list with path elements.
-    Takes either a path string or a list.
-    If 'path' is a string it is split using the forward slash as
-    path separator (as this is the default case in LilyPond),
-    if it is a list then the list is returned,
-    with elements converted from symbol to string if necessary."
-   (do-os-path-split path #\/))
-
-#(define-public (os-path-split-os path)
-   "Returns a string list with path elements.
-    Takes either a path string or a list.
-    If 'path' is a string it is split
-    respecting the OS dependent path separator,
-    if it is a list then the list is returned,
-    with elements converted from symbol to string if necessary."
-   (do-os-path-split path os-path-separator-char))
+#(define os-path-split os-path-split)
+#(define os-path-split-os os-path-split-os)
 
 % Output paths in different forms
 % First force the input to be a list, then convert it to the desired format
 % All the functions take a 'path' argument as processed by os-path-split.
 
-#(define-public (os-path-join-os path)
-   "Converts a given path to a path corresponding to the OS convention"
-   (string-join (os-path-split path) os-path-separator-string))
-
-#(define-public (os-path-join path)
-   "Converts a given path to a unix-like path"
-   (string-join (os-path-split path) "/"))
-
-#(define-public (os-path-join-dots path)
-   "Returns a string in LilyPondish dot-notation (for display)"
-   (string-join (os-path-split path) "."))
+#(define os-path-join-os os-path-join-os)
+#(define os-path-join os-path-join)
+#(define os-path-join-dots os-path-join-dots)
 
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -117,78 +81,15 @@
 
 % Handling absolute and relative paths
 
-#(define-public (os-path-absolute? path)
-   "Test if the given path is absolute"
-   (let ((path-list (os-path-split path)))
-     (if (and (> (length path-list) 0)
-              ;; consider the path absolute if either the regex for windows volumes is matched
-              ;; or the first list element is empty (indicating a "/" unix root)
-              (or (regexp-exec (make-regexp "^[a-z]:$" regexp/icase) (car path-list))
-                  (= 0 (string-length (car path-list)))))
-         #t #f)))
-
-#(define-public (os-path-absolute path)
-   "Return absolute and normalized path of given 'path'.
-    If 'path' is already an absolute path it is simply normalized,
-    if it is a relative path it is interpreted as relative 
-    to the current working directory."
-   (let* ((path-list (os-path-normalize path)))
-     (if (os-path-absolute? path-list)
-         path-list
-         (append
-          (os-path-cwd-list)
-          path-list))))
-
-#(define-public (os-path-normalize path)
-   "Return a normalized path by resolving '.' and '..' elements."
-   (let ((result '()))
-     (for-each
-      (lambda (e)
-        (set! result
-              (cond
-               ((equal? e "..")
-                ;; go up one directory except if  ".." is the first element
-                (if (> (length result) 0)
-                    (cdr result)
-                    `(,e ,@result)))
-               ;; strip "." element
-               ((equal? e ".")
-                result)
-               (else `(,e ,@result)))))
-      (os-path-split path))
-     (reverse result)))
-
-
-#(define-public (os-path-cwd-list)
-   "Return the current working directory as a list of strings."
-   (os-path-split (getcwd)))
-
-#(define-public (os-path-dirname path)
-   "Strips off the last part of a path.
-    If <path> does not contain a file name
-    the parent dir will be returned instead."
-   (let ((path-list (os-path-split path)))
-     (list-head path-list (- (length path-list) 1))))
+#(define os-path-absolute? os-path-absolute?)
+#(define os-path-absolute os-path-absolute)
+#(define os-path-normalize os-path-normalize)
+#(define os-path-cwd-list os-path-cwd-list)
+#(define os-path-dirname os-path-dirname)
 
 % processing "location" arguments
-
-#(define-public (location->normalized-path location)
-   "Returns a normalized path to the given location object"
-   (os-path-normalize (car (ly:input-file-line-char-column location))))
-
-#(define-public (location-extract-path location)
-   "Returns the normalized path from a LilyPond location
-    or './' if 'location' is in the same directory."
-   (let* ((loc (location->normalized-path location))
-          (dirmatch (string-match "(.*/).*" loc))
-          (dirname (if (regexp-match? dirmatch)
-                       (let ((full-string (match:substring dirmatch 1)))
-                         (substring full-string
-                           0
-                           (- (string-length full-string) 1)))
-                       ".")))
-     (os-path-normalize dirname)))
-
+#(define location->normalized-path location->normalized-path)
+#(define location-extract-path location-extract-path)
 
 %%%%%%%%%%%%%%%%%%
 % "this" functions
@@ -196,23 +97,10 @@
 % These functions operate on the file where they are used
 % (i.e. *not* necessarily the file that is currently being compiled)
 
-% Return the normalized absolute path and file name of "this" file
-#(define-public (this-file) (location->normalized-path (*location*)))
-
-% Return the normalized absolute path of the directory containing "this"
-#(define-public (this-dir)
-   (let ((file (this-file)))
-     (list-head file (- (length file) 1))))
-
-% Return the parent of (this-dir)
-#(define-public (this-parent)
-   (let ((file (this-file)))
-     (list-head file (- (length file) 2))))
-
-% Return #t if the function is called from the main input file,
-% #f otherwise
-#(define (this-file-compiled?)
-   (equal? (this-file) (os-path-input-file)))
+#(define this-file this-file)
+#(define this-dir this-dir)
+#(define this-parent this-parent)
+#(define this-file-compiled? this-file-compiled?)
 
 %%%%%%%%%%%%%%%%%%%%%%
 % Directory operations
@@ -220,28 +108,10 @@
 
 % Return all files from the given dir
 % as a string list
-#(define (scandir dir)
-   (let ((input-dir (opendir dir))
-         (result '())
-         ;; exclude hidden files and directory links
-         (pattern (make-regexp "^[^.]")))
-     (do ((entry (readdir input-dir) (readdir input-dir))) ((eof-object? entry))
-       (if (regexp-exec pattern entry)
-           (set! result (append result (list entry)))))
-     (closedir input-dir)
-     result))
-
+#(define scandir scandir)
 % Return all subdirectories from the given dir
 % as a string list
-#(define (get-subdirectories dir)
-   (let ((all-files (scandir dir)))
-     (map string->symbol
-       (filter
-        (lambda (file)
-          (if (eq? 'directory
-                   (stat:type (stat (string-append dir "/" file))))
-              #t #f))
-        all-files))))
+#(define get-subdirectories get-subdirectories)
 
 %%%%%%%%%%%%%%%%%%%%%%%
 % Input file operations
@@ -250,24 +120,12 @@
 %%%%%%%%%%%%%%%%%%%%%%
 
 % Returns a list with the absolute path to the compiled input file
-#(define (os-path-input-file)
-   (let ((input-file (last (command-line))))
-     (os-path-absolute input-file)))
-
+#(define os-path-input-file os-path-input-file)
 % Returns a string with the absolute path to the compiled input file
-#(define (os-path-input-filename)
-   (os-path-join (os-path-input-file)))
-
+#(define os-path-input-filename os-path-input-filename)
 % Returns a list with the absolute path of the directory containing the input file
-#(define (os-path-input-dir)
-   (os-path-dirname (os-path-input-file)))
-
+#(define os-path-input-dir os-path-input-dir)
 % Returns a string with the absolute path of the directory containing the input file
-#(define (os-path-input-dirname)
-   (os-path-join (os-path-input-dir)))
-
+#(define os-path-input-dirname os-path-input-dirname)
 % Returns a string wtih the absolute path to the input file, without file extension
-#(define (os-path-input-basename)
-   (format "~a/~a"
-     (os-path-input-dirname)
-     (ly:parser-output-name (*parser*))))
+#(define os-path-input-basename os-path-input-basename)
