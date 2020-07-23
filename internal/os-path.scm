@@ -274,8 +274,8 @@
      (ly:parser-output-name (*parser*))))
 
 (export
- os-path-separator-char
- os-path-separator-string
+; os-path-separator-char
+; os-path-separator-string
  do-os-path-split
  os-path-split-os
  os-path-join-os
@@ -286,8 +286,8 @@
  os-path-normalize
  os-path-cwd-list
  os-path-dirname
- location->normalized-path
- location-extract-path
+; location->normalized-path
+; location-extract-path
  this-file
  this-dir
  this-parent

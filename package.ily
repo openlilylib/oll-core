@@ -62,7 +62,6 @@
       ;; Add openLilyLib root to Guile path
       ;; (enable packages to load Scheme modules through <package-name>)
       (set! %load-path `(,(string-join oll-root "/") ,@%load-path))
-      ;; Add internal oll-core Scheme path
-      (set! %load-path `(,(string-join scheme-path "/") ,@%load-path))
+      ;; store root path as a marker that oll-core has been loaded
       (ly:parser-define! 'openlilylib-root oll-root)
       (ly:parser-include-string "\\include \"oll-core/internal/init.ily\"")))

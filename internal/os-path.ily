@@ -47,9 +47,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Define a global variable containing the OS-dependent path separator character
-#(define os-path-separator-char os-path-separator-char)
+%#(define os-path-separator-char os-path-separator-char)
 
-#(define os-path-separator-string os-path-separator-string)
+%#(define os-path-separator-string os-path-separator-string)
 
 %%%%%%%%%%%%%%%%%
 % Path operations
@@ -59,8 +59,8 @@
 % force an arbitrary path to be a list of strings.
 % From there we can reconstruct paths in arbitrary ways.
 
-#(define os-path-split os-path-split)
-#(define os-path-split-os os-path-split-os)
+%#(define os-path-split os-path-split)
+%#(define os-path-split-os os-path-split-os)
 
 % Output paths in different forms
 % First force the input to be a list, then convert it to the desired format
@@ -88,8 +88,8 @@
 #(define os-path-dirname os-path-dirname)
 
 % processing "location" arguments
-#(define location->normalized-path location->normalized-path)
-#(define location-extract-path location-extract-path)
+%#(define location->normalized-path location->normalized-path)
+%#(define location-extract-path location-extract-path)
 
 %%%%%%%%%%%%%%%%%%
 % "this" functions
