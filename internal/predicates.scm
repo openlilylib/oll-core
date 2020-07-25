@@ -1,15 +1,21 @@
 (define-module (oll-core internal predicates))
 
 (use-modules
- (srfi srfi-1))
+ (srfi srfi-1)
+ (lily))
 
 ; predicate for check-props
 ; which accepts an a-list or a context-mod
 (define (al-or-props? obj)
-  (if (or (ly:context-mod? obj)
-          (and (list? obj)
-               (every pair? obj)))
-      #t #f))
+  (or (ly:context-mod? obj)
+      (and (list? obj)
+           (every pair? obj))))
+
+
+(define (symbol-or-context-mod? obj)
+  (or (symbol? obj)
+      (ly:context-mod? obj)))
+
 
 ; temporary predicate, as this seems just too general ...
 (define (alist? obj)
@@ -108,3 +114,4 @@
 (export prop-rule?)
 (export prop-rules?)
 (export empty-parens?)
+(export symbol-or-context-mod?)
