@@ -39,74 +39,12 @@
 
 #(use-modules
   (oll-core internal predicates)
-  (oll-core internal properties))
-
-#(define (get-propset propset-path)
-   "Retrieve a propset entry.
-    Returns #f if no propset with the given path exists."
-   (let* ((propset-path (get-propset-path propset-path))
-          (branch (getAtree #t 'oll-options propset-path)))
-     (if (pair? branch) (cdr branch) #f)))
-
-#(define (get-propset-props propset-path)
-   "Retrieve the actual properties alist from a propset.
-    Returns #f if the propset doesn't exist."
-   (let ((propset (get-propset propset-path)))
-     (if propset
-         (assq-ref propset 'props)
-         #f)))
-
-#(define (get-configuration propset-path)
-   "Retrieve the currently active default configuration
-    from the property set."
-   (let ((propset (get-propset propset-path)))
-     (if propset
-         (assq-ref propset 'default-configuration)
-         'default)))
-
-#(define (get-propset-configurations propset-path)
-   "Retrieve the actual configurations alist from a propset.
-    Returns #f if the propset doesn't exist."
-   (let ((propset (get-propset propset-path)))
-     (if propset
-         (assq-ref propset 'configurations)
-         #f)))
-
-#(define (get-propset-configuration-filters propset-path)
-   "Retrieve the configuration-filters alist from a propset.
-    Returns #f if the propset doesn't exist."
-   (let ((propset (get-propset propset-path)))
-     (if propset
-         (assq-ref propset 'configuration-filters)
-         #f)))
-
-#(define (property-definition? obj)
-   "A property definition is a three-element list with
-    - a key (symbol?)
-    - a predicate
-    - a default value (arbitrary Scheme element)"
-   (and
-    (list? obj)
-    (= (length obj) 3)
-    (symbol? (first obj))
-    (procedure? (second obj))
-    ((second obj) (third obj))
-    ))
-
-#(define (prop-list? obj)
-   "List of property definitions, used in the propset definition."
-   (and
-    (list? obj)
-    (every property-definition? obj)))
-
-#(define (configuration-filter? obj)
-   "Configuration filters may either be symbol lists or booleans."
-   (or (symbol-list? obj)
-       (boolean? obj)))
+  (oll-core internal _properties)
+  )
 
 %
 setPropertyConfFilters =
-#(define-void-function (path type value)(symbol-list? symbol? configuration-filter?)
+#(define-void-function (path type value)(symbol-list? symbol? property-configuration-filter?)
    (let*
     ((propset (get-propset path))
      (settings-path
@@ -137,7 +75,7 @@ Skipping."
 % These are given as assignments in a \with {} block, as
 %   <name> = #(list <predicate> <default>)
 definePropertySet =
-#(define-void-function (path prop-list)(symbol-list? prop-list?)
+#(define-void-function (path prop-list)(symbol-list? property-definition-list?)
    (let* ((root (get-propset-path path))
           (prop-path (append root '(props))))
      ;; create structure
@@ -162,37 +100,13 @@ definePropertySet =
      (definePropertyConfiguration (ly:make-context-mod) (append path '(default)))
      ))
 
-#(define (property-entry propset-path name)
-   "Retrieve items for a property entry addressed by a property path
-    and the property name.
-    Returns a list with references to
-    - the overall property set
-    - the actual properties alist
-    - the property entry (a pair with predicate and value)
-    If any of these doesn't exist it and the following entry/ies
-    will be #f."
-   (let*
-    (;; locate the property set
-      (propset (get-propset propset-path))
-      ;; locate the actual property list
-      (props
-       (if propset
-           (assq-ref propset 'props)
-           #f))
-      ;; locate the property entry
-      (property
-       (if props
-           (assq-ref props name)
-           #f)))
-    (list propset props property)))
-
 % Retrieve a property value from a property set.
 % If the property set doesn't exist or doesn't include the requestes property
 % a warning is issued and #f returned
 getProperty =
 #(define-scheme-function (propset-path name)(symbol-list? symbol?)
    (let*
-    ((items (property-entry propset-path name))
+    ((items (get-property-entry propset-path name))
      (props (second items))
      (property (third items)))
     (if props
@@ -214,21 +128,13 @@ Returns #f, please expect follow-up errors.
 " name (os-path-join-dots propset-path))
          #f))))
 
-#(define (string->symbol-property pred val)
-   "Optionally convert a string to a symbol.
-    This is used to allow 'simple' entry of symbol? properties, since the
-    LilyPond parser is unable to do that interpretation in a \\with block."
-   (if (and (string? val) (eq? pred symbol?))
-       (string->symbol val)
-       val))
-
 % Set a property.
 % If the property doesn't exist or the value doesn't match the predicate
 % a warning is issued and the assignment skipped (old value kept).
 setProperty =
 #(define-void-function (propset-path name value)(symbol-list? symbol? scheme?)
    (let*
-    ((property (third (property-entry propset-path name)))
+    ((property (third (get-property-entry propset-path name)))
      (prop-path (os-path-join-dots (append propset-path (list name)))))
     (if property
         (let*
@@ -335,14 +241,6 @@ Trying to define configuration for non-existent propset
 Skipping definition."
            (os-path-join-dots propset-path)))))
 
-#(define (get-default-configuration propset-path)
-   "Retrieve the current name of the default configuraition
-    for the given property set."
-   (let ((propset (get-propset propset-path)))
-     (if propset
-         (assq-ref propset 'default-configuration)
-          'default)))
-
 % Set the property configuration that is used by default if none is given explicitly.
 % This is initialized with 'default but can be changed to anything.
 % Validity is checked only upon use.
@@ -358,204 +256,6 @@ property set ~a.
 Skipping." configuration-name (os-path-join-dots propset-path)))))
 
 \definePropertySet OLL.global #'()
-
-#(define (merge-configuration-filters global by-propset)
-   (let*
-    ((merge-func
-      (lambda (g p)
-        (let
-         ((result
-           (cond
-            ((null? g) p)
-            ((null? p) g)
-            (else (lset-intersection eq? g p)))))
-         (if (and (null? result)
-                  (or (not (null? g)) (not (null? p))))
-             ;; merging of two non-empty lists has resulte
-             ;; in an empty list. This does not mean "no filter"
-             ;; but rather "filter *everything*"
-             ;; (NOTE: configuration = #'___nothing___ would produce unexpected (?) results)
-             '(___nothing___)
-             result)
-         )))
-     (require-configuration (or (assq-ref global 'require-configuration)
-                                (assq-ref by-propset 'require-configuration)))
-     (use-only (merge-func
-                (assq-ref global 'use-only-configurations)
-                (assq-ref by-propset 'use-only-configurations)))
-     (ignore (lset-union eq?
-               (assq-ref global 'ignore-configurations)
-               (assq-ref by-propset 'ignore-configurations)))
-     )
-    `((require-configuration . ,require-configuration)
-      (use-only-configurations . ,use-only)
-      (ignore-configurations . ,ignore))))
-
-#(define (use-by-configuration propset-path props)
-   "Property available inside a with-property-set generated function.
-    Determines whether the configuration (given or not) allows the application
-    of the function regarding the OLL.global use-configurations/ignore-configurations 
-    properties.
-    NOTE: This is always available as a check that returns #t or #f,
-    but it is the responsibility of the function to act upon the information."
-   (let*
-    ((configuration (assq-ref props 'configuration))
-     (_global (get-propset-configuration-filters '(OLL global)))
-     (_by-propset (get-propset-configuration-filters propset-path))
-     (_configuration-filters (merge-configuration-filters _global _by-propset))
-     (use-configurations-prop (assq-ref _configuration-filters 'use-only-configurations))
-     (ignore-configurations-prop (assq-ref _configuration-filters 'ignore-configurations))
-     (require-configuration (assq-ref _configuration-filters 'require-configuration))
-     (by-use
-      (and
-       (if require-configuration (not (eq? configuration 'default)) #t)
-       (or
-        (null? use-configurations-prop)
-        (eq? configuration 'default)
-        (member configuration use-configurations-prop))))
-     (by-ignore
-      (not (member configuration ignore-configurations-prop)))
-     )
-    (and by-use by-ignore)
-    ))
-
-#(define (get-configuration propset-path configuration-name)
-   "Retrieve a list of properties specified in a configuration.
-    If a configuration has a 'parent' property
-    recursively fetch parents' properties too, in a way
-    that children override values from parents."
-   (if configuration-name
-       ;; store configuration's alist or an empty list
-       ;; issue a warning if configuration doesn't exist
-       (let* ((configuration (get-propset-configurations propset-path))
-              (props (assq-ref configuration configuration-name))
-              )
-         (if props
-             (let* ((parent (assq-ref props 'parent))
-                    (parent-props
-                     (if parent
-                         (get-configuration propset-path parent)
-                         '()))
-                    )
-               (append parent-props props))
-             (begin
-              (oll:warn "
-Requesting non-existing configuration
-  ~a
-for property set
-  ~a.
-Skipping"
-                configuration-name
-                propset-path)
-              '())
-             ))
-       '()))
-
-
-#(define (configuration-name? obj)
-   "Predicate for the choice of a configuration name.
-    It is eventually handled as a symbol, but may also be #f
-    to indicate 'no configuration'. A string is allowed as a convenience
-    for entry in a \\with block (the automatic string->symbol-property handler
-    works only for actual symbol? predicates."
-   (or (symbol? obj)
-       (string? obj)
-       (eq? obj #f)))
-
-#(define (sanitize-configuration-name obj)
-   "Ensure that a configuration name is either a symbol or #f.
-    When given in a \\with block the name is typically parsed as a string,
-    which must converted, while a #f value should be kept as-is."
-   (cond
-    ((or (symbol? obj) (eq? obj #f)) obj)
-    ((string? obj) (string->symbol obj))
-    (else
-     (oll:warn "
-Wrong property type: expecting string or symbol, got ~a" obj)
-     obj)))
-
-#(define (merge-props propset-path props configuration-or-opts)
-   "Update function properties:
-    - If a configuration is requested (and exists)
-      override properties with its values
-    - If instance properties are given 
-      they override both defaults and configurations."
-   (let*
-    ((opts
-      (cond
-       ((ly:context-mod? configuration-or-opts)
-        ;; if a \with block is given but without a configuration
-        ;; the current default configuration is retrieved
-        (if (member 'configuration (map cadr (ly:get-context-mods configuration-or-opts)))
-            configuration-or-opts
-            (begin
-             (ly:add-context-mod configuration-or-opts
-               `(assign configuration ,(get-default-configuration propset-path)))
-             configuration-or-opts)))
-       ((eq? configuration-or-opts #f)
-        (let*
-         ((root (get-propset propset-path))
-          (current-configuration (assq-ref root 'default-configuration)))
-       #{ \with {
-                 configuration = #current-configuration
-       } #}))
-       (else
-        #{ \with {
-                 configuration = #configuration-or-opts
-       } #})))
-
-     (given-props (context-mod->props opts))
-     (checked-props
-      (let*
-       ((propset (get-propset-props propset-path)))
-       (filter
-        (lambda (elt) (if elt #t #f))
-        (map
-         (lambda (prop)
-           (let*
-            ((name (car prop))
-             (value (cdr prop))
-             (property
-              (if (eq? name 'configuration)
-                  ;; ensure that a configuration name is either a symbol or #f
-                  (cons configuration-name? (sanitize-configuration-name value))
-                  (assq-ref propset name)))
-             )
-            (if property
-                (let*
-                 ((pred (car property))
-                  (value (string->symbol-property pred (cdr property))))
-                 (if (pred value)
-                     (cons name value)
-                     (begin
-                      (oll:warn "
-Typecheck error for property '~a':
-Expected ~a,
-found ~a"
-                        name pred value)
-                      #f)))
-                (begin
-                 (oll:warn "
-Skipping property ~a = ~a
-not present in property set ~a"
-                   name value (os-path-join-dots propset-path))
-                 #f))))
-         given-props))))
-
-     (configuration-name (assq-ref checked-props 'configuration))
-     (configuration (get-configuration propset-path configuration-name))
-
-     )
-    ;; override props with configuration and instance properties
-    (for-each
-     (lambda (prop)
-       (set! props (assoc-set! props (car prop) (cdr prop))))
-     (append configuration checked-props))
-    props))
-
-#(define (symbol-or-context-mod? obj)
-   (or (symbol? obj)
-       (ly:context-mod? obj)))
 
 #(define-macro (with-property-set proc vars preds propset-path . body)
    "Create a music/scheme/void-function attached to a propset.
@@ -600,6 +300,6 @@ non-existent property set '~a'" (os-path-join-dots propset-path))))
          ;; retrieve value of a given property
          (property (lambda (name) (assq-ref props name)))
          ;; determine applicability by configuration filters
-         (use-configuration (lambda () (use-by-configuration propset-path props)))
+         (use-by-configuration? (lambda () (use-by-property-configuration? propset-path props)))
          )
         . ,body))))

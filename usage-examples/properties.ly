@@ -36,7 +36,7 @@
   text = boo
   color = #blue
 %  index = invalid % fails type-check
-} demo.props my-preset
+} demo.props.my-preset
 
 % Define a function with the propset
 % - Due to the optional \with block at least one mandatory
@@ -50,7 +50,7 @@ testFunc =
 #(with-property-set define-scheme-function (dummy)(boolean?)
    `(demo props)
    (let*
-    ((do-use (use-configuration))
+    ((do-use (use-by-configuration?))
      (text (property 'text))
      (content
           (if do-use
