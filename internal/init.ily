@@ -48,11 +48,8 @@
   (oll-core internal grob-tools)
   (oll-core internal control)
   (oll-core internal lilypond-version-predicates)
-  (oll-core internal alist-access))
-
-% Option handling,
-% for oll-core, other openLilyLib packages or arbitrary end-user code
-\include "options.ily"
+  (oll-core internal alist-access)
+  (oll-core internal options))
 
 % Logging capabilities with different log levels
 \include "logging.ily"

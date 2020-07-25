@@ -39,6 +39,7 @@
 
 #(use-modules
   (oll-core internal predicates)
+  (oll-core internal options)
   (oll-core internal _properties)
   )
 

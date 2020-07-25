@@ -1,105 +1,43 @@
+;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+;                                                                             %
+; This file is part of openLilyLib,                                           %
+;                      ===========                                            %
+; the community library project for GNU LilyPond                              %
+; (https://github.com/openlilylib/openlilylib                                 %
+;              -----------                                                    %
+;                                                                             %
+; openLilyLib is free software: you can redistribute it and/or modify         %
+; it under the terms of the GNU General Public License as published by        %
+; the Free Software Foundation, either version 3 of the License, or           %
+; (at your option) any later version.                                         %
+;                                                                             %
+; openLilyLib is distributed in the hope that it will be useful,              %
+; but WITHOUT ANY WARRANTY; without even the implied warranty of              %
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               %
+; GNU General Public License for more details.                                %
+;                                                                             %
+; You should have received a copy of the GNU General Public License           %
+; along with openLilyLib. If not, see <http://www.gnu.org/licenses/>.         %
+;                                                                             %
+; openLilyLib is maintained by Urs Liska, ul@openlilylib.org                  %
+; and others.                                                                 %
+;       Copyright Urs Liska, 2016                                             %
+;                                                                             %
+;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+; Global option handling for openLilyLib
+;
+; Options are stored in one nested alist
+; Managment of that alist is realized through the a-list-access.ily files.
+
 (define-module (oll-core internal options))
 
 (use-modules
- (lily)
- (srfi srfi-1)
- (oll-core internal logging)
- (oll-core internal predicates)
- (oll-core internal alist-access)
- (oll-core internal os-path))
-
-(newAtree 'oll-options)
-
-; Convenience functions to add some type checking
-; to the bundling of package option templates.
-; To be used by package creators only
-(define (make-mandatory-props props)
-  (if (oll-mand-props? props)
-      props
-      (begin
-       (oll:warn "Wrong argument type: oll-mand-props? expected")
-       '())))
-
-(define (make-accepted-props props)
-  (if (oll-accepted-props? props)
-      props
-      (begin
-       (oll:warn "Wrong argument type: oll-accepted-props? expected")
-       '())))
-
-; Convenience function, retrieves a property alist from a context-mod object.
-; Properties can optionally be mandatory and type-checked
-(define (validate-props rules props)
-  "Check a list of properties and return a possibly updated list.
-    - Handle unknown options (remove or not depending on 'strict' or 'flexible' ruleset)
-    - type check
-    - Handle missing properties. If a default is available use that.
-    It is *assumed* without checking that rules satisfies the prop-rules? predicate,
-    which can be justified because the function should not be called from documents."
-  (let*
-   ((strict (eq? (car rules) 'strict))
-    (rules (cdr rules))
-    (rules
-     (map (lambda (rule)
-            (let*
-             ((rule (if (symbol? rule) (list rule) rule))
-              (optional (eq? (first rule) '?))
-              (rule (if optional (cdr rule) rule))
-              (k (first rule))
-              (pred
-               (if (= (length rule) 1)
-                   scheme?
-                   (second rule)))
-              (default
-               (if (= 3 (length rule))
-                   (third rule)
-                   '())))
-             (list k pred default optional)))
-       rules))
-    (missing
-     (delete '()
-       (map (lambda (r)
-              (let*
-               ((k (car r))
-                (default (third r))
-                (optional (fourth r))
-                (prop (assoc-get k props)))
-               (cond
-                (prop '())
-                ((not (null? default)) (cons k default))
-                (optional '())
-                (else
-                 (begin
-                  (ly:input-warning (*location*)
-                    "Missing mandatory property \"~a\"." k)
-                  '())))))
-         rules)))
-    (props
-     (delete '()
-       (map (lambda (p)
-              (let*
-               ((k (car p)) (v (cdr p)) (rule (assoc-ref rules k)))
-               (cond
-                ;; unknown option
-                ((not rule)
-                 (if strict
-                     (begin
-                      (ly:input-warning (*location*)
-                        "Unknown property \"~a\"." k)
-                      '())
-                     p))
-                ;; type check successful
-                (((car rule) v) p)
-                (else
-                 (begin
-                  (ly:input-warning (*location*)
-                    "Type check failed for property \"~a\".\nExpected: ~a, given: ~a"
-                    k (car rule) v)
-                  '())))))
-         props)))
-    )
-   (append props missing)))
-
+  (ice-9 pretty-print)
+  (srfi srfi-1)
+  (lily)
+  (oll-core internal predicates)
+  (oll-core internal _options))
 
 ; Convert a ly:context-mod? argument to a properties alist
 ; Arguments:
@@ -129,145 +67,201 @@
            (validate-props rules props)
            props)))))
 
-(define (make-opts-function-declaration proc vars preds rules optional . body)
-  "Return the declaration of a function with the given arguments."
-  (let* ((vars (append '(opts) vars))
-         (preds
-          (if optional
-              (begin
-               (cond
-                ((every list? preds)
-                 (ly:warning "defining a with-options function without mandatory arguments."))
-                ((list? (first preds))
-                 (ly:warning "defining a with-options function where the first argument is optional.")))
-               (append '((ly:context-mod? (ly:make-context-mod))) preds))
-              (append '(ly:context-mod?) preds)))
-         (rules
-          (if (empty-parens? rules)
-              (quote '(flexible))
-              rules)))
-    `(,proc ,vars ,preds
-       (let* ((rules ,rules)
-              (props (context-mod->props rules opts))
-              (property (lambda (name) (assq-ref props name)))
-              )
-         . ,body))))
+
+; Macro to facilitate definition of functions with options.
+; Begin the function definition with 'with-options and give the ruleset
+; before the body of the function.
+; Example:
+; (with-options define-void-function () ()
+;   `(strict
+;      (msg ,string?)
+;      (? author ,string? "Anonymous"))
+;   (pretty-print props))
+; Warning: The body of the function can't be empty.
+(define-macro (with-options proc vars preds rules . body)
+   (let ((optional #t))
+     (apply make-opts-function-declaration `(,proc ,vars ,preds ,rules ,optional . ,body))))
+
+(define-macro (with-opts . rest)
+   `(with-options . ,rest))
+
+(define-macro (with-required-options proc vars preds rules . body)
+   (let ((optional #f))
+     (apply make-opts-function-declaration `(,proc ,vars ,preds ,rules ,optional . ,body))))
+
+(define-macro (with-req-opts . rest)
+   `(with-required-options . ,rest))
 
 
-(define (register-option opt-path init)
-  (setAtree 'oll-options opt-path init))
+;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+; Interface to store and retrieve options from one global option alist.
+; The following functions rely on functionality in the
+; (oll-core internal alist-access) module
 
-; Convenience function to determine if an option is set.
-; can be used to avoid warnings when trying to access unregistered options.
-; Returns #t or #f
-(define (option-registered? path)
-     (pair? (getAtree #t 'oll-options path)))
+; Global object holding all configuration data of all loaded openLilyLib modules
+;\newAtree oll-options
 
-(define (set-option force-set path val)
-   (let ((is-set (option-registered? path)))
-     (if (and (not is-set) force-set)
-         (begin
-          (register-option path '())
-          (set! is-set #t)))
-     (if is-set
-         (begin
-          (setAtree 'oll-options path val)
-          (oll-log "Option set: ~a"
-            (format "~a: ~a"
-              (os-path-join-dots path) val))
-          )
-         ;; reject setting unknown options and report that
-         (oll-warn "Not a valid option path: ~a"  (os-path-join-dots path))
-         )))
+; A library can register options (best to be done in the __init__.ily file).
+; Later end users can only set registered options, so this is kind of a syntax check.
+;
+; #1: option path in list or dot notation.
+;     The first item should be the library name
+; #2: initial value
+;     If the user doesn't set the option explicitly this value is assumed
+(define-public registerOption
+(define-void-function (opt-path init)(symbol-list? scheme?)
+   (register-option opt-path init)))
 
-(define (set-child-option force-set parent-path option val)
-   (let ((is-set (option-registered? parent-path)))
-     (if (and (not is-set) force-set)
-         ;; register missing parent option
-         (begin
-          (register-option parent-path '())
-          (set! is-set #t)))
-     (if is-set
-         (set-option #t (append parent-path (list option)) val)
-         (oll-warn
-          "Trying to add child to non-existent option: ~a"
-          (os-path-join-dots parent-path)))))
 
-(define (set-child-options force-set parent-path children)
-   (let ((is-set (option-registered? parent-path)))
-     (if (and (not is-set) force-set)
-         ;; register missing parent option
-         (begin
-          (registerOption parent-path '())
-          (set! is-set #t)))
-     (if is-set
-         (for-each
-          (lambda (opt)
-            (set-child-option force-set parent-path (car opt) (cdr opt)))
-          children)
-         (oll:warn
-          "Trying to add children to non-existent option: ~a"
-          (os-path-join-dots parent-path)))))
+; Set an option.
+; Only registered options can be set this way.
+; #1: Optional argument <force-set>
+;     If set and the option is not registered it initialized
+;     instead of being rejected.
+; #2: Provide a tree path in dotted or list notation
+;     the first item of the path is the library name,
+;     followed by an arbitrary path at the library's discretion
+; #3: Any Scheme value
+(define-public setOption
+(define-void-function (force-set path val) ((boolean?) symbol-list? scheme?)
+   (set-option force-set path val)))
 
-(define (get-oll-option path)
-   (let ((option (getAtree #t 'oll-options path)))
-     (if option
-         ;; getAtree has returned a pair => option is set
-         (cdr option)
-         ;; getAtree has returned #f
-         (begin
-          (oll-warn
-           "Trying to access non-existent option: ~a" (os-path-join-dots path))
-          #f))))
+; Set a child option below a given option path.
+; #1: Optional boolean <force-set>
+;     If set this will implicitly create a missing 'parent' node
+; #2: <parent-path>
+;     A path within the a-tree. Child options will be set/created below
+; #3: <option>
+;     The name of the option
+; #4: <value>
+;     The actual option value
+(define-public setChildOption
+(define-void-function (force-set parent-path option val)
+   ((boolean?) symbol-list? symbol? scheme?)
+   (set-child-option force-set parent-path option val)))
 
-(define (get-option-with-fallback path fallback)
-   (let ((option (getAtree #t 'oll-options path)))
-     (if option
-         (cdr option)
-         fallback)))
+; Set multiple child options below a given option path.
+; #1: Optional boolean <force-set>
+;     If set this will implicitly create a missing 'parent' node
+; #2: <parent-path>
+;     A path within the a-tree. Child options will be set/created below
+; #3: <children>
+;     an alist with the children
+(define-public setChildOptions
+(define-void-function (force-set parent-path children)
+   ((boolean?) symbol-list? alist?)
+   (set-child-options force-set parent-path children)))
 
-(define (get-child-option path child)
+; Append a value to a list option
+; #1: Optional boolean <create>
+;     If set this will implicitly create an empty list to append to
+; #2: <path>
+;     A path within the option tree.
+;     If <create> is not #t and <path> doesn't exist a warning is issued
+; #3: <val>
+;     Any Scheme value to be appended to the list option
+(define-public appendToOption
+(define-void-function (create path val)
+   ((boolean?) symbol-list? scheme?)
+   (append-to-option create path val)))
+
+; Retrieve an option
+; Provide a tree path in dotted or list notation
+; Retrieving a non-existing option path issues a warning and returns #f
+(define-public getOption
+(define-scheme-function (path) (symbol-list?)
+   (get-oll-option path)))
+
+; Same as \getOption, but retrieving non-existing options returns
+; the fallback argument and does not raise a warning.
+(define-public getOptionWithFallback
+(define-scheme-function (path fallback)
+   (list? scheme?)
+   (get-option-with-fallback path fallback)))
+
+; Retrieve a child option from option <path>.
+; If either the 'parent' path or the child option are not present
+; a warning is issued and #f returned
+(define-public getChildOption
+(define-scheme-function (path child)
    (symbol-list? symbol?)
-   (get-oll-option (append path (list child))))
+   (get-child-option path child)))
 
-(define (get-child-option-with-fallback path child fallback)
-   (get-option-with-fallback (append path (list child)) fallback))
+; Same as \getChildOption, but retrieving non-existing options
+; returns the fallback argument and doesn't issue a warning.
+; This is useful for dynamic options where the user should be
+; allowed to provide arbitrary values.
+; An example is the setting of arbitrary annotation properties.
+(define-public getChildOptionWithFallback
+(define-scheme-function (path child fallback)
+   (symbol-list? symbol? scheme?)
+   (get-child-option-with-fallback path child fallback)))
 
+;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+;%%% Display all currently registered options
 
-(define (append-to-option create path val)
-   (let
-    ((opt
-      ;; Handle non-existing option, either by creating an empty list
-      ;; or by triggering the warning
-      (if create
-          (get-option-with-fallback path '())
-          (get-option-with-fallback path #f))))
-    (cond
-     ((not opt)
-      (oll-warn
-       "Trying to append to non-existent option: ~a"
-       (os-path-join-dots path)))
-     ((not (list? opt))
-      (oll-warn
-       "Trying to append to non-list option: ~a"
-       (os-path-join-dots path)))
-     (else
-      (set-option #f path (append opt (list val)))))))
+(define-public displayOptions
+(define-void-function (root)((symbol-list? '()))
+   (display "\n\nopenLilyLib: Currently registered options:\n=====\n")
+   (let ((use-root (if (null? root)
+                       oll-options
+                       (getOption root))))
+     (pretty-print
+      ;oll-options
+      use-root #:display? #t))))
 
+; Display the metadata of a package
+(define-public describePackage
+(define-void-function (name)(symbol?)
+   (if (member name (getOption '(loaded-packages)))
+       (begin
+        (format #t "\n\nopenLilyLib: Metadata of package '~a':\n=====\n" name)
+        (pretty-print (getOptionWithFallback `(,name meta) "None available")))
+       (format #t "\n\nopenLilyLib: Package '~a' is not loaded.\n\n" name))))
 
+; Display the options of a package or module (if available)
+; Package options will also include options of loaded modules
+(define-public displayModuleOptions
+(define-void-function (path)(symbol-list?)
+   (let*
+    ((package (car path))
+     (module (cdr path)))
+    (if (null? module)
+        ;; display *package* options
+        (if (member package (getOption '(loaded-packages)))
+            ;; package is loaded
+            (begin
+             (format #t "\n\nopenLilyLib: Options of package '~a':\n=====\n" package)
+             (let
+              ((options (filter
+                         (lambda (o)
+                           (not (member (car o) '(root meta))))
+                         (getOptionWithFallback (list package) '()))))
+              (if (not (null? options))
+                  ;; there are package options
+                  (pretty-print options)
+                  ;; no package options available
+                  (format #t "None available.\n\n"))))
+            ;; package is not loaded
+            (format #t "\n\nopenLilyLib: Can't show options, package '~a' is not loaded.\n\n" package))
+        ;; display *module* options
+        (if (member module (getOptionWithFallback `(loaded-modules ,package) '()))
+            ;; module is loaded
+            (begin
+             (format #t "\n\nopenLilyLib: Options of module '~a':\n=====\n" (os-path-join-dots path))
+             (pretty-print (getOptionWithFallback path "None available")))
+            ;; module is not loaded
+            (format #t "Can't show options, module '~a' is not loaded.\n\n" path))))))
 
-(export make-mandatory-props)
-(export make-accepted-props)
-(export validate-props)
-(export context-mod->props)
-(export make-opts-function-declaration)
-(export register-option)
-(export set-option)
-(export set-child-option)
-(export set-child-options)
-(export get-oll-option)
-(export get-option-with-fallback)
-(export get-child-option-with-fallback)
-(export get-child-option)
-(export append-to-option)
-(export option-registered?) ; TODO: remove when obsolete
+(export
+ with-options
+ with-opts
+ with-required-options
+ with-req-opts
+ )
+
+; TODO:
+; Provide commands to bulk-process this.
+; Maybe also make it possible to load options froma  JSON file
+; (although I'm not completely sure if that JSON file would be
+; actually easier to maintain).
