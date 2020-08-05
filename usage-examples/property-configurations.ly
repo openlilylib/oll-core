@@ -14,7 +14,7 @@ test =
    (let*
     ((text (property 'configuration))
      ;; use (use-configuration) to determine the "active" state of the function
-     (color (if (use-configuration) (property 'color) black))
+     (color (if (use-by-configuration?) (property 'color) black))
      (direction (property 'direction)))
    #{
      \once \override Stem.direction = #direction
@@ -32,7 +32,7 @@ testColor =
 #(with-property-set define-music-function (mus)(ly:music?)
    `(test colors)
    (let*
-    ((use (use-configuration))
+    ((use (use-by-configuration?))
      (color (if use (property 'color) black)))
     #{
       \temporary \override NoteHead.color = #color
@@ -131,12 +131,12 @@ content = {
   \test \with { configuration = one   } \testColor \with { configuration = one   } c'2
   \test \with { configuration = two   } \testColor \with { configuration = two   } d'
   \test \with { 
-    %  configuration = three  
+      configuration = three  
   } \testColor \with { 
-    %configuration = three 
+    configuration = three 
   } e'
-%  \test \with { configuration = four  } \testColor \with { configuration = four  } f'
-%  \test \with { configuration = five  } \testColor \with { configuration = five  } g'
+  \test \with { configuration = four  } \testColor \with { configuration = four  } f'
+  \test \with { configuration = five  } \testColor \with { configuration = five  } g'
 }
 
 \new Staff \content
