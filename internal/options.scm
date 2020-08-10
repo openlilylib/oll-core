@@ -431,7 +431,7 @@
 (define-void-function (root)((symbol-list? '()))
    (display "\n\nopenLilyLib: Currently registered options:\n=====\n")
    (let ((use-root (if (null? root)
-                       oll-options
+                       (getAlist 'oll-options)
                        (getOption root))))
      (pretty-print
       ;oll-options
