@@ -48,7 +48,7 @@
   (oll-core internal grob-tools)
   (oll-core internal control)
   (oll-core internal lilypond-version-predicates)
-  (oll-core internal alist-access)
+  (oll-core internal named-alists)
   (oll-core internal options))
 
 % Logging capabilities with different log levels

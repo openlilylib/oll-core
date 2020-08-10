@@ -2,7 +2,7 @@
 
 (use-modules
  (lily)
- (oll-core internal alist-access))
+ )
 
 ; Constant symbols representing the different log levels.
 (define oll-loglevels

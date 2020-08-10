@@ -4,7 +4,8 @@
  (srfi srfi-1)
  (lily)
  (oll-core internal options)
- (oll-core internal alist-access))
+ (oll-core internal named-alists)
+ )
 
 (define (get-propset-path propset-path)
   "Property sets are stored within the global oll-options data structure.

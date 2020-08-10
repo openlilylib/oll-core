@@ -38,7 +38,7 @@
   (lily)
   (oll-core internal predicates)
   (oll-core internal logging)
-  (oll-core internal alist-access)
+  (oll-core internal named-alists)
   (oll-core internal os-path)
   )
 
