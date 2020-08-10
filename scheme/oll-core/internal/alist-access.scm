@@ -28,7 +28,9 @@
 (define-module (oll-core internal alist-access))
 (use-modules
  (lily)
- (ice-9 common-list))
+ (ice-9 common-list)
+ (oll-core internal logging)
+ )
 
 ;;
 ;; Functions for easier and robust access to nested association lists.
@@ -39,14 +41,27 @@
 ;; Internal Helper functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define retrieve-list #f)
+(define save-list #f)
+
+(let
+ ((lists (list)))
+ (set! retrieve-list
+       (lambda (name)
+         (assq-ref lists name)))
+ (set! save-list
+       (lambda (name alst)
+         (set!
+          lists
+          (assq-set! lists name alst)))))
+
+
 ;; Check if a given alist is already defined.
-;; This is necessary as (ly:parser-lookup alst) will implicitly
-;; create an empty list, which will usually result in strange
-;; error conditions when a list name is misspelled.
+;; This is to provide a more meaningful error message,
+;; especially when list names have been misspelled.
 (define (check-alst funcname alst key-name val)
-  (if (not (defined? alst))
-      ; TODO: Change this to oll-warning (when this is transfered to oll-core)
-      (ly:input-warning (*location*) "
+  (if (not (retrieve-list alst))
+      (oll:warn "
 Trying to access non-present alist '~a' with function '~a',
 using key '~a' and ~a.  This will create a new alist instead,
 which is probably not intended."
@@ -72,8 +87,8 @@ which is probably not intended."
 ;; Is used by \setAlist and \addToAlist
 (define (set-a-list funcname alst key-name val in-place)
   (check-alst funcname alst key-name val)
-  (ly:parser-define! alst
-    (set-in-alist (ly:parser-lookup alst) key-name val in-place)))
+  (save-list alst
+    (set-in-alist (retrieve-list alst) key-name val in-place)))
 
 ;; Retrieve entry <key-name> from alist <alst>.
 ;; If <return-pair> is #t then the function behaves like 'assoc',
@@ -114,8 +129,8 @@ which is probably not intended."
 ;; Wrapper function around set-in-atree,
 ;; to be used by \setAtree and \addAtree
 (define (set-a-tree atree path val in-place)
-  (ly:parser-define! atree
-    (set-in-atree (ly:parser-lookup atree) path val in-place)))
+  (save-list atree
+    (set-in-atree (retrieve-list atree) path val in-place)))
 
 ;; Recursively walk the nested alist <tree> over the symbol-list <path>
 ;; and return the value for the last leaf in <path> or #f if the chain
@@ -157,7 +172,7 @@ which is probably not intended."
 (define-public newAlist
   (define-void-function (name)(symbol?)
     "Creates or resets <name> as an empty list."
-    (ly:parser-define! name (list))))
+    (save-list name (list))))
 
 ;; Set the node <key-name> to the value <val>.
 ;; If <key-name> is present it is replaced in-place,
@@ -177,8 +192,8 @@ which is probably not intended."
 (define-public removeFromAlist
   (define-void-function (alst key-name)(symbol? symbol?)
     (check-alst 'removeFromAlist alst key-name #f)
-    (ly:parser-define! alst
-      (assoc-remove! (ly:parser-lookup alst) key-name))))
+    (save-list alst
+      (assoc-remove! (retrieve-list alst) key-name))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -214,15 +229,15 @@ which is probably not intended."
   (define-scheme-function (return-pair atree path)
     ((boolean?) symbol? symbol-list-or-symbol?)
     (check-alst 'getAtree atree path #f)
-    (get-from-tree (ly:parser-lookup atree) path return-pair)))
+    (get-from-tree (retrieve-list atree) path return-pair)))
 
 ;; Remove node <path> from a-tree <atree>.
 ;; If <path> isn't present in <atree> it is not modified.
 (define-public remAtree
   (define-void-function (atree path)(symbol? list?)
     (check-alst 'remAtree atree path #f)
-    (ly:parser-define! atree
-      (remove-value (ly:parser-lookup atree) path))))
+    (save-list atree
+      (remove-value (retrieve-list atree) path))))
 
 
 ;; This is somewhat special and doesn't really fit in that module,
