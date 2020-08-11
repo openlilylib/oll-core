@@ -47,19 +47,19 @@
   (oll-core internal tools)
   (oll-core internal grob-tools)
   (oll-core internal control)
+  (oll-core internal predicates)
   (oll-core internal lilypond-version-predicates)
   (oll-core internal alist-access)
-  (oll-core internal options))
+  (oll-core internal options)
+  (oll-core internal properties)
+  )
 
 % Logging capabilities with different log levels
 \include "logging.ily"
 
-% Property handling,
-% like option handling
-% (which it may or may not replace on the long run)
-% but with type checking
-\include "properties.ily"
-
+% Storage for all property sets
+\registerOption #'(_propsets) #'()
+\definePropertySet #'(OLL global) #'()
 
 % Initialize option branch for oll-core
 \registerOption oll-core.root #(this-parent)
