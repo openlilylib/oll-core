@@ -38,6 +38,7 @@
 
 (use-modules
   (lily)
+  (srfi srfi-1)
   (ice-9 regex)
   (oll-core internal predicates))
 
