@@ -322,27 +322,6 @@
    (append props missing)))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ; Convert a ly:context-mod? argument to a properties alist
 ; Arguments:
 ; - rules (optional): a prop-rules? property definition list
