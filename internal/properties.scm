@@ -333,7 +333,7 @@ Expected ~a,
 found ~a"
                        name pred value)
                      #f)))
-               (begin
+               (beginsetPropertyConfFilters
                 ;; discard explicit properties not present in the property set
                 (oll:warn "
 Skipping property ~a = ~a
@@ -353,8 +353,8 @@ not present in property set ~a"
    props))
 
 (define setPropertyConfFilters
-  "Specify one of the property configuration filters."
   (define-void-function (path type value)(symbol-list? symbol? property-configuration-filter?)
+  "Specify one of the property configuration filters."
     (let*
      ((propset (get-propset path))
       (settings-path
@@ -381,11 +381,11 @@ Skipping."
      )))
 
 (define definePropertySet
+  (define-void-function (path prop-list)(symbol-list? property-definition-list?)
   "Define a property set
    with names (symbol?), types (procedure), and default value.
-   These are given as assignments in a \with {} block, as
+   These are given as assignments in a \\with {} block, as
      <name> = #(list <predicate> <default>)"
-  (define-void-function (path prop-list)(symbol-list? property-definition-list?)
     (let* ((root (get-propset-path path))
            (prop-path (append root '(props))))
       ;; create structure
@@ -411,14 +411,14 @@ Skipping."
       )))
 
 (define definePropertyConfiguration
+  (with-required-options define-void-function
+    (configuration-path)(symbol-list?)
   "Define a property configuration to be applied later.
-   Pass a \with {} block with any options to be specified
+   Pass a \\with {} block with any options to be specified
    and a name.
    The property set must exist,
    each specified property must exist,
    and values must match the properties' predicates."
-  (with-required-options define-void-function
-    (configuration-path)(symbol-list?)
     '(flexible)
     (let*
      ((propset-path (list-head configuration-path (- (length configuration-path) 1)))
@@ -481,10 +481,10 @@ Skipping definition."
            (os-path-join-dots propset-path))))))
 
 (define getProperty
+  (define-scheme-function (propset-path name)(symbol-list? symbol?)
   "Retrieve a property value from a property set.
    If the property set doesn't exist or doesn't include the requestes property
    a warning is issued and #f returned."
-  (define-scheme-function (propset-path name)(symbol-list? symbol?)
     (let*
      ((items (get-property-entry propset-path name))
       (props (second items))
@@ -509,10 +509,10 @@ Returns #f, please expect follow-up errors.
           #f)))))
 
 (define setProperty
+  (define-void-function (propset-path name value)(symbol-list? symbol? scheme?)
   "Set a property.
    If the property doesn't exist or the value doesn't match the predicate
    a warning is issued and the assignment skipped (old value kept)."
-  (define-void-function (propset-path name value)(symbol-list? symbol? scheme?)
     (let*
      ((property (third (get-property-entry propset-path name)))
       (prop-path (os-path-join-dots (append propset-path (list name)))))
@@ -540,20 +540,20 @@ Skipping assignment."
            prop-path)))))
 
 (define setProperties
+  (define-void-function (propset-path properties)(symbol-list? list?)
   "Set multiple properties (e.g. for defining global stylesheets).
    Each assignment is validated individually, and failing assignments
    don't affect the overall outcome."
-  (define-void-function (propset-path properties)(symbol-list? list?)
     (for-each
      (lambda (prop)
        (setProperty propset-path (car prop) (cdr prop)))
      properties)))
 
 (define usePropertyConfiguration
+  (define-void-function (propset-path configuration-name)(symbol-list? symbol?)
   "Set the property configuration that is used by default if none is given explicitly.
    This is initialized with 'default but can be changed to anything.
    Validity is checked only upon use."
-  (define-void-function (propset-path configuration-name)(symbol-list? symbol?)
     (let ((propset (get-propset propset-path)))
       (if propset
           (let ((root (get-propset-path propset-path)))
