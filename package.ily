@@ -46,16 +46,22 @@
 % - adds miscellaneous helper functionality (e.g. version predicates)
 
 % We won't support 2.18 anymore as there are simply too many
-% substantial improvements in the 2.19 branch.
-% While development versions are usually more or less up to date,
-% 2.19.22 marks an important step regarding access to LilyPond's parser.
-\version "2.19.22"
+% substantial improvements in the 2.19 branch starting from 2.19.22.
+\version "2.20.0"
 
 #(ly:set-option 'relative-includes #t)
 
 % Initialize oll-core *once*
-#(if (not (defined? 'openlilylib-root))
-     (begin
-      (ly:parser-parse-string (ly:parser-clone) "\\include \"oll-core/internal/os-path.ily\"")
-      (define-public openlilylib-root (this-parent))
+#(if (null? (ly:parser-lookup 'openlilylib-root))
+     (let*
+      ((this (car (ly:input-file-line-char-column (*location*))))
+       (path (string-split this #\/))
+       (oll-root (list-head path (- (length path) 2)))
+       (scheme-path (append oll-root '("oll-core" "scheme")))
+       )
+      ;; Add openLilyLib root to Guile path
+      ;; (enable packages to load Scheme modules through <package-name>)
+      (set! %load-path `(,(string-join oll-root "/") ,@%load-path))
+      ;; store root path as a marker that oll-core has been loaded
+      (ly:parser-define! 'openlilylib-root oll-root)
       (ly:parser-include-string "\\include \"oll-core/internal/init.ily\"")))

@@ -30,36 +30,35 @@
 
 % Initializes oll-core and loads secondary internal functionality
 
-\version "2.19.22"
+\version "2.20.0"
+
+\include "os-path.ily"
 
 % Add openLilyLib root directory to Guile's module load path
 % After this Scheme modules can be addressed starting from openLilyLib's
 % root directory (the parent of oll-core)
 \include "add-guile-path.ily"
-\addGuilePath #(os-path-join openlilylib-root)
-\addGuilePath #(os-path-join (append openlilylib-root '(oll-core scheme)))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Common functionality
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% A collection of general-purpose predicates
-#(use-modules (oll-core internal tools))
-#(use-modules (oll-core internal grob-tools))
-#(use-modules (oll-core internal control))
+#(use-modules
+  (oll-core internal tools)
+  (oll-core internal grob-tools)
+  (oll-core internal control)
+  (oll-core internal predicates)
+  (oll-core internal lilypond-version-predicates)
+  (oll-core internal named-alists)
+  (oll-core internal logging)
+  (oll-core internal options)
+  (oll-core internal properties)
+  )
 
-% Version predicates to execute code for specific LilyPond versions
-#(use-modules (oll-core internal lilypond-version-predicates))
+% Storage for all property sets
+\registerOption #'(_propsets) #'()
+\definePropertySet #'(OLL global) #'()
 
-% Helpers for handling Scheme association lists
-#(use-modules (oll-core internal alist-access))
-
-% Logging capabilities with different log levels
-\include "logging.ily"
-
-% Option handling,
-% for oll-core, other openLilyLib packages or arbitrary end-user code
-\include "options.ily"
 % Initialize option branch for oll-core
 \registerOption oll-core.root #(this-parent)
 
@@ -77,5 +76,6 @@
 % Welcome message.
 % First set log level to 'log so it will be displayed,
 % then set the default log level to 'warning.
+\setLogLevel log
 #(oll:log "oll-core: library infrastructure successfully loaded.")
-\setLogLevel #'warning
+\setLogLevel warning

@@ -53,8 +53,9 @@ maintainers: [
   ]
 contributors: [
   Andrew Bernard <andrew.bernard@gmail.com>
+  Stefano Troncaro <stefanotroncaro@gmail.com>
   ]
-version: 0.5.0
+version: 0.6.0
 license: GPL3
 repository:  https://github.com/openlilylib/oll-core/
 
