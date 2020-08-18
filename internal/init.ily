@@ -50,12 +50,10 @@
   (oll-core internal predicates)
   (oll-core internal lilypond-version-predicates)
   (oll-core internal named-alists)
+  (oll-core internal logging)
   (oll-core internal options)
   (oll-core internal properties)
   )
-
-% Logging capabilities with different log levels
-\include "logging.ily"
 
 % Storage for all property sets
 \registerOption #'(_propsets) #'()

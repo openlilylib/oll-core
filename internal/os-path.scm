@@ -40,7 +40,8 @@
   (lily)
   (srfi srfi-1)
   (ice-9 regex)
-  (oll-core internal predicates))
+  (oll-core internal predicates)
+  (oll-core internal logging))
 
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ; Helper functions handling the low-level differences between OSes
