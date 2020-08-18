@@ -2,7 +2,7 @@
 
 (use-modules
  (lily)
- (oll-core internal alist-access))
+ )
 
 ; Constant symbols representing the different log levels.
 (define oll-loglevels
@@ -12,9 +12,20 @@
     (log . 3)
     (debug . 4)))
 
+; Set the log level. oll-core's oll: logging functions won't do anything
+; if their log level is lower than the currently set level.
+; <level> has to be one of the symbols used in 'oll-loglevels'
+(define setLogLevel
+(define-void-function (level)(symbol?)
+  (let ((new-level (assq level oll-loglevels)))
+    (if new-level
+        (set! oll-loglevel (cdr new-level))
+        (oll:warn
+         (*location*) "Not a valid openLilyLib log level: ~a. Ignoring" level)))))
+
 ; Define one single public variable.
 ; We can't use oll-core's options for this because they are not loaded yet -
-; and the option handline needs the logging code ...
+; and the option handling needs the logging code ...
 ; Initialize to 'log, will later be set to 'warning
 (define oll-loglevel 2)
 
@@ -24,12 +35,6 @@
 (define (do-log loglevel)
   (>= oll-loglevel (assq-ref oll-loglevels loglevel)))
 
-(define (set-log-level level)
-  (let ((new-level (assq level oll-loglevels)))
-    (if new-level
-        (set! oll-loglevel (cdr new-level))
-        (oll-warn
-         (*location*) "Not a valid openLilyLib log level: ~a. Ignoring" level))))
 
 ; Generic function to consistently format the output for the logging functions
 (define (oll-format-log fmt vals)
@@ -60,7 +65,7 @@
 ; Critical error
 ; Aborts the compilation of the input file
 ; so use with care!
-(define (oll-error fmt . vals)
+(define (oll:error fmt . vals)
    (if (do-log 'critical)
        (begin
         ;log-to-file "Error" fmt vals)
@@ -68,21 +73,21 @@
          (format "Error:~a" (oll-format-log fmt vals)))
         (ly:error ""))))
 
-(define (oll-warn fmt . vals)
+(define (oll:warn fmt . vals)
    (if (do-log 'warning)
        (begin
         ;(oll:log-to-file "Warning" fmt vals)
         (ly:input-warning (*location*)
            (oll-format-log fmt vals)))))
 
-(define (oll-log fmt . vals)
+(define (oll:log fmt . vals)
   (if (do-log 'log)
       (begin
        ;        (log-to-file "Event" fmt vals)
        (ly:input-message (*location*)
          (oll-format-log fmt vals)))))
 
-(define (oll-debug fmt . vals)
+(define (oll:debug fmt . vals)
    (if (do-log 'debug)
        (begin
         ;(oll:log-to-file "Debug info" fmt vals)
@@ -90,8 +95,8 @@
           (oll-format-log fmt vals)))))
 
 
-(export set-log-level)
-(export oll-error)
-(export oll-warn)
-(export oll-log)
-(export oll-debug)
+(export setLogLevel)
+(export oll:error)
+(export oll:warn)
+(export oll:log)
+(export oll:debug)

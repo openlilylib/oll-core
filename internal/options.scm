@@ -38,7 +38,7 @@
   (lily)
   (oll-core internal predicates)
   (oll-core internal logging)
-  (oll-core internal alist-access)
+  (oll-core internal named-alists)
   (oll-core internal os-path)
   )
 
@@ -90,12 +90,12 @@
      (if is-set
          (begin
           (setAtree 'oll-options path val)
-          (oll-log "Option set: ~a"
+          (oll:log "Option set: ~a"
             (format "~a: ~a"
               (os-path-join-dots path) val))
           )
          ;; reject setting unknown options and report that
-         (oll-warn "Not a valid option path: ~a"  (os-path-join-dots path))
+         (oll:warn "Not a valid option path: ~a"  (os-path-join-dots path))
          ))))
 
 
@@ -122,11 +122,11 @@
           (getOptionWithFallback path #f))))
     (cond
      ((not opt)
-      (oll-warn
+      (oll:warn
        "Trying to append to non-existent option: ~a"
        (os-path-join-dots path)))
      ((not (list? opt))
-      (oll-warn
+      (oll:warn
        "Trying to append to non-list option: ~a"
        (os-path-join-dots path)))
      (else
@@ -156,7 +156,7 @@
           (set! is-set #t)))
      (if is-set
          (setOption #t (append parent-path (list option)) val)
-         (oll-warn
+         (oll:warn
           "Trying to add child to non-existent option: ~a"
           (os-path-join-dots parent-path))))))
 
@@ -204,7 +204,7 @@
          (cdr option)
          ;; getAtree has returned #f
          (begin
-          (oll-warn
+          (oll:warn
            "Trying to access non-existent option: ~a" (os-path-join-dots path))
           #f)))))
 
@@ -410,7 +410,7 @@
 (define-void-function (root)((symbol-list? '()))
    (display "\n\nopenLilyLib: Currently registered options:\n=====\n")
    (let ((use-root (if (null? root)
-                       oll-options
+                       (getAlist 'oll-options)
                        (getOption root))))
      (pretty-print
       ;oll-options
