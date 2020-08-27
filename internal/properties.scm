@@ -332,7 +332,8 @@ Expected ~a,
 found ~a"
                        name pred value)
                      #f)))
-               (beginsetPropertyConfFilters
+               (begin
+                setPropertyConfFilters
                 ;; discard explicit properties not present in the property set
                 (oll:warn "
 Skipping property ~a = ~a
