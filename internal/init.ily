@@ -32,18 +32,12 @@
 
 \version "2.20.0"
 
-\include "os-path.ily"
-
-% Add openLilyLib root directory to Guile's module load path
-% After this Scheme modules can be addressed starting from openLilyLib's
-% root directory (the parent of oll-core)
-\include "add-guile-path.ily"
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Common functionality
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #(use-modules
+  (oll-core internal os-path)
   (oll-core internal tools)
   (oll-core internal grob-tools)
   (oll-core internal control)
@@ -53,18 +47,20 @@
   (oll-core internal logging)
   (oll-core internal options)
   (oll-core internal properties)
+;  (oll-core internal module-handling)
+  (oll-core internal add-guile-path)
   )
 
 % Storage for all property sets
-\registerOption #'(_propsets) #'()
-\definePropertySet #'(OLL global) #'()
+%\registerOption #'(_propsets) #'()
+%\definePropertySet #'(OLL global) #'()
 
 % Initialize option branch for oll-core
-\registerOption oll-core.root #(this-parent)
+%\registerOption oll-core.root #(this-parent)
 
 % Create these nodes as oll-core is not loaded through \loadPackage
-\registerOption loaded-packages #'(oll-core)
-\registerOption loaded-modules.oll-core #'()
+%\registerOption loaded-packages #'(oll-core)
+%\registerOption loaded-modules.oll-core #'()
 
 % Functionality to load and manage modules
 \include "module-handling.ily"

@@ -1,4 +1,4 @@
-(define-module (oll-core internal predicates))
+(define-module (o-core internal predicates))
 
 (use-modules
  (srfi srfi-1)

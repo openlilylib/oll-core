@@ -480,6 +480,10 @@
        (oll:warn "Wrong argument type: oll-accepted-props? expected")
        '())))
 
+(registerOption '(_propsets) '())
+(registerOption '(oll-core root) (this-parent))
+\registerOption '(loaded-packages) '(oll-core))
+(registerOption '(loaded-modules oll-core) '())
 
 (export
  context-mod->props

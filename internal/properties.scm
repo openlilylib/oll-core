@@ -610,6 +610,8 @@ non-existent property set '~a'" (os-path-join-dots propset-path))))
         )
        . ,body))))
 
+(definePropertySet '(OLL global) '())
+
 (export
  ;; NOTE:
  ;; it seems these have to be public to be accessible from the macro invocation
