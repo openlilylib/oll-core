@@ -281,7 +281,7 @@ Wrong property type: expecting symbol, string or #f got ~a" obj)
        ;; construct a \with block with only the current default configuration
        (let*
         ((root (get-propset propset-path))
-         (current-configuration (assq-ref root 'default-configuration)))
+         (current-configuration (get-default-configuration propset-path)))
         #{
           \with {
             configuration = #current-configuration
