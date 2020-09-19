@@ -34,7 +34,7 @@
 % (type checking is active too
 \definePropertyConfiguration \with {
   text = boo
-  color = #blue
+  color = #magenta
 %  index = invalid % fails type-check
 } demo.props.my-preset
 
@@ -48,7 +48,7 @@
 %   props variable
 testFunc =
 #(with-property-set define-scheme-function (dummy)(boolean?)
-   `(demo props)
+ (list 'demo 'props)
    (let*
     ((do-use (use-by-configuration?))
      (text (property 'text))
@@ -56,25 +56,29 @@ testFunc =
           (if do-use
               (format "~a. ~a" (property 'index) text)
               (format "~a" text))))
-    (if do-use
+    (ly:message "color: ~a" (property 'color))
+    (if #t
         (markup #:with-color (property 'color) content)
-        (markup content)
+        (markup #:with-color (property 'color) content)
       )))
 
 % Invoke function with currently active properties
-%\testFunc ##t
+
+\testFunc ##t
+
+\markup "zwischen"
 
 % Invoke function with a preset
-\testFunc \with {
-  configuration = #'my-preset
-} ##t
+%\testFunc \with {
+%  configuration = #'my-preset
+%} ##t
 
 % Invoke function with a preset plus individual override
 \testFunc \with {
   configuration = #'my-preset
-  %index = ##t %fails due to type check
-  color = #magenta
-  label = "heyho-symbol" % (implicitly converted to symbol)
+  %index = ##t %falls due to type check
+  color = #blue
+  text = "heyho-symbol" % (implicitly converted to symbol)
 } ##t
 
 

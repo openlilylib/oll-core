@@ -563,6 +563,14 @@ Trying to set '~a' as default configuration for non-existing
 property set ~a.
 Skipping." configuration-name (os-path-join-dots propset-path))))))
 
+(define (make-propset-function-declaration proc vars preds propset-path . body)
+  "Return the declaration of a function with the given arguments."
+  (ly:message "proc: ~a" proc)
+  (ly:message "vars: ~a" vars)
+  (ly:message "preds: ~a" preds)
+  (ly:message "propset-path: ~a" propset-path)
+  )
+ 
 (define-macro (with-property-set proc vars preds propset-path . body)
   "Create a music/scheme/void-function attached to a propset.
     The first mandatory item after the predicate list is a quasi-quoted
@@ -572,6 +580,7 @@ Skipping." configuration-name (os-path-join-dots propset-path))))))
     argument must be defined. If that is not necessary one can alternatively
     accept a scheme? or ly:music? argument and return that unmodified.`
     "
+  (apply make-propset-function-declaration `(,proc ,vars ,preds ,propset-path . ,body))
   (let*
    ((vars (append `(configuration-or-opts) vars))
     (preds
