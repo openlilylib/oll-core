@@ -6,7 +6,7 @@
 % Little helper function
 show =
 #(define-void-function (fstring obj)(string? scheme?)
-   (ly:message (format "\n~a:\n~a\n" fstring obj)))
+   (ly:message (format #f "\n~a:\n~a\n" fstring obj)))
 
 %%%%%%%%%%%%%%%%
 % A) flat a-lists

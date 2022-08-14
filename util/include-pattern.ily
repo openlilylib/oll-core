@@ -78,7 +78,7 @@ includePattern =
            ;; in files opened previously in the same execution of \includePattern
            (for-each
             (lambda (file)
-              (let ((include-string (format "\\include \"~A\"\n" file)))
+              (let ((include-string (format #f "\\include \"~A\"\n" file)))
                 (ly:parser-include-string include-string)))
             includefiles)
 

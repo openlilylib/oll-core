@@ -86,7 +86,7 @@ declareLibrary =
      (lambda (o)
        (let ((mand-opt (car o)))
          (if (not (assoc-ref options mand-opt))
-             (oll:error (format "
+             (oll:error (format #f "
     Missing option in library declaration!
     Library: \"~a\"
     Option: \"~a\"" display-name mand-opt) ""))
@@ -103,14 +103,14 @@ declareLibrary =
          ;; check for type if there is a predicate (-> true for mandatory options)
          (if (and predicate?
                   (not (predicate? opt-val)))
-             (oll:error (format "
+             (oll:error (format #f "
     Type check failed for mandatory option in library declaration!
     Library: \"~a\"
     Option: \"~a\"
     Predicate: ~a" display-name opt-name predicate?) ""))
          (if (and known-opt-pred?
                   (not (known-opt-pred? opt-val)))
-             (oll:error (format "
+             (oll:error (format #f "
     Type check failed for known option in library declaration!
     Library: \"~a\"
     Option: \"~a\"
