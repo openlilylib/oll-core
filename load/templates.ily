@@ -62,7 +62,7 @@ loadTemplate =
           (let*
            (;TODO: replace dots with slashes (to load tools from subdirectories)
              (template-path #f)
-             (template-file (format "~a/~a.ily" directory template-name))
+             (template-file (format #f "~a/~a.ily" directory template-name))
              (exists (file-exists? template-file))
              (loaded (immediate-include template-file)))
            (if (not loaded)

@@ -91,7 +91,7 @@
          (begin
           (setAtree 'oll-options path val)
           (oll:log "Option set: ~a"
-            (format "~a: ~a"
+            (format #f "~a: ~a"
               (os-path-join-dots path) val))
           )
          ;; reject setting unknown options and report that

@@ -73,7 +73,7 @@
                  (has-value! tree #t))
                 (begin
                  (ly:input-warning (*location*)
-                   (format "TODO: Format warning about typecheck error in tree-set!
+                   (format #f "TODO: Format warning about typecheck error in tree-set!
 Expected ~a, got ~a" (procedure-name pred?) val))
                  (set! val #f)))
             ;; if no typecheck is set simply set the value
@@ -95,7 +95,7 @@ Expected ~a, got ~a" (procedure-name pred?) val))
             ;; recursively walk path
             (tree-set! create child cpath val)
             (ly:input-warning (*location*)
-              (format "TODO: Format missing path warning in tree-set!
+              (format #f "TODO: Format missing path warning in tree-set!
 Path: ~a" path)))))
   val)
 
@@ -275,9 +275,11 @@ Path: ~a" path)))))
   (tree-collect tree path (stack-create) (lambda (v) #t)))
 (define-method (tree-collect (tree <tree>) (path <list>) (pred? <procedure>))
   (tree-collect tree path (stack-create) pred?))
-(define-method (tree-collect (tree <tree>) (path <list>) (vals (@@ (oll-core stack) <stack>))) ; there is also a <stack> class in (oop goops)
+
+(define oll-stack (@@ (oll-core stack) <stack>)) ; there is also a <stack> class in (oop goops)
+(define-method (tree-collect (tree <tree>) (path <list>) (vals oll-stack))
   (tree-collect tree path vals (lambda (v) #t)))
-(define-method (tree-collect (tree <tree>) (path <list>) (vals (@@ (oll-core stack) <stack>)) (pred? <procedure>))
+(define-method (tree-collect (tree <tree>) (path <list>) (vals oll-stack) (pred? <procedure>))
   (let ((val (value tree)))
     (if (> (length path) 0)
         (let* ((ckey (car path))
@@ -297,7 +299,7 @@ Path: ~a" path)))))
     (cond
      ((and (number? v1) (number? v2)) (< v1 v2))
      ((and (ly:moment? v1) (ly:moment? v2)) (ly:moment<? v1 v2))
-     (else (string-ci<? (format "~A" v1) (format "~A" v2)))
+     (else (string-ci<? (format #f "~A" v1) (format #f "~A" v2)))
      )))
 
 ; walk the tree and call callback for every node
@@ -330,8 +332,8 @@ Path: ~a" path)))))
          (sortby (assoc-get 'sortby opt stdsort)) ; sort-function
          (empty (ly:assoc-get 'empty opt #f #f)) ; display empty nodes
          (dval (ly:assoc-get 'value opt #t #f)) ; display value
-         (vformat (ly:assoc-get 'vformat opt (lambda (v)(format "~A" v)) #f)) ; format value
-         (pformat (ly:assoc-get 'pformat opt (lambda (v)(format "~A" v)) #f)) ; format path
+         (vformat (ly:assoc-get 'vformat opt (lambda (v)(format #f "~A" v)) #f)) ; format value
+         (pformat (ly:assoc-get 'pformat opt (lambda (v)(format #f "~A" v)) #f)) ; format path
          (pathsep (ly:assoc-get 'pathsep opt "/" #f)) ; separator for path
          (port (ly:assoc-get 'port opt (current-output-port)))) ; output-port
     (tree-walk-branch tree path

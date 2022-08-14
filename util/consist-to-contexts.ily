@@ -46,7 +46,6 @@ consistToContexts =
                  }
                #}
                ; TODO: Make the input location point to the location of the *caller*
-               (oll:warn (format "Trying to install engraver to non-existent context ~a" ctx))))
+               (oll:warn (format #f "Trying to install engraver to non-existent context ~a" ctx))))
          contexts)
      } #})
-

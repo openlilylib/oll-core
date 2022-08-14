@@ -38,18 +38,18 @@
 
 ; Generic function to consistently format the output for the logging functions
 (define (oll-format-log fmt vals)
-  (apply format (format "\n\n~a\n" fmt) vals))
+  (apply format #f (format #f "\n\n~a\n" fmt) vals))
 
 ; Open log file
 (define oll-logfile
   (open-output-file
-   (format "~a.oll.log" (ly:parser-output-name (*parser*)))))
+   (format #f "~a.oll.log" (ly:parser-output-name (*parser*)))))
 
 ; Generic function to consistently write to log file.
 ; <title> is a sectioning header in the log file
 ; <fmt> and <vals> are simply passed along.
 (define (log-to-file title fmt vals)
-  (format oll-logfile
+  (format #f oll-logfile
     (string-append
      "\n"
      (os-path-join-os (location->normalized-path (*location*)))
@@ -57,7 +57,7 @@
      (number->string (cadr (ly:input-file-line-char-column (*location*))))
 
      "\n~a:\n"
-     (apply format fmt vals)
+     (apply format #f fmt vals)
      "\n\n")
     title))
 
@@ -70,7 +70,7 @@
        (begin
         ;log-to-file "Error" fmt vals)
         (ly:input-message (*location*)
-         (format "Error:~a" (oll-format-log fmt vals)))
+         (format #f "Error:~a" (oll-format-log fmt vals)))
         (ly:error ""))))
 
 (define (oll:warn fmt . vals)

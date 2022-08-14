@@ -51,7 +51,7 @@
 (define os-path-separator-char
    (if (eq? PLATFORM 'windows) #\\ #\/ ))
 
-(define os-path-separator-string (format "~a" os-path-separator-char))
+(define os-path-separator-string (format #f "~a" os-path-separator-char))
 
 ;%%%%%%%%%%%%%%%%
 ; Path operations
@@ -271,7 +271,7 @@
 
 ; Returns a string wtih the absolute path to the input file, without file extension
 (define (os-path-input-basename)
-   (format "~a/~a"
+   (format #f "~a/~a"
      (os-path-input-dirname)
      (ly:parser-output-name (*parser*))))
 

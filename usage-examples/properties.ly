@@ -54,8 +54,8 @@ testFunc =
      (text (property 'text))
      (content
           (if do-use
-              (format "~a. ~a" (property 'index) text)
-              (format "~a" text))))
+              (format #f "~a. ~a" (property 'index) text)
+              (format #f "~a" text))))
     (if do-use
         (markup #:with-color (property 'color) content)
         (markup content)

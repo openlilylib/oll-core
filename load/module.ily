@@ -42,4 +42,4 @@
 % \loadInclude "~a-include.ily"
 loadInclude =
 #(define-void-function (format-string)(string?)
-   (immediate-include (format format-string (os-path-input-basename))))
+   (immediate-include (format #f format-string (os-path-input-basename))))

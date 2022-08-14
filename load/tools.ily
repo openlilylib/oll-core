@@ -62,7 +62,7 @@ loadTool =
           (let*
            (;TODO: replace dots with slashes (to load tools from subdirectories)
              (tool-path #f)
-            (tool-file (format "~a/~a.ily" directory tool-name))
+            (tool-file (format #f "~a/~a.ily" directory tool-name))
             (exists (file-exists? tool-file))
             (loaded (immediate-include tool-file)))
            (if (not loaded)

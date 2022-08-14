@@ -46,7 +46,7 @@
       (let ((parser (ly:parser-clone)))
         (ly:parser-parse-string parser "\\language \"nederlands\"")
         (ly:parser-parse-string parser
-          (format "\\include \"~a\"" file))
+          (format #f "\\include \"~a\"" file))
         #t)
       #f))
 
