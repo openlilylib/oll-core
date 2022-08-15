@@ -16,13 +16,6 @@
   (or (symbol? obj)
       (ly:context-mod? obj)))
 
-
-; temporary predicate, as this seems just too general ...
-(define (alist? obj)
-  (if (and (list? obj)
-           (every pair? obj))
-      #t #f))
-
 ; Predicate for a mandatory option:
 ; a three-element list consisting of
 ; - name (symbol?)
@@ -105,7 +98,6 @@
 
 
 (export al-or-props?)
-(export alist?)
 (export oll-mand-prop?)
 (export oll-mand-props?)
 (export oll-accepted-prop?)

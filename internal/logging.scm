@@ -38,7 +38,7 @@
 
 ; Generic function to consistently format the output for the logging functions
 (define (oll-format-log fmt vals)
-  (apply format #f (format #f "\n\n~a\n" fmt) vals))
+  (apply format #f (format #f "\n~a\n" fmt) vals))
 
 ; Open log file
 (define oll-logfile
@@ -84,7 +84,7 @@
   (if (do-log 'log)
       (begin
        ;        (log-to-file "Event" fmt vals)
-       (ly:input-message (*location*)
+       (ly:message ;; (*location*)
          (oll-format-log fmt vals)))))
 
 (define (oll:debug fmt . vals)
