@@ -105,7 +105,19 @@
 
 
 (export al-or-props?)
-(export alist?)
+;; In LilyPond 2.23.10 and later, alist? is already defined in the (lily)
+;; module.  We still want to define this here, however, to support earlier
+;; versions.  For this reason, we use export! to mark the binding as "replacing",
+;; which silences a Guile warning in 2.23.10+.
+;; TODO: when LilyPond earlier than 2.23.10 is no longer supported, remove
+;; this and ensure callers import alist? from (lily). --JeanAS
+(cond-expand
+ (guile-2
+  (export! alist?))
+ ;; Guile 1 didn't have export!, but a Guile 1 version is necessarily earlier
+ ;; than 2.23.10.
+ (else
+  (export alist?)))
 (export oll-mand-prop?)
 (export oll-mand-props?)
 (export oll-accepted-prop?)
