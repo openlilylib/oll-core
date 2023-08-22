@@ -1,4 +1,4 @@
-\version "2.19.80"
+\version "2.24.0"
 
 % Common overrides to define the appearance of a custos
 custosOverrides = {

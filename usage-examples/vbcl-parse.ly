@@ -1,4 +1,4 @@
-\version "2.19.60"
+\version "2.24.0"
 % VBCL parser test program
 
 \include "oll-core/package.ily"

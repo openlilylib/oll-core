@@ -34,7 +34,7 @@
 %
 % Compiled and refactored by Urs Liska, based heavily on work by Jan-Peter Voigt
 
-\version "2.19.22"
+\version "2.24.0"
 
 #(use-modules
   (lily)

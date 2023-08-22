@@ -1,4 +1,4 @@
-\version "2.20.0"
+\version "2.24.0"
 
 % Use oll-core from the 'properties' branch
 \include "oll-core/package.ily"

@@ -35,7 +35,7 @@
 % Originally provided by Jan-Peter Voigt
 % and simplified by Urs Liska
 
-\version "2.19.22"
+\version "2.24.0"
 
 % add a directory to Guile's %load-path (Scheme module search path)
 % If path is an absolute path it is simply normalized,

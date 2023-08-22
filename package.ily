@@ -47,7 +47,7 @@
 
 % We won't support 2.18 anymore as there are simply too many
 % substantial improvements in the 2.19 branch starting from 2.19.22.
-\version "2.20.0"
+\version "2.24.0"
 
 #(ly:set-option 'relative-includes #t)
 

@@ -1,4 +1,4 @@
-\version "2.19.22"
+\version "2.24.0"
 
 % The following is temporary, and the oll-core directory must be in the include path.
 \include "oll-core.ily"

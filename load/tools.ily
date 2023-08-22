@@ -32,7 +32,7 @@
   This files contains utility routines to load "Tools" from a given directory
 %}
 
-\version "2.19.82"
+\version "2.24.0"
 
 % Root directory from where Tools can be loaded
 \registerOption oll-core.load.tools.directory #f

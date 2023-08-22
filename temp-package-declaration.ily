@@ -66,7 +66,7 @@
 %   For possible mandatory and known options see the two lists above.
 %
 declareLibrary =
-#(define-void-function (parser location display-name name options)
+#(define-void-function (display-name name options)
    (string? (symbol?) ly:context-mod?)
    (let*
     ;; internal-name is either explicitly given

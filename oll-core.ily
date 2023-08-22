@@ -49,7 +49,7 @@
 % substantial improvements in the 2.19 branch.
 % While development versions are usually more or less up to date,
 % 2.19.22 marks an important step regarding access to LilyPond's parser.
-\version "2.19.22"
+\version "2.24.0"
 
 #(ly:set-option 'relative-includes #t)
 

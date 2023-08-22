@@ -33,7 +33,7 @@
   It is written for ScholarLY \annotate but the functions should be generally usable
 %}
 
-\version "2.19.22"
+\version "2.24.0"
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Helper functions for the annotation engraver

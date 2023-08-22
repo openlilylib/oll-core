@@ -1,4 +1,4 @@
-\version "2.18.0"
+\version "2.24.0"
 
 \include "oll-core/package.ily"
 \loadModule oll-core.util.read-comment

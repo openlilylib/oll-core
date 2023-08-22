@@ -1,4 +1,4 @@
-\version "2.17.96"
+\version "2.24.0"
 
 \header {
   snippet-title = "Define variables anywhere"

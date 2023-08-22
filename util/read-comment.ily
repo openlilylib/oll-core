@@ -1,4 +1,4 @@
-\version "2.18.0"
+\version "2.24.0"
 
 \header {
   snippet-title = "read multiline copmment as string"
@@ -54,8 +54,8 @@
 
 % scheme function to read comment: \readComment
 readComment =
-#(define-scheme-function (parser location)()
-   (let* ((fll (ly:input-file-line-char-column location))
+#(define-scheme-function ()()
+   (let* ((fll (ly:input-file-line-char-column (*location*)))
           (file (car fll))
           (linenr (cadr fll))
           (port (open-file file "r")))

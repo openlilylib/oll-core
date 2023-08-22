@@ -273,7 +273,7 @@
 (define (os-path-input-basename)
    (format #f "~a/~a"
      (os-path-input-dirname)
-     (ly:parser-output-name (*parser*))))
+     (ly:parser-output-name)))
 
 (export
 ; os-path-separator-char

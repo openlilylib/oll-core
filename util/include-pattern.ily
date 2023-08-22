@@ -28,7 +28,7 @@
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\version "2.19.22"
+\version "2.24.0"
 
 % Should includes be logged or not?
 \registerOption oll-core.include-pattern.log-includes ##f
