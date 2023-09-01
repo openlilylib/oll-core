@@ -43,7 +43,7 @@
 ; Open log file
 (define oll-logfile
   (open-output-file
-   (format #f "~a.oll.log" (ly:parser-output-name (*parser*)))))
+   (format #f "~a.oll.log" (ly:parser-output-name))))
 
 ; Generic function to consistently write to log file.
 ; <title> is a sectioning header in the log file

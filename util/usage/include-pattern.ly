@@ -1,4 +1,4 @@
-\version "2.19.22"
+\version "2.24.0"
 
 \include "oll-core/package.ily"
 \loadModule oll-core.util.include-pattern

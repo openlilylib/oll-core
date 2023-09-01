@@ -1,4 +1,4 @@
-\version "2.16.2" % absolutely necessary!
+\version "2.24.0" % absolutely necessary!
 
 
 % TODO:
@@ -44,7 +44,7 @@ end = \relative c'' {
 
 #(define-macro (late embedded-lilypond)
    `(define-music-function
-     (parser location)
+     ()
      ()
      ,embedded-lilypond))
 

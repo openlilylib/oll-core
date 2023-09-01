@@ -1,4 +1,4 @@
-\version "2.19.82"
+\version "2.24.0"
 
 \include "oll-core/package.ily"
 \loadModule oll-core.load.tools

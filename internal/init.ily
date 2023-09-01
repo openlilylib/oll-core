@@ -30,7 +30,7 @@
 
 % Initializes oll-core and loads secondary internal functionality
 
-\version "2.20.0"
+\version "2.24.0"
 
 \include "os-path.ily"
 
